@@ -1,0 +1,557 @@
+/* PALETA DE CORES TOP:
+=============================================
+    Preto principal | Fundo/header | #171717
+=============================================
+    Grafite         | Cards/fundos | #232323 
+                    |  secundários |
+=============================================
+    Amarelo FLUXE   | Botões/      | #FFC400
+                    |    destaques |
+=============================================
+    Amarelo hover   | Interações   | #FFC933
+=============================================
+    Branco          | Texto        |
+                    |    principal | #FFFFFF
+=============================================
+    Cinza claro     | Inputs/cards | #F3F3F3
+=============================================
+    Cinza médio     | Bordas/textos| #A1A1A1 
+                    |  secundários |
+=============================================
+*/
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+/* ── HEADER ── */
+.containerHeader {
+    display: flex;
+    max-width: 100vw;
+    height: 13vh;
+    background-color: #171717;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    z-index: 100;
+    color: white;
+}
+
+.containerHeader {
+    position: sticky;
+    top: 0;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.header-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform: translateY(-100%);
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+    z-index: 999;
+}
+
+.header-fixed.header-visible {
+    transform: translateY(0);
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logoSicapda {
+    width: 15rem;
+}
+
+
+/* ── NAV ── */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    justify-content: center;
+}
+
+.linkMenu::after,
+.linkMenu::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(to right, #cba709, #e2df0c);
+    bottom: -5px;
+    left: 0;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s ease-out;
+}
+
+.linkMenu::before {
+    top: -5px;
+    transform-origin: left;
+}
+
+.linkMenu:hover::after,
+.linkMenu:hover::before {
+    transform: scaleX(1);
+}
+
+
+.linkMenu {
+    color: #ffffff;
+    background: none;
+    text-decoration: none;
+    font-weight: bold;
+    position: relative;
+}
+
+/* Botão do Header */
+.containerBut {
+    padding: 1%;
+    border-radius: 10px;
+    border: none;
+    width: 15%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #FFC400;
+    transition: 0.5s ease;
+}
+
+.containerBut {
+    color: #171717;
+    text-decoration: none;
+    font-weight: bold;
+    width: 17%;
+    font-size: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4%;
+    cursor: pointer;
+}
+
+.containerBut i {
+    font-size: 150%;
+    color: #171717;
+
+}
+
+.containerBut:hover {
+    background-color: #ffcf49;
+    transition: 0.5s ease;
+    transform: scale(1.1)
+}
+
+main {
+    background: linear-gradient(to left, whitesmoke, white);
+    /* background-color: red; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 96vh;
+    position: relative;
+}
+
+/* -------------------------------- SICAPDA + Painel -- */
+#divRowSicapdaPainel {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    margin-top: 2%;
+}
+
+#containerCirculo {
+    /* background-color: yellow; */
+    min-width: 10%;
+}
+
+/* -------------------------------- containerSICAPDA --- */
+#containerSICAPDA {
+    margin-top: 10vh;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    /* background-color: yellowgreen; */
+    width: 30%;
+    margin-left: 3%;
+}
+
+#containerSICAPDA h1 {
+    font-size: 5rem;
+}
+
+#containerSICAPDA h2 {
+    font-size: 1.4rem;
+}
+
+#containerSICAPDA p {
+    font-size: 1.1rem;
+}
+
+#containerSICAPDA h1 span {
+    color: #FFC400;
+}
+
+.slash {
+    background-color: #FFC400;
+    width: 120px;
+    height: 7px;
+}
+
+/* -------------------------------- Botões --- */
+#buttonRow {
+    display: flex;
+    justify-content: space-between;
+}
+
+.botao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 220px;
+    height: 50px;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.5s ease;
+}
+
+.botao span {
+    margin-right: 15px;
+}
+
+#amarelo:hover {
+    background-color: #ffcf49;
+    transition: 0.5s ease;
+}
+
+#amarelo {
+    background-color: #FFC400;
+    border: none;
+}
+
+#amarelo i {
+    font-size: 20px;
+}
+
+#branco {
+    background-color: white;
+    transition: 0.5s ease;
+}
+
+#branco:hover {
+    background-color: black;
+    color: white;
+    transition: 0.5s ease;
+}
+
+#branco i {
+    font-size: 27px;
+}
+
+/* -------------------------------- Fim Botões --- */
+
+#icones {
+    margin-top: 5%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#icones i {
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+#icones p {
+    font-weight: bold;
+    font-size: 17px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* -------------------------------- Fim containerSICAPDA --- */
+#painelGeral {
+    width: 50%;
+}
+
+#painelGeral img {
+    width: 100%;
+}
+
+/* -------------------------------- Fim SICAPDA + Painel ---- */
+
+/* -------------------------------- Soluções ---- */
+.solucoes {
+    margin-top: 20vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    min-height: 15vh;
+    width: 90%;
+    z-index: 3 !important;
+    background-color: whitesmoke;
+    border-radius: 10px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+}
+
+.boxes {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    width: 24%;
+}
+
+.icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #FFC400;
+    border-radius: 100%;
+    min-width: 40px;
+    min-height: 40px;
+    font-size: 20px;
+}
+
+.boxes div {
+    width: 75%;
+}
+
+.boxes div h2 {
+    font-size: 19px;
+}
+
+.boxes div p {
+    font-size: 13px;
+}
+
+.divisionBar {
+    min-height: 50px;
+    max-width: 1.5px;
+    min-width: 1.5px;
+    background-color: #171717;
+}
+
+/* -------------------------------- Fim soluções ---- */
+#sobreSection {
+    background: linear-gradient(to right, #f9f8fd, #ebecf4);
+    height: 70vh;
+    display: flex;
+    position: relative;
+    z-index: 1;
+}
+
+#divMarginTop {
+    margin-top: 10vh;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+.miniTitulo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2%;
+}
+
+.miniTitulo h5 {
+    font-size: 1.5rem;
+}
+
+.sobreSistema h1 span {
+    color: #F4B400;
+}
+
+.miniSlash {
+    background-color: #FFC400;
+    width: 3.8rem;
+    height: 0.3rem;
+}
+
+
+.sobreSistema {
+    width: 30%;
+    margin-left: 10%;
+    display: flex;
+    flex-direction: column;
+    gap: 5%;
+    margin-top: 9%;
+    /* background-color: blue; */
+}
+
+.botaoSobre {
+    width: 250px !important;
+    color: white !important;
+    background-color: #171717;
+    transition: 0.5s ease;
+}
+
+.botaoSobre:hover {
+    transform: scale(1.1);
+    transition: 0.5s ease;
+}
+
+.botao a {
+    text-decoration: none;
+    color: black;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.botaoSobre span {
+    font-size: 20px;
+    color: #FFC400;
+    margin-left: 20px;
+    margin-right: 0 !important;
+}
+
+#imagemSobre {
+    display: flex;
+    width: 60%;
+    align-items: end;
+    justify-content: end;
+}
+
+#imagemSobre img {
+    width: 100%;
+    /* background-color: green; */
+}
+
+.circuloAmarelo {
+    position: absolute;
+
+    width: 20%;
+    height: 80%;
+
+    background-color: #F4B400;
+    border-radius: 100%;
+
+    left: -12vw;
+    top: 20vh;
+
+    z-index: -1;
+}
+
+.quadradoAmarelo {
+    position: absolute;
+
+    width: 10rem;
+    height: 5rem;
+
+    background-color: #FFC400;
+
+    right: 1rem;
+    bottom: 8vh;
+
+    z-index: 0;
+}
+
+.footerSicapda {
+    min-height: 35vh;
+    max-height: 50vh;
+    background-color: #171717;
+    display: flex;
+    justify-content: space-between;
+}
+
+.tituloFooter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-left: 0.5vw;
+    font-size: 1.5rem;
+    color: #ffffff;
+
+}
+
+.tituloFooter {
+    font-size: 1.2rem;
+}
+
+.tituloFooter span {
+    color: #FFC400;
+}
+
+.tituloFooter img {
+    width: 20rem;
+}
+
+.containerInfo {
+    background-color: #171717;
+    display: flex;
+    align-items: center;
+    font-size: 1.7rem;
+    width: 60%;
+}
+
+.info i {
+    color: #F4B400;
+    font-size: 2rem;
+    margin-right: 4%;
+}
+
+.info span {
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.info h5 {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.info h6 {
+    font-size: 1rem;
+    font-weight: normal;
+    color: #dddcdc;
+}
+
+.zap {
+    color: #F4B400;
+    font-size: 2.7rem;
+    cursor: pointer;
+    background-color: none;
+    padding: 7%;
+    border-radius: 13px;
+    transition: 0.5s ease;
+}
+
+.zap:hover {
+    transition: 0.5s ease;
+    color: #ffffff;
+    background-color: #25D366;
+}
+
+.containerZap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 8vh;
+    transition: 0.5s ease;
+    justify-content: end;
+    margin-left: 2vw;
+}
+
+.containerZap h5 {
+    color: #ffffff;
+    font-size: 1.1rem;
+    margin-bottom: 1vh;
+}

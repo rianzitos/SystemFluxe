@@ -1,0 +1,646 @@
+/* PALETA DE CORES TOP:
+=============================================
+    Preto principal | Fundo/header | #171717
+=============================================
+    Grafite         | Cards/fundos | #232323 
+                    |  secundários |
+=============================================
+    Amarelo FLUXE   | Botões/      | #F4B400
+                    |    destaques |
+=============================================
+    Amarelo hover   | Interações   | #FFC933
+=============================================
+    Branco          | Texto        |
+                    |    principal | #FFFFFF
+=============================================
+    Cinza claro     | Inputs/cards | #F3F3F3
+=============================================
+    Cinza médio     | Bordas/textos| #A1A1A1 
+                    |  secundários |
+=============================================
+*/
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.fundo {
+    background: linear-gradient(45deg, #101010, #1f1f1f);
+    font-family: sans-serif;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* Copia isso daqui */
+
+.headerLogin {
+    min-height: 15vh;
+    max-height: 15vh;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(90deg, #121212, #1f1f1f);
+    justify-content: space-between;
+}
+
+
+
+
+/* Até aqui */
+
+/* ============================================
+   IMAGEM DO CIRCUITO
+   ============================================ */
+.circuit-decoration {
+    position: absolute;
+    bottom: 10vh;
+    left: 0;
+    width: 20%;
+    /* height: 45%; */
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.circuit-decoration img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: left bottom;
+    opacity: 0.55;
+    mix-blend-mode: screen;
+}
+
+/* Container que coloca titulo e form lado a lado */
+.layout-principal {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 75vh;
+    max-height: 75vh;
+    position: relative;
+    z-index: 1;
+}
+
+/* Corrige o container-titulo */
+.container-titulo {
+    color: white;
+    font-weight: bold;
+    width: 55%;
+    min-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-left: 5%;
+}
+
+/* Corrige o fundoContainer para ocupar o lado direito */
+.fundoContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 45%;
+    max-height: 100%;
+    padding: 2%;
+}
+
+/* Form-container sem width fixo, deixa o pai controlar */
+.form-container {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    width: 77%;
+    max-height: 80vh;
+    border-radius: 20px;
+    padding: 0;
+    overflow-y: auto;
+}
+
+/* Esconde scrollbar mas permite scroll se necessário */
+.form-container::-webkit-scrollbar {
+    display: none;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.inputs {
+    display: flex;
+    flex-direction: column;
+    margin-left: 10%;
+    margin-right: 10%;
+}
+
+/* ============================================
+   INPUT COM ÍCONE
+   ============================================ */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 5%;
+    margin-top: 1%;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    color: #A1A1A1;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.form input[type="email"],
+.form input[type="password"],
+.form input[type="text"] {
+    padding-left: 38px;
+    padding-right: 12px;
+    width: 100%;
+    height: 6vh;
+    border: 2px solid #A1A1A1;
+    border-radius: 5px;
+    background-color: white;
+    font-size: 0.9rem;
+    transition: border-color 0.3s;
+    outline: none;
+}
+
+.form input:focus {
+    border-color: #F4B400;
+}
+
+/* Toggle de senha */
+.toggle-senha {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #A1A1A1;
+    font-size: 1rem;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.toggle-senha:hover {
+    color: #F4B400;
+}
+
+
+/* ============================================
+   LINHA LEMBRAR-ME + ESQUECEU SENHA
+   ============================================ */
+.row-lembrar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 10% 5% 10%;
+    font-size: 0.82rem;
+}
+
+.lembrar-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #555;
+    cursor: pointer;
+    font-weight: normal;
+    user-select: none;
+}
+
+.lembrar-label input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #F4B400;
+    cursor: pointer;
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.link-esqueceu {
+    text-decoration: none;
+    color: #FFC933;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.link-esqueceu:hover {
+    color: #F4B400;
+}
+
+/* ============================================
+   BOTÕES
+   ============================================ */
+.butEnviar {
+    border-radius: 5px;
+    width: 80%;
+    border: none;
+    padding: 2.5%;
+    font-weight: bold;
+    background-color: #F4B400;
+    cursor: pointer;
+    font-size: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s, transform 0.15s;
+}
+
+.butEnviar i {
+    font-size: 200%;
+    margin-left: 10%;
+}
+
+.butEnviar:hover {
+    background-color: #FFC933;
+    transform: translateY(-1px);
+}
+
+.butEnviar:active {
+    transform: translateY(0);
+}
+
+.butHeader {
+    padding: 1rem;
+    border-radius: 20px;
+    border: none;
+    background-color: #F4B400;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-right: 2vw;
+    cursor: pointer;
+    transition: 0.5s ease
+}
+
+.butHeader:hover {
+    transition: 0.5s ease;
+    background-color: #FFC933;
+    transform: scale(1.1);
+}
+
+.container-but {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 2%;
+}
+
+/* ============================================
+   DIVISOR "ou"
+   ============================================ */
+.divisor-ou {
+    display: flex;
+    align-items: center;
+    margin: 2% 10%;
+    gap: 10px;
+}
+
+.divisor-ou span {
+    flex: 1;
+    height: 1px;
+    background-color: #ddd;
+}
+
+.divisor-ou p {
+    color: #A1A1A1;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* ============================================
+   FORM HEADER
+   ============================================ */
+.form-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-top: 8%;
+    margin-bottom: 1.5rem;
+}
+
+.form-header p {
+    margin-top: 2%;
+    color: #A1A1A1;
+}
+
+/* ============================================
+   LABELS
+   ============================================ */
+.inputs label {
+    font-size: 0.85rem;
+    color: #444;
+    font-weight: 600;
+}
+
+#logotipo {
+    width: 17%;
+    margin-left: 2%;
+}
+
+/* ============================================
+   FOOTER LOGIN
+   ============================================ */
+.footerLogin {
+    background-color: #111213;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #F3F3F3;
+    min-height: 10vh;
+    max-height: 10vh;
+    position: relative;
+    z-index: 9999;
+}
+
+/* ============================================
+   CÍRCULO AMARELO
+   ============================================ */
+.circulo-amarelo {
+    position: absolute;
+    width: 18%;
+    height: 40%;
+    background-color: #F4B400;
+    border-radius: 50%;
+    top: 15%;
+    left: -10%;
+    z-index: 1;
+}
+
+footer span {
+    color: #F4B400;
+}
+
+/* ============================================
+   FOOTER DO FORM
+   ============================================ */
+.footerForm {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    width: 78%;
+    margin: 2% auto 1rem auto;
+}
+
+.footerItem {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.footerItem a {
+    text-decoration: none;
+    color: #FFC933;
+    font-weight: 600;
+}
+
+.footerItem a:hover {
+    color: #F4B400;
+}
+
+/* ============================================
+   CRIPTOGRAFIA
+   ============================================ */
+.containerCript {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    color: #7c7c7c;
+    margin-bottom: 4%;
+}
+
+.containerCript p {
+    width: 100%;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.cadeado {
+    font-size: 120%;
+    margin-right: 4%;
+}
+
+/* ============================================
+   ASIDE — TÍTULOS
+   ============================================ */
+.container-titulo h1 {
+    font-size: 5rem;
+    margin-top: 3%;
+}
+
+.container-titulo span {
+    color: #F4B400;
+}
+
+.descricao {
+    color: white;
+    width: 40%;
+}
+
+.container-miniTitu {
+    border: 1px solid #FFC933;
+    padding: 1%;
+    letter-spacing: 2px;
+    color: #F4B400;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    margin-top: 10%;
+    display: flex;
+    width: 25%;
+    align-items: center;
+}
+
+.traco {
+    width: 4rem;
+    height: 0.3rem;
+    background-color: #F4B400;
+    border-radius: 10px;
+    margin-top: 5%;
+}
+
+.containerTraco {
+    margin-top: 2%;
+    width: 40%;
+    display: flex;
+    justify-content: start;
+    align-items: start;
+}
+
+/* ============================================
+   BADGE DE SEGURANÇA (inspirado no design ref.)
+   ============================================ */
+.badge-seguranca {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 5%;
+    width: 40%;
+}
+
+.badge-seguranca i {
+    font-size: 1.8rem;
+    color: #F4B400;
+    flex-shrink: 0;
+}
+
+.badge-seguranca p {
+    font-size: 1rem;
+    color: #fff0f0;
+    font-weight: normal;
+    line-height: 1.5;
+}
+
+/* ============================================
+   ALERTAS
+   ============================================ */
+.alerta {
+    margin: 0 10% 1rem 10%;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.alerta-erro {
+    background-color: #fff0f0;
+    color: #cc0000;
+    border: 1px solid #ffcccc;
+}
+
+.alerta-sucesso {
+    background-color: #f0fff4;
+    color: #006621;
+    border: 1px solid #b3f0c2;
+}
+
+
+
+@keyframes piscar {
+
+    0% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.3;
+    }
+}
+
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: #171717;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* gap: 12px; era 24px — reduz o espaço entre imagem e texto */
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+}
+
+#loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logoImg {
+    width: 10%;
+    /* tamanho fixo — ajuste conforme o GIF */
+    object-fit: contain;
+    /* garante que o GIF não seja cortado */
+}
+
+.loading-text {
+    color: #F4B400;
+    text-align: center;
+    letter-spacing: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    font-size: 16px;
+    animation: piscar 1.5s infinite;
+    margin-top: 4%;
+}
+
+.circle-decoration {
+    position: absolute;
+    top: 75vh;
+    right: 20vw;
+    width: 28vw;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.circle-decoration img {
+    width: 60%;
+    object-fit: contain;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+}
+
+.dots-decoration {
+    position: absolute;
+    top: 15vh;
+    right: 36vw;
+    width: 10vw;
+    height: 20vh;
+    pointer-events: none;
+    z-index: 0;
+
+    background-image: radial-gradient(circle, #6b6b6b 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+
+.dots-decoration-amarelo {
+    position: absolute;
+    top: 71vh;
+    right: 2vw;
+    width: 10vw;
+    height: 20vh;
+    pointer-events: none;
+    z-index: 0;
+
+    background-image: radial-gradient(circle, #F4B400 1px, transparent 2px);
+    background-size: 20px 20px;
+}
+
+.circuit-line {
+    position: absolute;
+    top: 28vh;
+    right: 67vw;
+    width: 28vw;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.circuit-line img {
+    width: 60%;
+    object-fit: contain;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+    z-index: 0;
+}
