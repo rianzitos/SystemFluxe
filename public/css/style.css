@@ -6,7 +6,7 @@
     margin: 0;
     padding: 0;
     font-family: "Space Grotesk", sans-serif;
-    /* overflow-x: hidden; */
+    box-sizing: border-box;
 }
 
 html,
@@ -171,7 +171,7 @@ body {
     text-decoration: none;
     font-size: 91%;
     font-weight: bold;
-    min-width: 101%;
+    min-width: 100%; 
 }
 
 .itemMenu {
@@ -251,6 +251,13 @@ body {
 .subTitulo {
     font-weight: bold;
     font-size: 350%;
+    text-align: center;
+    width: 80vw;
+    margin-bottom: 10%;
+}
+
+.subTitulo span {
+    color: #FFC400
 }
 
 .slash {
@@ -621,18 +628,16 @@ h3 {
 
 .container-circuito {
     position: absolute;
-
     top: -60%;
-    /* left: 10%; */
 
-    width: 30%;
+    width: 115%;
 
     z-index: 1;
     opacity: 0.6;
 }
 
 .container-circuito img {
-    width: 100vw;
+    width: 100%;
     height: auto;
     position: relative;
     left: -10%;
@@ -1247,7 +1252,7 @@ h3 {
 @media (max-width: 480px) {
 
     #container-header {
-        width:100vw
+        width: 100vw
     }
 
     #logotipo {
@@ -1261,10 +1266,13 @@ h3 {
 
     .titulo {
         font-size: 260%;
+        margin-left: 20%;
+        margin-bottom: 3%;
     }
 
     .fluxe {
-        font-size: 420%;
+        font-size: 5rem;
+        margin-left: 15%;
     }
 
     .container-texto {
@@ -1298,6 +1306,10 @@ h3 {
         font-size: 14px;
     }
 
+    .row {
+        padding: 4.5%;
+    }
+
     .card {
         max-width: 100%;
     }
@@ -1329,7 +1341,7 @@ h3 {
     }
 
     .equipe-linha {
-        width: 80vw;
+        width: 90vw;
     }
 
     .equipe-titulo {
