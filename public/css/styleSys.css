@@ -555,3 +555,240 @@ main {
     font-size: 1.1rem;
     margin-bottom: 1vh;
 }
+
+/* ==========================
+   RESPONSIVIDADE
+========================== */
+
+/* Tablets */
+@media (max-width: 1024px) {
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .containerBut {
+        width: auto;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+
+    #containerSICAPDA {
+        width: 45%;
+    }
+
+    #painelGeral {
+        width: 45%;
+    }
+
+    .solucoes {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .boxes {
+        width: 45%;
+    }
+
+    .divisionBar {
+        display: none;
+    }
+
+    .sobreSistema {
+        width: 45%;
+        margin-left: 5%;
+    }
+
+    #imagemSobre {
+        width: 50%;
+    }
+
+    .footerSicapda {
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+        gap: 30px;
+        max-height: none;
+    }
+
+    .containerInfo {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+}
+
+/* Celulares */
+@media (max-width: 768px) {
+
+    .containerHeader {
+        flex-direction: column;
+        height: auto;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .logoSicapda {
+        width: 12rem;
+    }
+
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .containerBut {
+        width: auto;
+        padding: 12px 20px;
+    }
+
+    main {
+        height: auto;
+        padding-bottom: 40px;
+    }
+
+    #divRowSicapdaPainel {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    #containerSICAPDA {
+        width: 90%;
+        margin: 40px 0;
+        align-items: center;
+    }
+
+    #containerSICAPDA h1 {
+        font-size: 3rem;
+    }
+
+    #containerSICAPDA h2 {
+        font-size: 1.2rem;
+    }
+
+    #painelGeral {
+        width: 95%;
+    }
+
+    #buttonRow {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+    }
+
+    #icones {
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .solucoes {
+        margin-top: 40px;
+        flex-direction: column;
+        width: 95%;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .boxes {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 15px;
+    }
+
+    #sobreSection {
+        height: auto;
+        padding: 50px 0;
+    }
+
+    #divMarginTop {
+        flex-direction: column;
+        align-items: center;
+        margin-top: 0;
+    }
+
+    .sobreSistema {
+        width: 90%;
+        margin: 0;
+        text-align: center;
+        align-items: center;
+    }
+
+    #imagemSobre {
+        width: 95%;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .botaoSobre {
+        width: 100% !important;
+        max-width: 300px;
+    }
+
+    .footerSicapda {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 30px 20px;
+        gap: 30px;
+        max-height: none;
+    }
+
+    .tituloFooter img {
+        width: 15rem;
+    }
+
+    .containerInfo {
+        width: 100%;
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    .info {
+        width: 100%;
+    }
+
+    .containerZap {
+        margin: 0;
+    }
+}
+
+/* Celulares pequenos */
+@media (max-width: 480px) {
+
+    #containerSICAPDA h1 {
+        font-size: 2.5rem;
+    }
+
+    #containerSICAPDA h2 {
+        font-size: 1rem;
+    }
+
+    #containerSICAPDA p {
+        font-size: 0.95rem;
+    }
+
+    .botao {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .miniTitulo h5 {
+        font-size: 1rem;
+    }
+
+    .sobreSistema h1 {
+        font-size: 1.8rem;
+    }
+
+    .tituloFooter {
+        font-size: 1rem;
+    }
+}
+
