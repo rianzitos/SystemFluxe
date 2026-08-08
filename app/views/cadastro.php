@@ -5,6 +5,7 @@
 // sozinho aqui.
 require_once __DIR__ . '/../../config/app.php';
 
+
 // Se o wizard enviou o formulário (POST), processa e responde em JSON.
 // Não renderiza HTML nesse caso — quem trata a resposta é o cadastro.js.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -27,7 +28,7 @@ unset($_SESSION['flash_erro']);
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
   <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/png">
 </head>
-
+<!-- logo fluxe, link de cadastro, icone -->
 <body>
 
   <div class="page">
@@ -39,6 +40,7 @@ unset($_SESSION['flash_erro']);
         <div class="logo">
           <img src="../../public/img/logotipo.png" alt="Logo da Empresa">
         </div>
+<!-- barra lateral de cadastro -->
 
         <h1 class="titulo">SICA<span class="accent">PDA</span></h1>
         <p class="subtitle">Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar</p>
