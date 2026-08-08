@@ -6,7 +6,7 @@
     margin: 0;
     padding: 0;
     font-family: "Space Grotesk", sans-serif;
-    /* overflow-x: hidden; */
+    box-sizing: border-box;
 }
 
 html,
@@ -171,7 +171,7 @@ body {
     text-decoration: none;
     font-size: 91%;
     font-weight: bold;
-    min-width: 101%;
+    min-width: 100%; 
 }
 
 .itemMenu {
@@ -251,6 +251,13 @@ body {
 .subTitulo {
     font-weight: bold;
     font-size: 350%;
+    text-align: center;
+    width: 80vw;
+    margin-bottom: 10%;
+}
+
+.subTitulo span {
+    color: #FFC400
 }
 
 .slash {
@@ -291,6 +298,11 @@ body {
     font-size: larger;
     transition: 0.5s;
     cursor: pointer;
+}
+
+.botao a {
+    text-decoration: none;
+    color: white;
 }
 
 .botao:hover {
@@ -431,6 +443,7 @@ input:checked+label .descricao * {
     transition: 0.5s;
     font-size: larger;
     margin-top: 10%;
+    margin-left: 7.5%;
 }
 
 #butProject:hover {
@@ -621,18 +634,16 @@ h3 {
 
 .container-circuito {
     position: absolute;
-
     top: -60%;
-    /* left: 10%; */
 
-    width: 30%;
+    width: 115%;
 
     z-index: 1;
     opacity: 0.6;
 }
 
 .container-circuito img {
-    width: 100vw;
+    width: 100%;
     height: auto;
     position: relative;
     left: -10%;
@@ -811,13 +822,11 @@ h3 {
     min-height: 260px;
     background: #f0f0f0;
     border-radius: 18px;
-    border: 2px dashed #ccc;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: #aaa;
 }
 
 .equipe-foto-icon {
@@ -825,17 +834,17 @@ h3 {
     color: #ccc;
 }
 
-.equipe-foto-placeholder span {
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    color: #bbb;
+.equipe-foto-placeholder {
+    background: url('/public/img/equipe.jpeg');
+    background-size: cover;
+    background-position-x: 30%;
 }
 
-.equipe-foto-placeholder small {
-    font-size: 0.78rem;
-    color: #ccc;
+
+.equipe-foto-central img {
+    width: 40rem
 }
+
 
 /* Banner de conclusão */
 .equipe-banner {
@@ -1146,7 +1155,7 @@ h3 {
     }
 
     .equipe-foto-placeholder {
-        min-height: 200px;
+        min-height: 320px;
     }
 
     .membro-card {
@@ -1247,7 +1256,7 @@ h3 {
 @media (max-width: 480px) {
 
     #container-header {
-        width:100vw
+        width: 100vw
     }
 
     #logotipo {
@@ -1261,10 +1270,13 @@ h3 {
 
     .titulo {
         font-size: 260%;
+        margin-left: 20%;
+        margin-bottom: 3%;
     }
 
     .fluxe {
-        font-size: 420%;
+        font-size: 5rem;
+        margin-left: 15%;
     }
 
     .container-texto {
@@ -1298,6 +1310,10 @@ h3 {
         font-size: 14px;
     }
 
+    .row {
+        padding: 4.5%;
+    }
+
     .card {
         max-width: 100%;
     }
@@ -1329,7 +1345,7 @@ h3 {
     }
 
     .equipe-linha {
-        width: 80vw;
+        width: 90vw;
     }
 
     .equipe-titulo {
