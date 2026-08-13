@@ -695,7 +695,7 @@ unset($_SESSION['flash_erro']);
             Ambiente protegido e criptografado
           </div>
           <div>
-            <a class="loginLink" href="login.php">Já tem uma conta? Clique aqui</a>
+            <a class="loginLink" href="/login">Já tem uma conta? Clique aqui</a>
           </div>
         </div>
       </div>

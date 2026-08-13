@@ -156,7 +156,7 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
                     <div class="footerItem">
                         <!-- Cria o container do rodapé do formulário para alinhar os elementos finais da caixa. -->
                         <p>Ainda não possui uma conta?</p>
-                        <a href="cadastro.php">Criar conta</a>
+                        <a href="/cadastro">Criar conta</a>
                     </div>
                 </div>
 

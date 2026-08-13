@@ -27,6 +27,7 @@ $cardsResumo = [
         'valor'    => 1248,
         'variacao' => 12.5,
         'periodo'  => 'este mês',
+        'icone'    => 'bi-person-fill',
     ],
     [
         'chave'    => 'acessos',
@@ -34,6 +35,7 @@ $cardsResumo = [
         'valor'    => 3842,
         'variacao' => 18.2,
         'periodo'  => 'este mês',
+        'icone'    => 'bi-door-open-fill',
     ],
     [
         'chave'    => 'refeicoes',
@@ -41,6 +43,7 @@ $cardsResumo = [
         'valor'    => 5736,
         'variacao' => 9.4,
         'periodo'  => 'este mês',
+        'icone'    => 'bi-cup-hot-fill',
     ],
     [
         'chave'    => 'acuracia',
@@ -49,6 +52,7 @@ $cardsResumo = [
         'sufixo'   => '%',
         'variacao' => 6.7,
         'periodo'  => 'este mês',
+        'icone'    => 'bi-graph-up-arrow',
     ],
 ];
 
@@ -99,9 +103,9 @@ $menu = [
     ['chave' => 'painel',    'rota' => '/painel',           'label' => 'Painel',            'icone' => 'grid'],
     ['chave' => 'acessos',   'rota' => '/acessos',          'label' => 'Acessos',           'icone' => 'link'],
     ['chave' => 'pessoas',   'rota' => '/pessoas',          'label' => 'Pessoas',           'icone' => 'users'],
-    ['chave' => 'previsao',  'rota' => '/previsao-demanda', 'label' => 'Previsão de Demanda','icone' => 'clipboard'],
+    ['chave' => 'previsao',  'rota' => '/previsao-demanda', 'label' => 'Previsão de Demanda', 'icone' => 'clipboard'],
     ['chave' => 'refeicoes', 'rota' => '/refeicoes',        'label' => 'Refeições',         'icone' => 'meal'],
-    ['chave' => 'relatorios','rota' => '/relatorios',       'label' => 'Relatórios',        'icone' => 'file'],
+    ['chave' => 'relatorios', 'rota' => '/relatorios',       'label' => 'Relatórios',        'icone' => 'file'],
     ['chave' => 'config',    'rota' => '/configuracoes',    'label' => 'Configurações',     'icone' => 'gear'],
 ];
 
@@ -128,14 +132,15 @@ function icone(string $nome): string
         'chevron'   => '<path d="M6 9l6 6 6-6"/>',
         'alert'     => '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
         'pulse'     => '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
-        'card-users'=> '<circle cx="8" cy="9" r="2.5"/><path d="M3 19c0-2.5 2-4.5 5-4.5s5 2 5 4.5M14 9h7M14 13h5"/>',
-        'card-access'=> '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M13 10h5M13 14h3"/>',
+        'card-users' => '<circle cx="8" cy="9" r="2.5"/><path d="M3 19c0-2.5 2-4.5 5-4.5s5 2 5 4.5M14 9h7M14 13h5"/>',
+        'card-access' => '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M13 10h5M13 14h3"/>',
     ];
     return $icones[$nome] ?? '';
 }
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -143,7 +148,10 @@ function icone(string $nome): string
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../public/css/painel.css">
+    <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
+
 <body>
 
     <div class="layout">
@@ -159,9 +167,9 @@ function icone(string $nome): string
                 <nav class="menu">
                     <?php foreach ($menu as $item): ?>
                         <a href="<?= htmlspecialchars($item['rota']) ?>"
-                           class="menu-item <?= $paginaAtual === $item['chave'] ? 'ativo' : '' ?>">
+                            class="menu-item <?= $paginaAtual === $item['chave'] ? 'ativo' : '' ?>">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round"><?= icone($item['icone']) ?></svg>
+                                stroke-linecap="round" stroke-linejoin="round"><?= icone($item['icone']) ?></svg>
                             <span><?= htmlspecialchars($item['label']) ?></span>
                         </a>
                     <?php endforeach; ?>
@@ -176,9 +184,10 @@ function icone(string $nome): string
                 </div>
                 <a href="/logout" class="sair" title="Sair">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                        <path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <path d="M16 17l5-5-5-5" />
+                        <path d="M21 12H9" />
                     </svg>
                 </a>
             </div>
@@ -189,7 +198,9 @@ function icone(string $nome): string
 
             <button class="btn-menu-mobile" id="btnMenuMobile" aria-label="Abrir menu">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                     stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
             </button>
 
             <!-- Cabeçalho -->
@@ -202,13 +213,13 @@ function icone(string $nome): string
                 <div class="cabecalho-acoes">
                     <div class="seletor-data">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                             stroke-linecap="round" stroke-linejoin="round"><?= icone('calendar') ?></svg>
+                            stroke-linecap="round" stroke-linejoin="round"><?= icone('calendar') ?></svg>
                         <span id="labelPeriodo">Carregando período…</span>
                     </div>
 
                     <button class="sino" id="btnNotificacoes" aria-label="Notificações">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                             stroke-linecap="round" stroke-linejoin="round"><?= icone('bell') ?></svg>
+                            stroke-linecap="round" stroke-linejoin="round"><?= icone('bell') ?></svg>
                         <?php if ($notificacoesNaoLidas > 0): ?>
                             <span class="badge-sino"><?= (int)$notificacoesNaoLidas ?></span>
                         <?php endif; ?>
@@ -221,8 +232,7 @@ function icone(string $nome): string
                 <?php foreach ($cardsResumo as $card): ?>
                     <div class="card">
                         <div class="card-icone card-icone-<?= htmlspecialchars($card['chave']) ?>">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round"><?= icone('card-users') ?></svg>
+                            <i class="iconeCard bi <?= htmlspecialchars($card['icone']) ?>"></i>
                         </div>
                         <p class="card-label"><?= htmlspecialchars($card['label']) ?></p>
                         <p class="card-valor">
@@ -230,7 +240,7 @@ function icone(string $nome): string
                         </p>
                         <p class="card-variacao positiva">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                 stroke-linecap="round" stroke-linejoin="round"><?= icone('trend-up') ?></svg>
+                                stroke-linecap="round" stroke-linejoin="round"><?= icone('trend-up') ?></svg>
                             <?= number_format($card['variacao'], 1, ',', '.') ?>% <span><?= htmlspecialchars($card['periodo']) ?></span>
                         </p>
                     </div>
@@ -242,8 +252,8 @@ function icone(string $nome): string
                 <div class="painel-grafico grafico-linha">
                     <h2>Previsão de Demanda</h2>
                     <div class="legenda-grafico">
-                        <span><i class="ponto ponto-previsto"></i> Previsto</span>
-                        <span><i class="ponto ponto-realizado"></i> Realizado</span>
+                        <span><i class="ponto ponto-previsto"></i> Previsto (em KG)</span>
+                        <span><i class="ponto ponto-realizado"></i> Realizado (em KG)</span>
                     </div>
                     <div class="grafico-canvas">
                         <canvas id="graficoDemanda"></canvas>
@@ -282,7 +292,7 @@ function icone(string $nome): string
                         <?php foreach ($alertas as $alerta): ?>
                             <div class="alerta alerta-<?= htmlspecialchars($alerta['tipo']) ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                     stroke-linecap="round" stroke-linejoin="round">
+                                    stroke-linecap="round" stroke-linejoin="round">
                                     <?= icone($alerta['tipo'] === 'aviso' ? 'alert' : ($alerta['tipo'] === 'info' ? 'pulse' : 'trend-up')) ?>
                                 </svg>
                                 <div>
@@ -308,4 +318,5 @@ function icone(string $nome): string
     <script src="../../public/js/chart.umd.min.js"></script>
     <script src="../../public/js/painel.js"></script>
 </body>
+
 </html>

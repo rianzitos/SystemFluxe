@@ -389,11 +389,11 @@
   $('#btnEntrar').addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
     // Ajuste esse caminho se o seu login.php estiver em outro lugar.
-    window.location.href = 'login.php';
+    window.location.href = '/login';
   });
   $('#btnVoltarLogin').addEventListener('click', () => {
     localStorage.removeItem(STORAGE_KEY);
-    window.location.href = 'login.php';
+    window.location.href = '/login';
   });
 
   /* ---------- autosave ---------- */
