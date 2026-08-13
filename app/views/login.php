@@ -12,12 +12,13 @@
     <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/png">
 </head>
 <!-- liga com outras paginas e mostra nosso icone -->
+
 <body class="fundo">
 
     <div id="loading-screen">
         <div class="logo"><img class="logoImg" src="../../public/img/AnimacaoFluxe2.gif" alt="Animação da Logo"></div>
-<!-- alt="Animação da Logo": Texto de acessibilidade que descreve a imagem para leitores de tela ou substitui o elemento caso o arquivo não carregue. -->
-        <p class="loading-text">CARREGANDO...</p> 
+        <!-- alt="Animação da Logo": Texto de acessibilidade que descreve a imagem para leitores de tela ou substitui o elemento caso o arquivo não carregue. -->
+        <p class="loading-text">CARREGANDO...</p>
         <!-- mensagem pro usuario que vai entrar ao site -->
     </div>
 
@@ -47,7 +48,9 @@
             </div>
             <h1>SICA<span>PDA</span></h1>
             <div class="descricao">
-                <h3>Sistema Inteligente de Controle de Acesso e <span>P</span>revisão de <span>D</span>emanda <span>A</span>limentar</h3>
+                <h3>Sistema Inteligente de Controle de Acesso e <span>P</span>revisão de <span>D</span>emanda
+                    <span>A</span>limentar
+                </h3>
             </div>
             <div class="containerTraco">
                 <div class="traco"></div>
@@ -62,7 +65,7 @@
 
         <section class="fundoContainer">
             <main class="form-container">
-<!-- <section class="fundoContainer">: 
+                <!-- <section class="fundoContainer">: 
     Abre a seção de plano de fundo que envelopa e posiciona 
     o conteúdo na tela inteira.<main class="form-container">: Abre 
         a área principal estruturada como a caixa ou card onde o formulário
@@ -76,7 +79,7 @@
                     <div class="alerta alerta-erro">
                         <?= htmlspecialchars($_SESSION['flash_erro']) ?>
                     </div>
- <!-- ?php empty: Verifica se existe alguma mensagem de erro guardada 
+                    <!-- ?php empty: Verifica se existe alguma mensagem de erro guardada 
 na sessão; se houver, o código HTML abaixo é ativado.?= htmlspecialchars(...)
  ?>: Exibe o texto do erro com segurança, impedindo que códigos maliciosos injetados 
  por usuários quebrem o layout da página.-->
@@ -89,7 +92,7 @@ na sessão; se houver, o código HTML abaixo é ativado.?= htmlspecialchars(...)
                     <div class="alerta alerta-sucesso">
                         <?= htmlspecialchars($_SESSION['flash_sucesso']) ?>
                     </div>
-<!-- unset($_SESSION['flash_erro']);: Apaga a mensagem de erro da memória do servidor 
+                    <!-- unset($_SESSION['flash_erro']);: Apaga a mensagem de erro da memória do servidor 
 para que ela não reapareça quando a página for atualizada.if (!empty(...'flash_sucesso'])):
      Verifica se há um aviso de sucesso na sessão e renderiza a caixa verde (alerta-sucesso)
       com o texto protegido por htmlspecialchars. -->
@@ -100,37 +103,28 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
 
                 <form class="form" action="/login" method="POST">
                     <div class="inputs">
-<!-- unset e endif: Apaga a mensagem de sucesso da memória e fecha a
+                        <!-- unset e endif: Apaga a mensagem de sucesso da memória e fecha a
   condição aberta anteriormente.<form>: Abre o formulário enviando os dados em
      segundo plano (POST) para a rota /login. -->
                         <label for="email">E-mail</label>
                         <div class="input-wrapper">
                             <i class="bi bi-envelope input-icon"></i>
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                required
-                                autocomplete="email"
+                            <input type="email" id="email" name="email" required autocomplete="email"
                                 placeholder="seuemail@empresa.com"
                                 value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                         </div>
-<!-- como deve ser digitado -->
+                        <!-- como deve ser digitado -->
                         <label for="senha">Senha</label>
                         <div class="input-wrapper">
                             <i class="bi bi-lock input-icon"></i>
-                            <input
-                                type="password"
-                                id="senha"
-                                name="senha"
-                                required
-                                placeholder="Sua senha"
+                            <input type="password" id="senha" name="senha" required placeholder="Sua senha"
                                 autocomplete="current-password">
-                            <button type="button" class="toggle-senha" id="toggleSenha" aria-label="Mostrar senha"><!-- Botão para mostrar ou ocultar senha -->
+                            <button type="button" class="toggle-senha" id="toggleSenha"
+                                aria-label="Mostrar senha"><!-- Botão para mostrar ou ocultar senha -->
                                 <i class="bi bi-eye" id="iconeSenha"></i><!-- Ícone do olho -->
                             </button>
                         </div>
-<!-- tipo da senha e campo -->
+                        <!-- tipo da senha e campo -->
                     </div>
 
                     <!-- LEMBRAR-ME + ESQUECEU A SENHA  -->
@@ -144,7 +138,8 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
                     </div>
 
                     <div class="container-but">
-                        <button class="butEnviar" type="submit">ENTRAR NO SISTEMA <i class="bi bi-arrow-right-short"></i></button>
+                        <button class="butEnviar" type="submit">ENTRAR NO SISTEMA <i
+                                class="bi bi-arrow-right-short"></i></button>
                     </div>
                 </form>
 

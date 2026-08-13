@@ -85,7 +85,6 @@
     z-index: 1;
 }
 
-/* Corrige o container-titulo */
 .container-titulo {
     color: white;
     font-weight: bold;
@@ -97,7 +96,6 @@
     padding-left: 5%;
 }
 
-/* Corrige o fundoContainer para ocupar o lado direito */
 .fundoContainer {
     display: flex;
     flex-direction: column;
@@ -359,7 +357,7 @@
     min-height: 10vh;
     max-height: 10vh;
     position: relative;
-    z-index: 9999;
+    z-index: 9998;
 }
 
 /* ============================================
