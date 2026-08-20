@@ -284,6 +284,10 @@
     transform: scale(1.1);
 }
 
+.butHeader i {
+    display: none;
+}
+
 .container-but {
     display: flex;
     align-items: center;
@@ -641,4 +645,229 @@ footer span {
     mix-blend-mode: screen;
     opacity: 0.7;
     z-index: 0;
+}
+
+/* ================================================================
+   RESPONSIVIDADE — MOBILE
+   Tudo abaixo é NOVO. Nenhuma regra acima foi alterada.
+   Empilha o layout (título em cima, form embaixo), como no
+   design de referência mobile.
+   ================================================================ */
+@media (max-width: 900px) {
+
+    .fundo {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .headerLogin {
+        min-height: auto;
+        max-height: none;
+        padding: 4vw 4vw;
+    }
+
+    #logotipo {
+        width: 60%;
+        margin-left: 0;
+    }
+
+    .butHeader {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        margin-right: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .butHeader-texto {
+        display: none;
+    }
+
+    .butHeader i {
+        display: inline-block;
+        font-size: 1.2rem;
+    }
+
+    /* Foco no formulário: bola amarela decorativa removida no mobile */
+    .circulo-amarelo {
+        display: none;
+    }
+
+    .circuit-decoration {
+        width: 32%;
+        bottom: auto;
+        top: 58vh;
+        opacity: 0.35;
+    }
+
+    .circuit-line {
+        display: none;
+    }
+
+    .dots-decoration {
+        top: 9vh;
+        right: 6vw;
+        width: 22vw;
+        height: 14vh;
+        display: none;
+    }
+
+    .dots-decoration-amarelo {
+        top: auto;
+        bottom: 22vh;
+        right: 2vw;
+        width: 26vw;
+        height: 16vh;
+    }
+
+    .circle-decoration {
+        top: auto;
+        bottom: 6vh;
+        right: -12vw;
+        width: 55vw;
+        display: none;
+    }
+
+    /* Empilha título e formulário */
+    .layout-principal {
+        flex-direction: column;
+        min-height: auto;
+        max-height: none;
+        padding: 6vh 0 8vh 0;
+    }
+
+    .container-titulo {
+        width: 100%;
+        min-height: auto;
+        padding: 0 8%;
+        justify-content: center;
+        position: relative;
+        text-align: center;
+        z-index: 1;
+    }
+
+    .container-miniTitu {
+        width: auto;
+        padding: 3% 5%;
+        font-size: 0.65rem;
+        margin-top: 10%;
+    }
+
+    .container-titulo h1 {
+        font-size: 3.4rem;
+        margin-top: 6%;
+        line-height: 1;
+    }
+
+    .descricao {
+        width: 100%;
+    }
+
+    .descricao h3 {
+        font-size: 1.15rem;
+        line-height: 1.4;
+    }
+
+    .containerTraco {
+        width: auto;
+        margin-top: 6%;
+    }
+
+    .badge-seguranca {
+        width: 100%;
+        margin-top: 8%;
+        margin-bottom: 4%;
+        margin-left: 8vw;
+    }
+
+    .badge-seguranca p {
+        font-size: 1rem;
+    }
+
+    .fundoContainer {
+        width: 100%;
+        max-height: none;
+        padding: 6% 5% 0 5%;
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-container {
+        width: 100%;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .form-header {
+        margin-top: 10%;
+    }
+
+    .form-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .inputs {
+        margin-left: 6%;
+        margin-right: 6%;
+    }
+
+    .form input[type="email"],
+    .form input[type="password"],
+    .form input[type="text"] {
+        height: 6.5vh;
+        font-size: 1rem;
+    }
+
+    .row-lembrar {
+        flex-wrap: wrap;
+        row-gap: 10px;
+        margin: 0 6% 6% 6%;
+    }
+
+    .butEnviar {
+        width: 90%;
+        padding: 4%;
+        font-size: 1rem;
+    }
+
+    .footerForm {
+        width: 90%;
+    }
+
+    .logoImg {
+        width: 32%;
+    }
+
+    .footerLogin {
+        min-height: auto;
+        max-height: none;
+        padding: 5% 6%;
+        text-align: center;
+    }
+
+    .footerLogin h4 {
+        font-size: 0.75rem;
+    }
+}
+
+/* Ajuste fino para telas bem pequenas (ex: iPhone SE) */
+@media (max-width: 400px) {
+    .container-titulo h1 {
+        font-size: 2.6rem;
+    }
+
+    .container-miniTitu {
+        font-size: 0.58rem;
+    }
+
+    .descricao h3 {
+        font-size: 1rem;
+    }
+
+    .form-header h1 {
+        font-size: 1.3rem;
+    }
 }

@@ -25,7 +25,12 @@
     <header class="headerLogin">
         <img id="logotipo" src="../../public/img/logotipo.png" alt="Logotipo da empresa">
 
-        <a href="/"><button class="butHeader">Saiba mais sobre a empresa</button></a>
+        <a href="/">
+            <button class="butHeader">
+                <i class="bi bi-person-circle"></i>
+                <span class="butHeader-texto">Saiba mais sobre a empresa</span>
+            </button>
+        </a>
     </header>
 
     <div class="circulo-amarelo"></div>
