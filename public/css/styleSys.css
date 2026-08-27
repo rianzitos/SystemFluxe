@@ -27,7 +27,6 @@
     font-family: sans-serif;
 }
 
-
 /* ==================================================
    CORES DA BARRA DE ROLAGEM E SELEÇÃO DE TEXTO
 ================================================== */
@@ -56,6 +55,7 @@
   background-color: #ffcc00; /* Cor do fundo da seleção */
   color: #000000;           /* Cor do texto selecionado */
 }
+
 
 /* ── HEADER ── */
 .containerHeader {

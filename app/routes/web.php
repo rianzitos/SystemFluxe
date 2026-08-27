@@ -55,6 +55,20 @@ if ($uri === '/' || $uri === '/login') {
 //cria a rota do painel, que bloqueia invasores através do AuthMiddleware
 // e só exibe a tela protegida (painel.php) se o usuário estiver logado.
 
+} elseif ($uri === '/acessos') {
+    AuthMiddleware::autenticado();
+    require_once __DIR__ . '/../views/acessos.php';
+//cria a rota de acessos, seguindo o mesmo padrão do painel: bloqueia
+// invasores através do AuthMiddleware e só exibe a tela protegida
+// (acessos.php) se o usuário estiver logado.
+
+} elseif ($uri === '/pessoas') {
+    AuthMiddleware::autenticado();
+    require_once __DIR__ . '/../views/pessoas.php';
+//cria a rota de pessoas, seguindo o mesmo padrão das anteriores: bloqueia
+// invasores através do AuthMiddleware e só exibe a tela protegida
+// (pessoas.php) se o usuário estiver logado.
+
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
 } else {
