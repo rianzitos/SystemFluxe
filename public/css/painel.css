@@ -41,6 +41,36 @@ h1, h2, .logo-sica { font-family: 'Sora', 'Inter', sans-serif; }
     min-height: 100vh;
 }
 
+/* ==================================================
+   CORES DA BARRA DE ROLAGEM E SELEÇÃO DE TEXTO
+================================================== */
+
+::-webkit-scrollbar {
+    width: 10px; /* largura da barra */
+}
+
+::-webkit-scrollbar-track {
+    background: #000000; /* cor do fundo/pista */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #FFC400; /* cor da barra de rolagem (polegar) */
+    border-radius: 5px;
+    transition: 0.5s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #cba709; /* cor da barra ao passar o mouse */
+    transition: 0.5s ease;
+}
+
+/* Altera a seleção em todo o site */
+::selection {
+  background-color: #ffcc00; /* Cor do fundo da seleção */
+  color: #000000;           /* Cor do texto selecionado */
+}
+
+
 /* ===================== SIDEBAR ===================== */
 
 .sidebar {
