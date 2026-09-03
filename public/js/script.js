@@ -167,3 +167,30 @@ document.querySelectorAll('.itemMenu').forEach(link => {
         hamburgerBtn.setAttribute('aria-expanded', 'false');
     });
 });
+
+/* ========================= */
+/* TRANSIÇÃO DE SAÍDA - BOTÃO PROJETO */
+/* ========================= */
+
+const projectBtn = document.querySelector('#butProject a');
+const transitionOverlay = document.getElementById('page-transition-overlay');
+
+if (projectBtn && transitionOverlay) {
+    projectBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        const destino = projectBtn.getAttribute('href');
+        const rect = projectBtn.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+
+        transitionOverlay.style.setProperty('--x', `${x}px`);
+        transitionOverlay.style.setProperty('--y', `${y}px`);
+
+        transitionOverlay.classList.add('active');
+
+        setTimeout(() => {
+            window.location.href = destino;
+        }, 900);
+    });
+}

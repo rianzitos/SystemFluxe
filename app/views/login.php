@@ -23,7 +23,7 @@
     </div>
 
     <header class="headerLogin">
-        <img id="logotipo" src="../../public/img/logotipo.png" alt="Logotipo da empresa">
+        <img id="logotipo" src="../../public/img/logotipo.svg" alt="Logotipo da empresa">
 
         <a href="/">
             <button class="butHeader">

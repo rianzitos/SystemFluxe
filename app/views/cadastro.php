@@ -38,7 +38,7 @@ unset($_SESSION['flash_erro']);
       <div class="cubos"><img src="../../public/img/cubos_cadastro.png" alt="Cubos amarelos transparentes"></div>
       <div class="side-content">
         <div class="logo">
-          <img src="../../public/img/logotipo.png" alt="Logo da Empresa">
+          <img src="../../public/img/logotipo.svg" alt="Logo da Empresa">
         </div>
 <!-- barra lateral de cadastro -->
 
