@@ -21,96 +21,6 @@ window.addEventListener('load', () => {
     }, 1500);
 });
 
-const revelar = ScrollReveal({
-    origin: 'bottom', // Origem da animação
-    distance: '50px', // Distância da animação
-    duration: 800,   // Duração em milissegundos
-    reset: true      // Se a animação repete ao scrollar de volta
-});
-
-revelar.reveal('.box-sobre', {// revelar.reveal() serve para animar elementos conforme o usuário rola a página
-    delay: 400
-});
-
-revelar.reveal('.box', {// revelar.reveal() serve para animar elementos conforme o usuário rola a página
-    delay: 400
-});
-
-revelar.reveal('.meio-circulo', {// '.meio-circulo' são Classes que servem apenas para identificar quais elementos do HTML serão afetados.
-    delay: 400 // delay tempo de espera antes da animação iniciar
-})
-
-
-revelar.reveal('.quadrado-amarelo', {
-    delay: 400
-})
-// Anima o bloco visual amarelo decorativo após 0.4 segundos.
-
-revelar.reveal('.bolinhas', {
-    delay: 400
-})
-// Anima o elemento de bolinhas decorativas em segundo plano após 0.4 segundos.
-revelar.reveal('.imageBox', {
-    delay: 600
-});
-// Faz a caixa da imagem principal surgir na tela após 0.6 segundos.
-revelar.reveal('.circulo', {
-    delay: 400
-});
-// Ativa a animação de círculos visuais ou decorativos com atraso de 0.4 segundos.
-revelar.reveal('.idea', {
-    delay: 400
-})
-// Revela o ícone circular de inovação (lâmpada) nos cards após 0.4 segundos.
-revelar.reveal('.target', {
-    delay: 600
-})
-// Exibe o ícone de foco/alvo do segundo card após 0.6 segundos.
-revelar.reveal('.people', {
-    delay: 800
-})
-// Mostra o ícone de parceria do terceiro card após 0.8 segundos.
-revelar.reveal('.card', {
-    delay: 400
-})
-// Inicia a animação de surgimento dos cards de conteúdo após 0.4 segundos.
-revelar.reveal('.row', {
-    delay: 400
-})
-// Aplica o efeito de revelação nas linhas internas que organizam os cards após 0.4 segundos.
-revelar.reveal('.quadro1', {
-    delay: 400
-})
-// faz o primeiro quadro de conteúdo ou imagem surgir após 0.4 segundos.
-revelar.reveal('.quadro2', {
-    delay: 600
-})
-// Revela o segundo quadro em sequência com atraso de 0.6 segundos.
-revelar.reveal('.quadro3', {
-    delay: 800
-})
-// Exibe o terceiro quadro de forma sequencial após 0.8 segundos.
-revelar.reveal('.quadro4', {
-    delay: 1000
-})
-// Finaliza a sequência exibindo o quarto quadro após 1 segundo completo.
-
-revelar.reveal('.equipe-header', {
-    delay: 800
-});
-
-// revelar.reveal('.equipe-titulo', {
-//     delay: 1000
-// })
-
-// revelar.reveal('.quadro4', {
-//     delay: 1000
-// })
-
-/* ========================= */
-/* LOADING SCREEN */
-/* ========================= */
-
 document.body.classList.add("loading");
 // Bloqueia a rolagem da página inserindo a trava de carregamento no corpo do site.
 window.addEventListener("load", () => {
@@ -194,3 +104,79 @@ if (projectBtn && transitionOverlay) {
         }, 900);
     });
 }
+
+/* ---------------------------------------------------
+   ScrollReveal — animações de entrada ao rolar a página
+--------------------------------------------------- */
+const revelar = ScrollReveal({
+    distance: '40px',
+    duration: 900,
+    easing: 'cubic-bezier(0.5, 0, 0, 1)',
+    reset: false,   // anima uma vez só, sem "piscar" ao subir e descer
+    mobile: true,
+});
+
+// -------- HERO (Somos a Fluxe) --------
+revelar.reveal('.titulo', {
+    origin: 'left',
+    distance: '30px',
+    interval: 120,       // "SOMOS A" entra, depois "FLUXE" logo em seguida
+});
+revelar.reveal('.container-texto', { origin: 'left', distance: '30px', delay: 260 });
+revelar.reveal('#butProject', { origin: 'bottom', delay: 380 });
+revelar.reveal('.imageBox', { origin: 'right', distance: '60px', delay: 200 });
+
+// Decorativos do hero — sutis, não competem com o texto
+revelar.reveal('.meio-circulo', { origin: 'left', distance: '30px', scale: 0.9, duration: 700 });
+revelar.reveal('.quadrado-amarelo', { origin: 'top', distance: '20px', delay: 300, duration: 600 });
+revelar.reveal('.bolinhas', { origin: 'right', distance: '20px', delay: 400, duration: 600 });
+
+// -------- SOBRE NÓS --------
+revelar.reveal('.sobre .box-sobre .subTitulo1', { origin: 'left' });
+revelar.reveal('.sobre .box-sobre .slash1', { origin: 'left', distance: '20px', delay: 100, duration: 600 });
+revelar.reveal('.sobre .box-sobre .container-texto', { origin: 'left', delay: 180 });
+revelar.reveal('.sobre .box-sobre .botao', { origin: 'left', delay: 280 });
+
+revelar.reveal('.infos .card', {
+    origin: 'bottom',
+    interval: 150,
+    distance: '30px',
+});
+
+// -------- PRINCIPAIS IMPLEMENTAÇÕES --------
+revelar.reveal('.container-circuito', { origin: 'left', distance: '50px', duration: 1000 });
+revelar.reveal('.implementacoes .subTitulo', { origin: 'left' });
+revelar.reveal('.implementacoes .slash', { origin: 'left', distance: '20px', delay: 100, duration: 600 });
+
+revelar.reveal('.quadro', {
+    origin: 'bottom',
+    interval: 150,
+    distance: '40px',
+    duration: 700,
+});
+
+// -------- EQUIPE --------
+revelar.reveal('.equipe-label', { origin: 'top' });
+revelar.reveal('.equipe-titulo', { origin: 'top', delay: 100 });
+revelar.reveal('.equipe-subtitulo', { origin: 'top', delay: 180 });
+
+revelar.reveal('.equipe-linha--top .membro-card:first-child', { origin: 'left', distance: '50px' });
+revelar.reveal('.equipe-foto-central', { scale: 0.9, duration: 800, delay: 150 });
+revelar.reveal('.equipe-linha--top .membro-card:last-child', { origin: 'right', distance: '50px' });
+
+revelar.reveal('.equipe-linha--bottom .membro-card', {
+    origin: 'bottom',
+    interval: 150,
+    distance: '30px',
+});
+
+revelar.reveal('.equipe-banner', { origin: 'bottom', delay: 150 });
+
+// -------- RODAPÉ --------
+revelar.reveal('#divirodape', { origin: 'left', distance: '30px' });
+revelar.reveal('#rodapeUl li', {
+    origin: 'right',
+    interval: 100,
+    distance: '20px',
+    delay: 150,
+});

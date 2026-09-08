@@ -1,0 +1,28 @@
+# ─── Front Controller (SICAPDA) ───────────────────────────────────────────
+# Toda requisição que NÃO aponte para um arquivo/pasta real (css, js, img,
+# uploads, index.php) é enviada para o index.php, que carrega as rotas
+# limpas definidas em app/routes/web.php (/login, /cadastro, /painel...).
+#
+# Este arquivo só funciona se o DocumentRoot do servidor apontar para esta
+# pasta "public/" — é isso que impede o acesso direto a app/, config/,
+# config/.env, ia/ e ao restante do projeto pela web.
+
+RewriteEngine On
+
+# Se o caminho pedido já existe como arquivo ou diretório real, serve normalmente.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Caso contrário, encaminha tudo para o index.php (front controller).
+RewriteRule ^ index.php [L]
+
+# ─── Cabeçalhos de segurança básicos ───────────────────────────────────────
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Bloqueia listagem de diretórios caso o servidor tenha Options +Indexes
+Options -Indexes

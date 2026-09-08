@@ -9,11 +9,13 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 // Descobre se o usuário está visualizando a página (GET) ou enviando dados (POST).
 
 // ─── Arquivos estáticos (só necessário ao rodar com o servidor embutido do PHP) ───
-// Quando você roda `php -S localhost:8000 app/routes/web.php`, TODA requisição passa
-// por este arquivo, inclusive CSS, JS e imagens. Se o caminho pedido existir de fato
-// em disco, devolvemos `false` para o servidor embutido servir o arquivo normalmente.
+// Ex.: `php -S localhost:8000 -t public public/index.php`. TODA requisição passa
+// por este roteador, inclusive CSS, JS e imagens. O "DocumentRoot" real em
+// produção é a pasta public/, então é lá que verificamos se o caminho pedido
+// existe de fato — se existir, devolvemos `false` para o servidor embutido
+// servir o arquivo normalmente.
 if (PHP_SAPI === 'cli-server') {
-    $caminhoReal = __DIR__ . '/../../' . ltrim($uri, '/');
+    $caminhoReal = __DIR__ . '/../../public/' . ltrim($uri, '/');
     if ($uri !== '/' && is_file($caminhoReal)) {
         return false;
     }
@@ -21,14 +23,23 @@ if (PHP_SAPI === 'cli-server') {
 
 // ─── Rotas publicas ───────────────────────────────────────────────────────────
 
-if ($uri === '/' || $uri === '/login') {
+if ($uri === '/') {
+    require_once __DIR__ . '/../../index.html';
+// raiz do domínio (fluxeteam.com.br) exibe a landing institucional da Fluxe.
+
+} elseif ($uri === '/sicapda') {
+    require_once __DIR__ . '/../views/indexSys.html';
+// /sicapda exibe a landing de apresentação do sistema SICAPDA.
+
+} elseif ($uri === '/login') {
     if ($metodo === 'POST') {
         (new AcessoController())->processarLogin();
     } else {
         (new AcessoController())->exibirLogin();
     }
-//l (/) ou o /login, o sistema verifica o método.Enviar o formulário (POST) aciona
-// a função para validar e processar o login.Apenas acessar a página (GET ou outro método) aciona a função para exibir a tela de login.
+// Enviar o formulário (POST) aciona a função para validar e processar o
+// login. Apenas acessar a página (GET ou outro método) aciona a função
+// para exibir a tela de login.
 
 } elseif ($uri === '/cadastro') {
     if ($metodo === 'POST') {

@@ -2,7 +2,7 @@
 =============================================
     Preto principal | Fundo/header | #171717
 =============================================
-    Grafite         | Cards/fundos | #232323 
+    Grafite         | Cards/fundos | #232323
                     |  secundários |
 =============================================
     Amarelo FLUXE   | Botões/      | #FFC400
@@ -15,10 +15,25 @@
 =============================================
     Cinza claro     | Inputs/cards | #F3F3F3
 =============================================
-    Cinza médio     | Bordas/textos| #A1A1A1 
+    Cinza médio     | Bordas/textos| #A1A1A1
                     |  secundários |
 =============================================
 */
+
+:root {
+    --preto: #171717;
+    --grafite: #232323;
+    --amarelo: #FFC400;
+    --amarelo-secundario: #F4B400;
+    --amarelo-hover: #FFC933;
+    --branco: #FFFFFF;
+    --cinza-claro: #F3F3F3;
+    --cinza-medio: #A1A1A1;
+
+    --raio-padrao: 10px;
+    --sombra-padrao: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    --header-offset: 110px;
+}
 
 * {
     padding: 0;
@@ -27,57 +42,83 @@
     font-family: sans-serif;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
+
+html,
+body {
+    overflow-x: hidden;
+    width: 100%;
+}
+
 /* ==================================================
    CORES DA BARRA DE ROLAGEM E SELEÇÃO DE TEXTO
 ================================================== */
 
 ::-webkit-scrollbar {
-    width: 10px; /* largura da barra */
+    width: 10px;
+    /* largura da barra */
 }
 
 ::-webkit-scrollbar-track {
-    background: #000000; /* cor do fundo/pista */
+    background: #000000;
+    /* cor do fundo/pista */
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #FFC400; /* cor da barra de rolagem (polegar) */
+    background: var(--amarelo);
+    /* cor da barra de rolagem (polegar) */
     border-radius: 5px;
     transition: 0.5s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #cba709; /* cor da barra ao passar o mouse */
+    background: #cba709;
+    /* cor da barra ao passar o mouse */
     transition: 0.5s ease;
 }
 
 /* Altera a seleção em todo o site */
 ::selection {
-  background-color: #ffcc00; /* Cor do fundo da seleção */
-  color: #000000;           /* Cor do texto selecionado */
+    background-color: #ffcc00;
+    /* Cor do fundo da seleção */
+    color: #000000;
+    /* Cor do texto selecionado */
+}
+
+/* Compensa a altura do header fixo ao navegar pelas âncoras do menu */
+#inicio,
+#funcionalidades,
+#sobreSection,
+#precos,
+#contato {
+    scroll-margin-top: var(--header-offset);
 }
 
 
-/* ── HEADER ── */
+/* ================================================
+   HEADER
+================================================== */
 .containerHeader {
     display: flex;
-    max-width: 100vw;
+    max-width: 100%;
     height: 13vh;
-    background-color: #171717;
+    background-color: var(--preto);
     align-items: center;
     justify-content: space-between;
-    padding: 0 2rem;
+    gap: 2rem;
+    padding: 0 clamp(1.5rem, 4vw, 3rem);
     z-index: 100;
     color: white;
-}
-
-.containerHeader {
-    position: sticky;
+    position: relative;
     top: 0;
     transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .header-fixed {
-    position: fixed;
+    /* position: fixed; */
     top: 0;
     left: 0;
     width: 100%;
@@ -85,21 +126,31 @@
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
     z-index: 999;
 }
-
+/* 
 .header-fixed.header-visible {
     transform: translateY(0);
-}
+} */
 
 .header-brand {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-shrink: 0;
 }
 
 .logoSicapda {
-    width: 15rem;
+    width: 12rem;
+    display: block;
 }
 
+/* Ações do header: nav + CTA. No mobile isso vira o painel do menu. */
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    flex: 1;
+    justify-content: flex-end;
+}
 
 /* ── NAV ── */
 .nav-links {
@@ -107,6 +158,16 @@
     align-items: center;
     gap: 2.5rem;
     justify-content: center;
+    flex-wrap: wrap;
+}
+
+.linkMenu {
+    color: var(--branco);
+    background: none;
+    text-decoration: none;
+    font-weight: bold;
+    position: relative;
+    padding: 0.35rem 0;
 }
 
 .linkMenu::after,
@@ -116,7 +177,7 @@
     width: 100%;
     height: 3px;
     background: linear-gradient(to right, #cba709, #e2df0c);
-    bottom: -5px;
+    bottom: 0;
     left: 0;
     transform: scaleX(0);
     transform-origin: right;
@@ -124,7 +185,7 @@
 }
 
 .linkMenu::before {
-    top: -5px;
+    top: 0;
     transform-origin: left;
 }
 
@@ -133,107 +194,102 @@
     transform: scaleX(1);
 }
 
-
-.linkMenu {
-    color: #ffffff;
-    background: none;
-    text-decoration: none;
-    font-weight: bold;
-    position: relative;
-}
-
 /* Botão do Header */
 .containerBut {
-    padding: 1%;
-    border-radius: 10px;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--raio-padrao);
     border: none;
-    width: 15%;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #FFC400;
-    transition: 0.5s ease;
-}
-
-.containerBut {
-    color: #171717;
+    gap: 0.6rem;
+    background-color: var(--amarelo);
+    color: var(--preto);
     text-decoration: none;
     font-weight: bold;
-    width: 17%;
-    font-size: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 4%;
+    font-size: 1rem;
+    white-space: nowrap;
     cursor: pointer;
+    flex-shrink: 0;
+    transition: 0.3s ease;
 }
 
 .containerBut i {
-    font-size: 150%;
-    color: #171717;
-
+    font-size: 1.3rem;
+    color: var(--preto);
 }
 
 .containerBut:hover {
-    background-color: #ffcf49;
-    transition: 0.5s ease;
-    transform: scale(1.1)
+    background-color: var(--amarelo-hover);
+    transform: scale(1.05);
 }
 
+/* Botão hamburguer — some no desktop, aparece no mobile */
+.menuToggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--branco);
+    font-size: 1.9rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem;
+    flex-shrink: 0;
+}
+
+
+/* ================================================
+   HERO (SICAPDA + Painel)
+================================================== */
 main {
     background: linear-gradient(to left, whitesmoke, white);
-    /* background-color: red; */
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 100%;
-    height: 96vh;
-    position: relative;
+    padding: 4vw 0 6vw;
 }
 
-/* -------------------------------- SICAPDA + Painel -- */
 #divRowSicapdaPainel {
-    width: 100%;
+    width: 90%;
+    max-width: 1400px;
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
-    margin-top: 2%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
 }
 
-#containerCirculo {
-    /* background-color: yellow; */
-    min-width: 10%;
-}
-
-/* -------------------------------- containerSICAPDA --- */
 #containerSICAPDA {
-    margin-top: 10vh;
     display: flex;
     flex-direction: column;
     gap: 1.1rem;
-    /* background-color: yellowgreen; */
-    width: 30%;
-    margin-left: 3%;
+    width: 44%;
 }
 
 #containerSICAPDA h1 {
-    font-size: 5rem;
+    font-size: 4.5rem;
+    line-height: 1;
+}
+
+#containerSICAPDA h1 span {
+    color: var(--amarelo);
 }
 
 #containerSICAPDA h2 {
     font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--preto);
 }
 
 #containerSICAPDA p {
     font-size: 1.1rem;
-}
-
-#containerSICAPDA h1 span {
-    color: #FFC400;
+    color: #3d3d3d;
+    max-width: 46ch;
 }
 
 .slash {
-    background-color: #FFC400;
+    background-color: var(--amarelo);
     width: 120px;
     height: 7px;
 }
@@ -241,7 +297,9 @@ main {
 /* -------------------------------- Botões --- */
 #buttonRow {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    margin-top: 0.5rem;
 }
 
 .botao {
@@ -250,23 +308,30 @@ main {
     align-items: center;
     width: 220px;
     height: 50px;
-    border-radius: 10px;
+    border-radius: var(--raio-padrao);
     font-weight: bold;
     cursor: pointer;
-    transition: 0.5s ease;
+    border: 1px solid transparent;
+    transition: 0.3s ease;
 }
 
 .botao span {
     margin-right: 15px;
+    display: flex;
+    align-items: center;
 }
 
-#amarelo:hover {
-    background-color: #ffcf49;
-    transition: 0.5s ease;
+.botao a {
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    display: flex;
+    align-items: center;
 }
 
 #amarelo {
-    background-color: #FFC400;
+    background-color: var(--amarelo);
+    color: var(--preto);
     border: none;
 }
 
@@ -274,74 +339,82 @@ main {
     font-size: 20px;
 }
 
-#branco {
-    background-color: white;
-    transition: 0.5s ease;
+#amarelo:hover {
+    background-color: var(--amarelo-hover);
 }
 
-#branco:hover {
-    background-color: black;
-    color: white;
-    transition: 0.5s ease;
+#branco {
+    background-color: white;
+    color: var(--preto);
+    border: 1px solid #e2e2e2;
 }
 
 #branco i {
     font-size: 27px;
 }
 
-/* -------------------------------- Fim Botões --- */
-
-#icones {
-    margin-top: 5%;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+#branco:hover {
+    background-color: var(--preto);
+    color: white;
 }
 
-#icones i {
-    font-size: 20px;
-    margin-right: 5px;
+/* -------------------------------- Ícones de confiança --- */
+#icones {
+    margin-top: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.8rem;
 }
 
 #icones p {
     font-weight: bold;
-    font-size: 17px;
+    font-size: 15px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    gap: 0.4rem;
+    color: var(--preto);
 }
 
-/* -------------------------------- Fim containerSICAPDA --- */
+#icones i {
+    font-size: 18px;
+    color: var(--amarelo-secundario);
+}
+
+/* -------------------------------- Painel/imagem --- */
 #painelGeral {
-    width: 50%;
+    width: 48%;
 }
 
 #painelGeral img {
     width: 100%;
+    display: block;
 }
 
-/* -------------------------------- Fim SICAPDA + Painel ---- */
-
-/* -------------------------------- Soluções ---- */
+/* ================================================
+   SOLUÇÕES / FUNCIONALIDADES
+================================================== */
 .solucoes {
-    margin-top: 20vh;
+    position: relative;
+    margin-top: 5vw;
     display: flex;
     flex-direction: row;
     justify-content: space-around;
     align-items: center;
     min-height: 15vh;
     width: 90%;
-    z-index: 3 !important;
+    max-width: 1400px;
+    z-index: 3;
     background-color: whitesmoke;
-    border-radius: 10px;
-    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    border-radius: var(--raio-padrao);
+    box-shadow: var(--sombra-padrao);
+    padding: 2rem 1.5rem;
 }
 
 .boxes {
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
-    align-items: center;
+    align-items: flex-start;
+    gap: 1rem;
     width: 24%;
 }
 
@@ -349,241 +422,739 @@ main {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #FFC400;
+    background-color: var(--amarelo);
     border-radius: 100%;
-    min-width: 40px;
-    min-height: 40px;
+    min-width: 42px;
+    min-height: 42px;
+    flex-shrink: 0;
     font-size: 20px;
-}
-
-.boxes div {
-    width: 75%;
+    margin-top: 0.15rem;
 }
 
 .boxes div h2 {
     font-size: 19px;
+    margin-bottom: 0.3rem;
 }
 
 .boxes div p {
     font-size: 13px;
+    color: #4a4a4a;
+    line-height: 1.4;
 }
 
 .divisionBar {
     min-height: 50px;
     max-width: 1.5px;
     min-width: 1.5px;
-    background-color: #171717;
+    background-color: var(--preto);
+    opacity: 0.15;
 }
 
-/* -------------------------------- Fim soluções ---- */
+/* ================================================
+   SOBRE O SISTEMA
+================================================== */
 #sobreSection {
     background: linear-gradient(to right, #f9f8fd, #ebecf4);
-    height: 70vh;
+    min-height: 65vh;
     display: flex;
+    align-items: center;
     position: relative;
     z-index: 1;
+    padding: 4vw 0;
 }
 
 #divMarginTop {
-    margin-top: 10vh;
-    width: 100%;
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
     display: flex;
     flex-direction: row;
-    justify-content: space-around;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+.sobreSistema {
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
 }
 
 .miniTitulo {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 2%;
+    gap: 0.8rem;
 }
 
 .miniTitulo h5 {
-    font-size: 1.5rem;
-}
-
-.sobreSistema h1 span {
-    color: #F4B400;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--preto);
 }
 
 .miniSlash {
-    background-color: #FFC400;
+    background-color: var(--amarelo);
     width: 3.8rem;
     height: 0.3rem;
+    flex-shrink: 0;
 }
 
+.sobreSistema h1 {
+    font-size: 2.6rem;
+    line-height: 1.15;
+}
 
-.sobreSistema {
-    width: 30%;
-    margin-left: 10%;
-    display: flex;
-    flex-direction: column;
-    gap: 5%;
-    margin-top: 9%;
-    /* background-color: blue; */
+.sobreSistema h1 span {
+    color: var(--amarelo-secundario);
+}
+
+.sobreSistema p {
+    font-size: 1.05rem;
+    color: #3d3d3d;
+    max-width: 44ch;
 }
 
 .botaoSobre {
     width: 250px !important;
     color: white !important;
-    background-color: #171717;
-    transition: 0.5s ease;
+    background-color: var(--preto);
+    margin-top: 0.5rem;
 }
 
 .botaoSobre:hover {
-    transform: scale(1.1);
-    transition: 0.5s ease;
-}
-
-.botao a {
-    text-decoration: none;
-    color: black;
-    height: 100%;
-    display: flex;
-    align-items: center;
+    transform: scale(1.05);
 }
 
 .botaoSobre span {
     font-size: 20px;
-    color: #FFC400;
+    color: var(--amarelo);
     margin-left: 20px;
     margin-right: 0 !important;
 }
 
 #imagemSobre {
     display: flex;
-    width: 60%;
-    align-items: end;
-    justify-content: end;
+    position: relative;
+    top: 12.3vh;
+    width: 50%;
+    align-items: center;
+    justify-content: center;
 }
 
 #imagemSobre img {
-    width: 100%;
-    /* background-color: green; */
+    width: 130%;
+    display: block;
+    position: absolute;
+    left: -12vw;
 }
 
+/* Elementos decorativos (usados em outras seções do site) */
 .circuloAmarelo {
     position: absolute;
-
     width: 20%;
     height: 80%;
-
-    background-color: #F4B400;
+    background-color: var(--amarelo-secundario);
     border-radius: 100%;
-
     left: -12vw;
     top: 20vh;
-
     z-index: -1;
 }
 
 .quadradoAmarelo {
     position: absolute;
-
     width: 10rem;
     height: 5rem;
-
-    background-color: #FFC400;
-
+    background-color: var(--amarelo);
     right: 1rem;
     bottom: 8vh;
-
     z-index: 0;
 }
 
-.footerSicapda {
-    min-height: 35vh;
-    max-height: 50vh;
-    background-color: #171717;
-    display: flex;
-    justify-content: space-between;
+/* ================================================
+   PLANOS E PREÇOS
+================================================== */
+#precos {
+    background: linear-gradient(to bottom, #ffffff, #fafafa);
+    padding: 6vw 0;
 }
 
-.tituloFooter {
+.precosGrid {
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
+}
+
+.precosMiniTitulo {
+    justify-content: center;
+}
+
+.precosTitulo {
+    font-size: 2.6rem;
+    line-height: 1.15;
+    max-width: 30ch;
+}
+
+.precosTitulo span {
+    color: var(--amarelo-secundario);
+}
+
+.precosSubtitulo {
+    font-size: 1.05rem;
+    color: #3d3d3d;
+    max-width: 50ch;
+}
+
+/* -------------------------------- Toggle Mensal/Anual --- */
+.toggleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.toggleLabel {
+    font-weight: bold;
+    color: var(--preto);
+    font-size: 0.98rem;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--preto);
+    border-radius: 999px;
+    transition: 0.3s ease;
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: var(--branco);
+    border-radius: 50%;
+    transition: 0.3s ease;
+}
+
+.switch input:checked+.slider {
+    background-color: var(--amarelo);
+}
+
+.switch input:checked+.slider::before {
+    transform: translateX(24px);
+}
+
+.toggleBadge {
+    background-color: #fff3cd;
+    color: #a17400;
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+}
+
+/* -------------------------------- Cards de planos --- */
+.planosRow {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+}
+
+.planoCard {
+    position: relative;
+    width: 32%;
+    background-color: var(--branco);
+    border: 1px solid #e2e2e2;
+    border-radius: var(--raio-padrao);
+    padding: 2.2rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 0.9rem;
+    box-shadow: var(--sombra-padrao);
+    transition: 0.3s ease;
+}
+
+.planoCard:hover {
+    transform: translateY(-6px);
+}
+
+.planoDestaque {
+    border: 2px solid var(--amarelo);
+    transform: scale(1.03);
+    z-index: 2;
+}
+
+.planoDestaque:hover {
+    transform: scale(1.03) translateY(-6px);
+}
+
+.planoBadge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--amarelo);
+    color: var(--preto);
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.planoIcon {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
-    margin-left: 0.5vw;
-    font-size: 1.5rem;
-    color: #ffffff;
-
-}
-
-.tituloFooter {
+    width: 44px;
+    height: 44px;
+    border-radius: 100%;
+    background-color: var(--cinza-claro);
+    color: var(--preto);
     font-size: 1.2rem;
 }
 
-.tituloFooter span {
-    color: #FFC400;
+.planoCard h3 {
+    font-size: 1.25rem;
+    color: var(--preto);
 }
 
-.tituloFooter img {
-    width: 20rem;
+.planoDesc {
+    font-size: 0.9rem;
+    color: var(--cinza-medio);
+    margin-top: -0.6rem;
+}
+
+.planoPreco {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.3rem;
+    margin: 0.3rem 0;
+}
+
+.moeda {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--preto);
+}
+
+.valor {
+    font-size: 2.3rem;
+    font-weight: bold;
+    color: var(--preto);
+    line-height: 1;
+}
+
+.periodo {
+    font-size: 0.95rem;
+    color: var(--cinza-medio);
+    margin-bottom: 0.2rem;
+}
+
+.planoLista {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+    margin: 0.3rem 0 0.5rem;
+}
+
+.planoLista li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.92rem;
+    color: #3d3d3d;
+    line-height: 1.4;
+}
+
+.planoLista i {
+    color: var(--amarelo-secundario);
+    font-size: 1rem;
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.planoBotao {
+    width: 100% !important;
+    background-color: var(--branco);
+    color: var(--preto);
+    border: 1.5px solid #dcdcdc;
+    margin-top: auto;
+}
+
+.planoBotao:hover {
+    background-color: var(--preto);
+    color: var(--branco);
+    border-color: var(--preto);
+}
+
+.planoBotaoDestaque {
+    background-color: var(--amarelo);
+    border: none;
+    color: var(--preto);
+}
+
+.planoBotaoDestaque:hover {
+    background-color: var(--amarelo-hover);
+    color: var(--preto);
+}
+
+/* -------------------------------- Rodapé dos planos --- */
+.planosFooter {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e2e2e2;
+    text-align: left;
+}
+
+.planoFooterItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    width: 24%;
+}
+
+.planoFooterItem i {
+    color: var(--amarelo-secundario);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.planoFooterItem h5 {
+    font-size: 0.95rem;
+    color: var(--preto);
+}
+
+.planoFooterItem h6 {
+    font-size: 0.82rem;
+    font-weight: normal;
+    color: var(--cinza-medio);
+    line-height: 1.3;
+}
+
+/* ================================================
+   CONTATO
+================================================== */
+#contato {
+    background-color: var(--grafite);
+    padding: 6vw 0;
+}
+
+.contatoGrid {
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4rem;
+}
+
+.contatoTexto {
+    width: 44%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.contatoTexto .miniTitulo h5 {
+    color: var(--branco);
+}
+
+.contatoTexto h1 {
+    font-size: 2.6rem;
+    line-height: 1.15;
+    color: var(--branco);
+}
+
+.contatoTexto h1 span {
+    color: var(--amarelo);
+}
+
+.contatoTexto>p {
+    font-size: 1.05rem;
+    color: var(--cinza-medio);
+    max-width: 46ch;
+}
+
+.contatoInfo {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.contatoInfo li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--branco);
+    font-size: 0.98rem;
+}
+
+.contatoInfo i {
+    color: var(--amarelo-secundario);
+    font-size: 1.15rem;
+}
+
+/* Botão de contorno reutilizado no Contato e no Footer */
+.ctaOutline {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--raio-padrao);
+    background-color: transparent;
+    border: 1.5px solid var(--amarelo-secundario);
+    color: var(--branco);
+    text-decoration: none;
+    font-weight: bold;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    transition: 0.3s ease;
+}
+
+.ctaOutline i {
+    font-size: 1.4rem;
+    color: var(--amarelo-secundario);
+    transition: 0.3s ease;
+}
+
+.ctaOutline:hover {
+    background-color: #25D366;
+    border-color: #25D366;
+}
+
+.ctaOutline:hover i {
+    color: var(--branco);
+}
+
+.formCard {
+    width: 48%;
+    background-color: var(--cinza-claro);
+    border-radius: var(--raio-padrao);
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+    box-shadow: var(--sombra-padrao);
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.formGroup label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--preto);
+}
+
+.formGroup input,
+.formGroup textarea {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    background-color: var(--branco);
+    color: var(--preto);
+    resize: vertical;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+    outline: 2px solid var(--amarelo-secundario);
+    outline-offset: 1px;
+}
+
+.formSubmit {
+    margin-top: 0.3rem;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: var(--raio-padrao);
+    background-color: var(--amarelo);
+    color: var(--preto);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.formSubmit:hover {
+    background-color: var(--amarelo-hover);
+}
+
+/* ================================================
+   FOOTER
+================================================== */
+.footerSicapda {
+    background-color: var(--preto);
+    padding: 4vw clamp(1.5rem, 5vw, 5rem);
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.footerTop {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.footerBrand {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.footerBrand img {
+    width: 14rem;
+    display: block;
+}
+
+.footerBrand h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--branco);
+    max-width: 32ch;
+    line-height: 1.4;
+}
+
+.footerBrand h3 span {
+    color: var(--amarelo);
+}
+
+.footerDivider {
+    height: 1px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 .containerInfo {
-    background-color: #171717;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+}
+
+.info {
     display: flex;
-    align-items: center;
-    font-size: 1.7rem;
-    width: 60%;
+    align-items: flex-start;
+    gap: 1rem;
 }
 
 .info i {
-    color: #F4B400;
-    font-size: 2rem;
-    margin-right: 4%;
+    color: var(--amarelo-secundario);
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    margin-top: 0.2rem;
+}
+
+.infoText {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
 .info span {
     font-weight: bold;
-    color: #ffffff;
+    font-size: 1.6rem;
+    color: var(--branco);
 }
 
 .info h5 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: bold;
-    color: #ffffff;
+    color: var(--branco);
 }
 
 .info h6 {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: normal;
-    color: #dddcdc;
+    color: #b8b8b8;
+    line-height: 1.4;
+}
+
+/* Mantidos para compatibilidade com outras páginas que usam contato flutuante */
+.containerZap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: end;
+    margin-bottom: 8vh;
+    margin-left: 2vw;
+    transition: 0.5s ease;
+}
+
+.containerZap h5 {
+    color: var(--branco);
+    font-size: 1.1rem;
+    margin-bottom: 1vh;
 }
 
 .zap {
-    color: #F4B400;
+    color: var(--amarelo-secundario);
     font-size: 2.7rem;
     cursor: pointer;
-    background-color: none;
+    background-color: transparent;
     padding: 7%;
     border-radius: 13px;
     transition: 0.5s ease;
 }
 
 .zap:hover {
-    transition: 0.5s ease;
-    color: #ffffff;
+    color: var(--branco);
     background-color: #25D366;
-}
-
-.containerZap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 8vh;
-    transition: 0.5s ease;
-    justify-content: end;
-    margin-left: 2vw;
-}
-
-.containerZap h5 {
-    color: #ffffff;
-    font-size: 1.1rem;
-    margin-bottom: 1vh;
 }
 
 /* ==========================
@@ -593,29 +1164,26 @@ main {
 /* Tablets */
 @media (max-width: 1024px) {
 
-    .nav-links {
-        gap: 1rem;
+    .header-brand {
+        height: 7vh;
     }
 
-    .containerBut {
-        width: auto;
-        padding: 10px 15px;
-        font-size: 0.9rem;
+    .header-brand img {
+        width: 12rem;
     }
 
     #containerSICAPDA {
-        width: 45%;
+        width: 48%;
     }
 
     #painelGeral {
-        width: 45%;
+        width: 48%;
     }
 
     .solucoes {
         flex-wrap: wrap;
         height: auto;
-        padding: 20px;
-        gap: 20px;
+        row-gap: 1.5rem;
     }
 
     .boxes {
@@ -627,59 +1195,123 @@ main {
     }
 
     .sobreSistema {
-        width: 45%;
-        margin-left: 5%;
+        width: 48%;
     }
 
     #imagemSobre {
-        width: 50%;
-    }
-
-    .footerSicapda {
-        flex-direction: column;
-        align-items: center;
-        padding: 30px;
-        gap: 30px;
-        max-height: none;
+        width: 48%;
     }
 
     .containerInfo {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 20px;
+        grid-template-columns: repeat(2, 1fr);
     }
 
+    .beneficiosGrid,
+    .contatoGrid {
+        flex-wrap: wrap;
+    }
+
+    .beneficiosTexto,
+    .spotlightCard,
+    .contatoTexto,
+    .formCard {
+        width: 100%;
+    }
+        .planosRow {
+        flex-wrap: wrap;
+    }
+
+    .planoCard {
+        width: 100%;
+        transform: none;
+    }
+
+    .planoDestaque:hover {
+        transform: translateY(-6px);
+    }
+
+    .planosFooter {
+        flex-wrap: wrap;
+    }
+
+    .planoFooterItem {
+        width: 45%;
+    }
+}
+
+/* Menu do header vira hamburguer a partir daqui.
+   O painel fica "position: absolute" ancorado no próprio header
+   (que já é position: sticky/fixed), então ele acompanha a altura
+   real do header em qualquer tamanho de tela, sem precisar
+   adivinhar em vh. */
+@media (max-width: 900px) {
+
+    .menuToggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .headerActions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        max-height: 0;
+        overflow-y: auto;
+        background-color: var(--preto);
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0;
+        padding: 0 1.5rem;
+        opacity: 0;
+        pointer-events: none;
+        transition: max-height 0.35s ease, opacity 0.25s ease, padding 0.35s ease;
+    }
+
+    .headerActions.is-open {
+        max-height: 80vh;
+        opacity: 1;
+        pointer-events: auto;
+        padding: 1.5rem;
+        box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .nav-links {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        width: 100%;
+    }
+
+    .linkMenu {
+        width: 100%;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .linkMenu::before,
+    .linkMenu::after {
+        display: none;
+    }
+
+    .headerActions .containerBut {
+        width: 100%;
+        margin: 1.5rem 0 0.5rem;
+    }
 }
 
 /* Celulares */
 @media (max-width: 768px) {
 
     .containerHeader {
-        flex-direction: column;
         height: auto;
-        padding: 20px;
-        gap: 20px;
+        padding: 1.2rem 1.5rem;
     }
 
     .logoSicapda {
-        width: 12rem;
-    }
-
-    .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 15px;
-    }
-
-    .containerBut {
-        width: auto;
-        padding: 12px 20px;
-    }
-
-    main {
-        height: auto;
-        padding-bottom: 40px;
+        width: 10rem;
     }
 
     #divRowSicapdaPainel {
@@ -689,8 +1321,7 @@ main {
     }
 
     #containerSICAPDA {
-        width: 90%;
-        margin: 40px 0;
+        width: 100%;
         align-items: center;
     }
 
@@ -702,58 +1333,61 @@ main {
         font-size: 1.2rem;
     }
 
+    #containerSICAPDA p {
+        max-width: none;
+    }
+
     #painelGeral {
         width: 95%;
     }
 
     #buttonRow {
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
+        justify-content: center;
     }
 
     #icones {
-        flex-wrap: wrap;
-        gap: 15px;
         justify-content: center;
     }
 
     .solucoes {
-        margin-top: 40px;
+        margin-top: 10vw;
         flex-direction: column;
         width: 95%;
-        padding: 20px;
-        gap: 20px;
+        padding: 1.5rem;
     }
 
     .boxes {
         width: 100%;
-        justify-content: flex-start;
-        gap: 15px;
     }
 
     #sobreSection {
-        height: auto;
-        padding: 50px 0;
+        min-height: auto;
+        padding: 12vw 0;
     }
 
     #divMarginTop {
-        flex-direction: column;
-        align-items: center;
-        margin-top: 0;
+        flex-direction: column-reverse;
+        text-align: center;
     }
 
     .sobreSistema {
         width: 90%;
-        margin: 0;
-        text-align: center;
         align-items: center;
+    }
+
+    .sobreSistema p {
+        max-width: none;
     }
 
     #imagemSobre {
         width: 95%;
-        justify-content: center;
-        margin-top: 30px;
+        top: 0;
+        margin-top: 2rem;
+    }
+
+    #imagemSobre img {
+        width: 100%;
+        position: static;
     }
 
     .botaoSobre {
@@ -761,31 +1395,43 @@ main {
         max-width: 300px;
     }
 
-    .footerSicapda {
-        flex-direction: column;
+    .beneficiosTexto,
+    .contatoTexto {
         align-items: center;
         text-align: center;
-        padding: 30px 20px;
-        gap: 30px;
-        max-height: none;
     }
 
-    .tituloFooter img {
-        width: 15rem;
+    .beneficiosTexto>p,
+    .contatoTexto>p {
+        max-width: none;
+    }
+
+    .checklist li {
+        text-align: left;
+    }
+
+    .contatoInfo {
+        align-items: center;
+    }
+
+    .ctaOutline {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .footerTop {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .footerBrand {
+        flex-direction: column;
+        text-align: center;
     }
 
     .containerInfo {
-        width: 100%;
-        flex-direction: column;
-        gap: 25px;
-    }
-
-    .info {
-        width: 100%;
-    }
-
-    .containerZap {
-        margin: 0;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 }
 
@@ -813,12 +1459,17 @@ main {
         font-size: 1rem;
     }
 
-    .sobreSistema h1 {
+    .sobreSistema h1,
+    .beneficiosTexto h1,
+    .contatoTexto h1 {
         font-size: 1.8rem;
     }
 
-    .tituloFooter {
-        font-size: 1rem;
+    .footerBrand h3 {
+        font-size: 1.05rem;
+    }
+
+    .formCard {
+        padding: 1.5rem;
     }
 }
-

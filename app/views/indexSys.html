@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -11,10 +11,10 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <script src="https://unpkg.com/scrollreveal@4.0.9/dist/scrollreveal.min.js"></script>
 </head>
 <!-- Cabeçalho da página, o utf faz mostrar caracteres especiais  -->
 
@@ -25,20 +25,27 @@
             <img class="logoSicapda" src="../../public/img/logo_sicapda.png" alt="Logo do SICAPDA">
         </div>
 
-        <nav class="nav-links" id="navLinks">
-            <a class="linkMenu" href="#">Início</a>
-            <a class="linkMenu" href="#">Funcionalidades</a>
-            <a class="linkMenu" href="#">Sobre o Sistema</a>
-            <a class="linkMenu" href="#">Benefícios</a>
-            <a class="linkMenu" href="#">Contato</a>
-        </nav>
+        <div class="headerActions" id="headerActions">
+            <nav class="nav-links" id="navLinks">
+                <a class="linkMenu" href="#inicio">Início</a>
+                <a class="linkMenu" href="#funcionalidades">Funcionalidades</a>
+                <a class="linkMenu" href="#sobreSection">Sobre o Sistema</a>
+                <a class="linkMenu" href="#precos">Preços</a>
+                <a class="linkMenu" href="#contato">Contato</a>
+            </nav>
 
-        <a class="containerBut" href="../../index.html">
-            <i class="bi bi-person"></i> Conheça a empresa <i class="bi bi-arrow-right"></i> </a>
-        </a>
+            <a class="containerBut" href="../../index.html">
+                <i class="bi bi-person"></i> Conheça a empresa <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <button class="menuToggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-expanded="false"
+            aria-controls="headerActions">
+            <i class="bi bi-list"></i>
+        </button>
     </header>
 
-    <main>
+    <main id="inicio">
 
         <div id="divRowSicapdaPainel">
 
@@ -50,7 +57,7 @@
 
                 <div id="buttonRow">
                     <button class="botao" id="amarelo"><span><i class="bi bi-bar-chart-line-fill"></i></span> <a
-                            href="login.php">Acessar sistema</a>
+                            href="/login">Acessar sistema</a>
                     </button>
                     <button class="botao" id="branco"><span><i class="bi bi-play"></i></span> Ver como funciona</button>
                 </div>
@@ -64,11 +71,11 @@
             </div>
 
             <div id="painelGeral">
-                <img src="../../public/img/dashboardSisytema.png" alt="Imagem do dashboard do sistema">
+                <img src="../../public/img/dashboardSistema.svg" alt="Imagem do dashboard do sistema">
             </div>
         </div>
 
-        <div class="solucoes">
+        <div class="solucoes" id="funcionalidades">
 
             <div class="boxes">
                 <i class="bi bi-lock-fill icons"></i>
@@ -79,20 +86,18 @@
                 </div>
             </div>
 
-            <div class="divisionBar">
-            </div>
+            <div class="divisionBar"></div>
 
             <div class="boxes">
                 <i class="bi bi-fork-knife icons"></i>
 
                 <div>
                     <h2>Previsão Inteligente</h2>
-                    <p>Algoritmos que prevem a demanda alimentar com alta assertividade.</p>
+                    <p>Algoritmos que preveem a demanda alimentar com alta assertividade.</p>
                 </div>
             </div>
 
-            <div class="divisionBar">
-            </div>
+            <div class="divisionBar"></div>
 
             <div class="boxes">
                 <i class="bi bi-bar-chart-line-fill icons"></i>
@@ -100,34 +105,28 @@
                     <h2>Relatórios e Métricas</h2>
                     <p>Dashboards completos para análise e tomadas de decisão.</p>
                 </div>
-
             </div>
 
-            <div class="divisionBar">
-            </div>
+            <div class="divisionBar"></div>
 
             <div class="boxes">
                 <i class="bi bi-people-fill icons"></i>
 
                 <div>
-                    <h2>Gestão Integrada.</h2>
+                    <h2>Gestão Integrada</h2>
                     <p>Dados centralizados, conectados e sempre atualizados.</p>
                 </div>
-
             </div>
 
         </div>
     </main>
-
-
-    
 
     <section id="sobreSection">
         <div id="divMarginTop">
             <div class="sobreSistema">
                 <div class="miniTitulo">
                     <div class="miniSlash"></div>
-                    <h5>SOBRE O SISTEMA</h5>
+                    <h5>Sobre o sistema</h5>
                 </div>
                 <h1>Uma solução <span>completa</span> para sua gestão.</h1>
                 <p>O SICAPDA combina tecnologia, dados e inteligência para simplificar processos e garantir eficiência
@@ -137,48 +136,231 @@
             </div>
 
             <div id="imagemSobre">
-                <img src="../../public/img/computadorSys.svg" alt="Computador e Celular">
+                <img src="../../public/img/computadorSys.png" alt="Computador e Celular">
             </div>
         </div>
     </section>
 
+    <section id="precos">
+        <div class="precosGrid">
+            <div class="miniTitulo precosMiniTitulo">
+                <div class="miniSlash"></div>
+                <h5>Planos e Preços</h5>
+            </div>
+            <h1 class="precosTitulo">Escolha o plano <span>ideal</span> para a sua instituição.</h1>
+            <p class="precosSubtitulo">Soluções flexíveis para instituições de todos os tamanhos. Mais eficiência, menos
+                desperdício.</p>
+
+            <div class="toggleWrapper">
+                <span class="toggleLabel">Mensal</span>
+                <label class="switch">
+                    <input type="checkbox" id="toggleAnual">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggleLabel">Anual</span>
+                <span class="toggleBadge">Economize até 20%</span>
+            </div>
+
+            <div class="planosRow">
+
+                <div class="planoCard">
+                    <div class="planoIcon"><i class="bi bi-person"></i></div>
+                    <h3>Plano Básico</h3>
+                    <p class="planoDesc">Ideal para pequenas instituições</p>
+                    <div class="planoPreco">
+                        <span class="moeda">R$</span>
+                        <span class="valor" data-mensal="490,00" data-anual="392,00">490,00</span>
+                        <span class="periodo">/mês</span>
+                    </div>
+                    <ul class="planoLista">
+                        <li><i class="bi bi-check-circle-fill"></i> Até 500 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Previsão de demanda básica</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Relatórios padrão</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Suporte por e-mail</li>
+                    </ul>
+                    <button class="botao planoBotao">Escolher plano</button>
+                </div>
+
+                <div class="planoCard planoDestaque">
+                    <span class="planoBadge">Mais escolhido</span>
+                    <div class="planoIcon"><i class="bi bi-bar-chart-line-fill"></i></div>
+                    <h3>Plano Profissional</h3>
+                    <p class="planoDesc">Perfeito para instituições em crescimento</p>
+                    <div class="planoPreco">
+                        <span class="moeda">R$</span>
+                        <span class="valor" data-mensal="1.290,00" data-anual="1.032,00">1.290,00</span>
+                        <span class="periodo">/mês</span>
+                    </div>
+                    <ul class="planoLista">
+                        <li><i class="bi bi-check-circle-fill"></i> Até 2.000 usuários</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Previsão de demanda avançada</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Relatórios personalizados</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Suporte prioritário</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Integrações com sistemas</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Dashboards interativos</li>
+                    </ul>
+                    <button class="botao planoBotao planoBotaoDestaque">Escolher plano</button>
+                </div>
+
+                <div class="planoCard">
+                    <div class="planoIcon"><i class="bi bi-building"></i></div>
+                    <h3>Plano Empresarial</h3>
+                    <p class="planoDesc">Para grandes instituições</p>
+                    <div class="planoPreco">
+                        <span class="moeda">R$</span>
+                        <span class="valor" data-mensal="2.490,00" data-anual="1.992,00">2.490,00</span>
+                        <span class="periodo">/mês</span>
+                    </div>
+                    <ul class="planoLista">
+                        <li><i class="bi bi-check-circle-fill"></i> Usuários ilimitados</li>
+                        <li><i class="bi bi-check-circle-fill"></i> IA preditiva avançada</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Dashboards customizados</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Suporte dedicado 24/7</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Integrações avançadas</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Treinamento da equipe</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Permissões e controles avançados</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Relatórios e análises ilimitadas</li>
+                    </ul>
+                    <button class="botao planoBotao">Escolher plano</button>
+                </div>
+
+            </div>
+
+            <div class="planosFooter">
+                <div class="planoFooterItem">
+                    <i class="bi bi-shield-check"></i>
+                    <div>
+                        <h5>Sem fidelidade</h5>
+                        <h6>Cancele quando quiser.</h6>
+                    </div>
+                </div>
+                <div class="planoFooterItem">
+                    <i class="bi bi-lock-fill"></i>
+                    <div>
+                        <h5>Seus dados seguros</h5>
+                        <h6>Conformidade com LGPD.</h6>
+                    </div>
+                </div>
+                <div class="planoFooterItem">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <div>
+                        <h5>Atualizações inclusas</h5>
+                        <h6>Sempre com o melhor do sistema.</h6>
+                    </div>
+                </div>
+                <div class="planoFooterItem">
+                    <i class="bi bi-headset"></i>
+                    <div>
+                        <h5>Suporte especializado</h5>
+                        <h6>Equipe pronta para ajudar.</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contato">
+        <div class="contatoGrid">
+
+            <div class="contatoTexto">
+                <div class="miniTitulo">
+                    <div class="miniSlash"></div>
+                    <h5>Contato</h5>
+                </div>
+                <h1>Vamos <span>conversar</span> sobre a sua operação.</h1>
+                <p>Conte um pouco sobre a sua instituição e o time comercial retorna com os próximos passos.</p>
+
+                <ul class="contatoInfo">
+                    <li><i class="bi bi-envelope"></i> fluxeteam@gmail.com</li>
+                    <li><i class="bi bi-telephone"></i> (19) 99482-0921 </li>
+                    <li><i class="bi bi-geo-alt"></i> Mococa, SP</li>
+                </ul>
+
+                <a class="ctaOutline" href="#" aria-label="Falar no WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                    <span>Falar no WhatsApp</span>
+                </a>
+            </div>
+
+            <form class="formCard" method="POST" action="">
+                <!-- Ajuste o "action" para o endpoint PHP que vai receber esse formulário -->
+                <div class="formGroup">
+                    <label for="nomeContato">Nome</label>
+                    <input type="text" id="nomeContato" name="nome" placeholder="Seu nome" required>
+                </div>
+
+                <div class="formGroup">
+                    <label for="emailContato">E-mail</label>
+                    <input type="email" id="emailContato" name="email" placeholder="seuemail@empresa.com" required>
+                </div>
+
+                <div class="formGroup">
+                    <label for="mensagemContato">Mensagem</label>
+                    <textarea id="mensagemContato" name="mensagem" rows="4"
+                        placeholder="Conte um pouco sobre a sua instituição"></textarea>
+                </div>
+
+                <button class="formSubmit" type="submit">Enviar mensagem</button>
+            </form>
+
+        </div>
+    </section>
+
     <footer class="footerSicapda">
-        <div class="containerZap">
-            <h5>Nosso contato</h5>
-            <i class="zap bi bi-whatsapp"></i>
+
+        <div class="footerTop">
+            <div class="footerBrand">
+                <img src="../../public/img/logotipo.svg" alt="Logo da Fluxe">
+                <h3>Resultados que <span>transformam</span> a gestão da sua instituição</h3>
+            </div>
+
+            <a class="ctaOutline" href="#" aria-label="Falar no WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+                <span>Fale com a gente</span>
+            </a>
         </div>
-        <div class="tituloFooter">
-            <img src="../../public/img/logotipo.png" alt="Logo da Fluxe">
-            <h3>Resultados que <span>transformam</span></h3>
-            <h3>a gestão da sua instituição</h3>
-        </div>
+
+        <div class="footerDivider"></div>
 
         <div class="containerInfo">
             <div class="info">
-                <i class="seguranca bi bi-shield-check"></i><span>+98%</span>
-                <h5>Mais segurança</h5>
-                <h6>Redução de acessos não autorizados.</h6>
+                <i class="bi bi-shield-check"></i>
+                <div class="infoText">
+                    <span>+98%</span>
+                    <h5>Mais segurança</h5>
+                    <h6>Redução de acessos não autorizados.</h6>
+                </div>
             </div>
             <div class="info">
-                <i class="bi bi-graph-up-arrow"></i><span>+95%</span>
-                <h5>Precisão nas previsões</h5>
-                <h6>Menos desperdício e melhor planejamento alimentar.</h6>
+                <i class="bi bi-graph-up-arrow"></i>
+                <div class="infoText">
+                    <span>+95%</span>
+                    <h5>Precisão nas previsões</h5>
+                    <h6>Menos desperdício e melhor planejamento alimentar.</h6>
+                </div>
             </div>
             <div class="info">
-                <i class="bi bi-clock"></i><span>-35%</span>
-                <h5>Redução nos custos</h5>
-                <h6>Otimização de recursos e processos.</h6>
+                <i class="bi bi-clock"></i>
+                <div class="infoText">
+                    <span>-35%</span>
+                    <h5>Redução nos custos</h5>
+                    <h6>Otimização de recursos e processos.</h6>
+                </div>
             </div>
             <div class="info">
-                <i class="bi bi-emoji-smile"></i><span>+100%</span>
-                <h5>Satisfação dos usuários</h5>
-                <h6>Experiência moderna, rápida e intuitiva.</h6>
+                <i class="bi bi-emoji-smile"></i>
+                <div class="infoText">
+                    <span>+100%</span>
+                    <h5>Satisfação dos usuários</h5>
+                    <h6>Experiência moderna, rápida e intuitiva.</h6>
+                </div>
             </div>
         </div>
 
     </footer>
 
-
     <script src="../../public/js/scriptSys.js"></script>
+
+</body>
 
 </html>
