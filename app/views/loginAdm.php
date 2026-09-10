@@ -32,9 +32,11 @@
             margin-top: 2px;
         }
     </style>
+
+    <!-- estilo principal da página -->
 </head>
 
-<body class="fundo">
+<body class="fundoAdm">
 
     <header class="headerLogin">
         <img id="logotipo" src="../../public/img/logotipo.svg" alt="Logotipo da empresa">

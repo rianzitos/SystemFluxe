@@ -37,15 +37,13 @@
     <div id="smooth-wrapper">
         <div id="smooth-content">
 
-
-
             <header id="container-header">
                 <img id="logotipo" src="public/img/logotipo.svg" alt="Logotipo Fluxe">
                 <ul id="menu">
                     <li><a class="itemMenu" href="#inicio">Início </a></li>
                     <li><a class="itemMenu" href="#sobrenos">Sobre Nós </a></li>
                     <li><a class="itemMenu" href="#solucoes">Soluções </a></li>
-                    <li><a class="itemMenu" href="#projetos">Projetos </a></li>
+                    <li><a class="itemMenu" href="/app/views/indexSys.html">Projeto </a></li>
                     <li><a class="itemMenu" href="#equipe">Equipe </a></li>
                     <li><a class="itemMenu" href="#contato">Contato </a></li>
                 </ul> <!--Cabeçalho da página inícial-->
@@ -60,197 +58,203 @@
             <div class="meio-circulo"></div> <!-- Forma decorativa em meia lua -->
 
             <nav class="nav">
-                <div class="container inicio">
 
-                    <div class="box">
+                <section id="inicio">
+                    <div class="container inicio">
+                        <div class="box">
 
-                        <h1 class="titulo">SOMOS A</h1>
-                        <h1 class="titulo fluxe">FLUXE</h1> <!--inicio da página-->
+                            <h1 class="titulo">SOMOS A</h1>
+                            <h1 class="titulo fluxe">FLUXE</h1> <!--inicio da página-->
 
-                        <div class="container-texto"> <!-- Texto de apresentação -->
-                            <p id="texto">Somos uma equipe que acredita no poder da
-                                tecnologia para transformar ideias simples em soluções que realmente
-                                ajudam pessoas.</p>
+                            <div class="container-texto"> <!-- Texto de apresentação -->
+                                <p id="texto">Somos uma equipe que acredita no poder da
+                                    tecnologia para transformar ideias simples em soluções que realmente
+                                    ajudam pessoas.</p>
 
+                            </div>
+
+                            <button id="butProject"><a href="app/views/indexSys.html">Conheça nosso projeto
+                                    principal</a></button>
                         </div>
-
-                        <button id="butProject"><a href="/sicapda">Conheça nosso projeto
-                                principal</a></button>
+                        <div class="quadrado-amarelo"></div>
+                        <div class="imageBox"> <!-- Imagem principal -->
+                            <img id="imagemUm" src="public/img/cartaoFluxe.svg" alt="">
+                        </div>
+                        <div class="bolinhas"></div> <!-- Bolinhas decorativas -->
                     </div>
-                    <div class="quadrado-amarelo"></div>
-                    <div class="imageBox"> <!-- Imagem principal -->
-                        <img id="imagemUm" src="public/img/cartaoFluxe.svg" alt="">
-                    </div>
-                    <div class="bolinhas"></div> <!-- Bolinhas decorativas -->
-
-                </div>
+                </section>
 
                 <!-- Sessão Sobre Nos-->
-                <section id="sobrenos"></section>
-                <div class="container sobre">
+                <section id="sobrenos">
+                    <div class="container sobre">
 
-                    <div class="box-sobre">
-                        <h1 class="subTitulo1">SOBRE NÓS</h1>
-                        <div class="slash1"></div> <!-- Linha decorativa -->
-                        <div class="container-texto"> <!-- Texto explicando a empresa -->
-                            <p id="texto">A FLUXE nasceu com um propósito simples: usar a tecnologia
-                                para resolver problemas reais e gerar impacto positivo na sociedade.
-                                Acreditamos que inovação vai além de criar sistemas, ela deve transformar
-                                realidades, melhorar rotinas e contribuir para um futuro mais consciente.</p>
+                        <div class="box-sobre">
+                            <h1 class="subTitulo1">SOBRE NÓS</h1>
+                            <div class="slash1"></div> <!-- Linha decorativa -->
+                            <div class="container-texto"> <!-- Texto explicando a empresa -->
+                                <p id="texto">A FLUXE nasceu com um propósito simples: usar a tecnologia
+                                    para resolver problemas reais e gerar impacto positivo na sociedade.
+                                    Acreditamos que inovação vai além de criar sistemas, ela deve transformar
+                                    realidades, melhorar rotinas e contribuir para um futuro mais consciente.</p>
+                            </div>
+
+                            <button class="botao"><a href="">SAIBA MAIS</a></button>
                         </div>
 
-                        <button class="botao"><a href="">SAIBA MAIS</a></button>
-                    </div>
+                        <!-- CARDS DE INFOS -->
+                        <div class="infos">
 
-                    <!-- CARDS DE INFOS -->
-                    <div class="infos">
-
-                        <input type="radio" name="slide" id="inovacao" checked> <!-- Seleciona o card ativo -->
-                        <label for="inovacao" class="card"> <!-- Card de inovação -->
-                            <div class="row">
-                                <div class="circle ideia"><!-- Ícone do card -->
-                                    <img class="iconImg" src="public/img/idea.svg" alt="Imagem Ideia">
+                            <input type="radio" name="slide" id="inovacao" checked> <!-- Seleciona o card ativo -->
+                            <label for="inovacao" class="card"> <!-- Card de inovação -->
+                                <div class="row">
+                                    <div class="circle ideia"><!-- Ícone do card -->
+                                        <img class="iconImg" src="public/img/idea.svg" alt="Imagem Ideia">
+                                    </div>
+                                    <div class="descricao">
+                                        <h1>INOVAÇÃO</h1> <!-- Texto do card -->
+                                        <p>O mundo muda constantemente, e empresas que não acompanham
+                                            essa transformação acabam ficando para trás. Na FLUXE, enxergamos
+                                            a inovação como a capacidade de antecipar necessidades e criar
+                                            soluções que impactem a vida das pessoas de forma prática e
+                                            inteligente. Cada projeto nasce da observação de problemas reais,
+                                            transformando tecnologia em experiências úteis, acessíveis
+                                            e relevantes.</p>
+                                    </div>
                                 </div>
-                                <div class="descricao">
-                                    <h1>INOVAÇÃO</h1> <!-- Texto do card -->
-                                    <p>O mundo muda constantemente, e empresas que não acompanham
-                                        essa transformação acabam ficando para trás. Na FLUXE, enxergamos
-                                        a inovação como a capacidade de antecipar necessidades e criar
-                                        soluções que impactem a vida das pessoas de forma prática e
-                                        inteligente. Cada projeto nasce da observação de problemas reais,
-                                        transformando tecnologia em experiências úteis, acessíveis
-                                        e relevantes.</p>
+                            </label>
+
+                            <input type="radio" name="slide" id="target"
+                                class="black"><!-- Seleciona o card "Foco em Resultados" -->
+                            <label for="target" class="card"><!-- Card com informações sobre resultados -->
+                                <div class="row">
+                                    <div class="circle target"><!-- Card com informações sobre resultados -->
+                                        <img class="iconImg" src="public/img/target.png" alt="Imagem Foco">
+                                    </div>
+                                    <div class="descricao">
+                                        <h1>FOCO EM RESULTADOS</h1>
+                                        <p>Ideias só têm valor quando geram resultados reais.
+                                            Por isso, desenvolvemos soluções com estratégia,
+                                            eficiência e propósito, buscando não apenas atender
+                                            expectativas, mas criar impactos positivos duradouros.
+                                            Nosso compromisso está em entregar projetos que otimizem processos,
+                                            reduzam problemas e tragam benefícios concretos para quem utiliza
+                                            nossas soluções.</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </label>
+                            </label>
 
-                        <input type="radio" name="slide" id="target"
-                            class="black"><!-- Seleciona o card "Foco em Resultados" -->
-                        <label for="target" class="card"><!-- Card com informações sobre resultados -->
-                            <div class="row">
-                                <div class="circle target"><!-- Card com informações sobre resultados -->
-                                    <img class="iconImg" src="public/img/target.png" alt="Imagem Foco">
+                            <input type="radio" name="slide" id="people">
+                            <label for="people" class="card"><!-- Card sobre parceria -->
+                                <div class="row">
+                                    <div class="circle people"> <!-- Ícone do card -->
+                                        <img class="iconImg" src="public/img/people.png" alt="Imagem Parceria">
+                                    </div>
+                                    <div class="descricao">
+                                        <h1>PARCERIA</h1>
+                                        <p>Grandes transformações não acontecem sozinhas.
+                                            Acreditamos que confiança, escuta e colaboração
+                                            são essenciais para construir projetos que realmente
+                                            façam diferença. Mais do que clientes ou parceiros,
+                                            buscamos criar conexões baseadas em propósito,
+                                            crescimento e evolução conjunta, porque resultados sólidos nascem de
+                                            relações
+                                            fortes.</p>
+                                    </div>
                                 </div>
-                                <div class="descricao">
-                                    <h1>FOCO EM RESULTADOS</h1>
-                                    <p>Ideias só têm valor quando geram resultados reais.
-                                        Por isso, desenvolvemos soluções com estratégia,
-                                        eficiência e propósito, buscando não apenas atender
-                                        expectativas, mas criar impactos positivos duradouros.
-                                        Nosso compromisso está em entregar projetos que otimizem processos,
-                                        reduzam problemas e tragam benefícios concretos para quem utiliza
-                                        nossas soluções.</p>
-                                </div>
-                            </div>
-                        </label>
-
-                        <input type="radio" name="slide" id="people">
-                        <label for="people" class="card"><!-- Card sobre parceria -->
-                            <div class="row">
-                                <div class="circle people"> <!-- Ícone do card -->
-                                    <img class="iconImg" src="public/img/people.png" alt="Imagem Parceria">
-                                </div>
-                                <div class="descricao">
-                                    <h1>PARCERIA</h1>
-                                    <p>Grandes transformações não acontecem sozinhas.
-                                        Acreditamos que confiança, escuta e colaboração
-                                        são essenciais para construir projetos que realmente
-                                        façam diferença. Mais do que clientes ou parceiros,
-                                        buscamos criar conexões baseadas em propósito,
-                                        crescimento e evolução conjunta, porque resultados sólidos nascem de relações
-                                        fortes.</p>
-                                </div>
-                            </div>
-                        </label>
-
-                    </div>
-
-                </div>
-
-                <div class="container implementacoes"> <!-- Área das principais implementações -->
-
-                    <div class="container-circuito">
-                        <img src="public/img/circuitoSistema.png" alt="Circuito tecnológico">
-                    </div>
-
-                    <div class="box-sobre">
-
-                        <h1 class="subTitulo">Principais <span>Implementações</span></h1>
-                        <div class="slash"></div>
-
-                        <div id="container-quadros"> <!-- Container com os quadros dos projetos -->
-                            <div class="quadro quadro1">
-
-                                <h2>
-                                    Sistema de Controle de Acesso
-                                </h2>
-
-                                <div id="projeto1" class="infoProjeto">
-                                    <p>
-                                        Solução completa para gestão e controle de acesso com tecnologia inteligente.
-                                    </p>
-                                    <img class="imgQuadro" src="public/img/cartaoAcesso.svg" alt="Imagem Grupo">
-                                    <!-- Imagem do projeto -->
-                                </div>
-
-                            </div>
-
-                            <!-- QUADRO 2 -->
-                            <div class="quadro quadro2">
-
-                                <h2>
-                                    Previsão de Demanda Alimentar
-                                </h2>
-
-                                <div id="projeto2" class="infoProjeto"> <!-- Informações do projeto -->
-
-                                    <p>
-                                        Sistema inteligente que prevê a demanda de refeições e reduz desperdicios.
-                                    </p>
-                                    <img class="imgQuadro" src="public/img/tablet.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
-
-                            <!-- QUADRO 3 -->
-                            <div class="quadro quadro3">
-
-                                <h2>
-                                    Dashboard em Tempo Real
-                                </h2>
-
-                                <div id="projeto3" class="infoProjeto">
-
-                                    <p>
-                                        Dashboard interativos para acompanhamento e tomada de decisão em tempo real.
-                                    </p>
-                                    <img class="imgQuadro" src="public/img/dashboardSistema.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
-
-                            <!-- QUADRO 4 -->
-                            <div class="quadro quadro4">
-
-                                <h2>
-                                    Gestão de Refeitórios
-                                </h2>
-
-                                <div id="projeto4" class="infoProjeto">
-
-                                    <p>
-                                        Plataforma integrada para otimizar a gestão de refeitórios institucionais.
-                                    </p>
-                                    <img class="imgQuadro" src="public/img/cozinha.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
+                            </label>
 
                         </div>
 
                     </div>
+                </section>
 
-                </div>
+                <section id="solucoes">
+                    <div class="container implementacoes"> <!-- Área das principais implementações -->
+
+                        <div class="container-circuito">
+                            <img src="public/img/circuitoSistema.png" alt="Circuito tecnológico">
+                        </div>
+
+                        <div class="box-sobre">
+
+                            <h1 class="subTitulo">Principais <span>Implementações</span></h1>
+                            <div class="slash"></div>
+
+                            <div id="container-quadros"> <!-- Container com os quadros dos projetos -->
+                                <div class="quadro quadro1">
+
+                                    <h2>
+                                        Sistema de Controle de Acesso
+                                    </h2>
+
+                                    <div id="projeto1" class="infoProjeto">
+                                        <p>
+                                            Solução completa para gestão e controle de acesso com tecnologia
+                                            inteligente.
+                                        </p>
+                                        <img class="imgQuadro" src="public/img/cartaoAcesso.svg" alt="Imagem Grupo">
+                                        <!-- Imagem do projeto -->
+                                    </div>
+
+                                </div>
+
+                                <!-- QUADRO 2 -->
+                                <div class="quadro quadro2">
+
+                                    <h2>
+                                        Previsão de Demanda Alimentar
+                                    </h2>
+
+                                    <div id="projeto2" class="infoProjeto"> <!-- Informações do projeto -->
+
+                                        <p>
+                                            Sistema inteligente que prevê a demanda de refeições e reduz desperdicios.
+                                        </p>
+                                        <img class="imgQuadro" src="public/img/tablet.svg" alt="Imagem Grupo">
+                                    </div>
+
+                                </div>
+
+                                <!-- QUADRO 3 -->
+                                <div class="quadro quadro3">
+
+                                    <h2>
+                                        Dashboard em Tempo Real
+                                    </h2>
+
+                                    <div id="projeto3" class="infoProjeto">
+
+                                        <p>
+                                            Dashboard interativos para acompanhamento e tomada de decisão em tempo real.
+                                        </p>
+                                        <img class="imgQuadro" src="public/img/dashboardSistema.svg" alt="Imagem Grupo">
+                                    </div>
+
+                                </div>
+
+                                <!-- QUADRO 4 -->
+                                <div class="quadro quadro4">
+
+                                    <h2>
+                                        Gestão de Refeitórios
+                                    </h2>
+
+                                    <div id="projeto4" class="infoProjeto">
+
+                                        <p>
+                                            Plataforma integrada para otimizar a gestão de refeitórios institucionais.
+                                        </p>
+                                        <img class="imgQuadro" src="public/img/cozinha.svg" alt="Imagem Grupo">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                </section>
 
                 <div class="circulo"></div>
                 <div class="linha-diagonal"></div> <!-- Forma decorativa circular -->
@@ -292,7 +296,7 @@
 
                             <div class="equipe-foto-central">
                                 <div class="equipe-foto-placeholder">
-                                    
+
                                 </div>
                             </div>
 
@@ -369,25 +373,59 @@
 
             </nav>
 
-            <footer id="rodape"> <!-- Rodapé -->
-                <div id="divirodape">
-                    <h1 id="textRodape">FALE COM A&nbsp;<span id="fluxeText">FLUXE</span></h1>
-                    <h3>Vamos transformar sua ideia em realidade!</h3>
-                    <h3>Entre em contato conosco e descubra como podemos ajudar o seu negócio</h3>
-                </div>
-                <ul id="rodapeUl"> <!-- Lista de contatos -->
-                    <li><i class="bi bi-envelope icone"></i>contato@fluxe.com.br</li>
-                    <li><i class="bi bi-telephone-fill icone"></i>(19) 99999-9999</li>
-                    <li><i class="bi bi-geo-alt-fill icone"></i>Mococa - SP, Brasil</li>
-                    <li><i class="bi bi-globe icone"></i>www.fluxe.com.br</li>
+            <section id="contato">
+                <!-- Rodapé -->
+                <footer class="contatoGrid">
 
-            </footer>
+                    <div class="contatoTexto">
+                        <div class="miniTitulo">
+                            <div class="miniSlash"></div>
+                            <h5>Contato</h5>
+                        </div>
+                        <h1>Vamos <span>conversar</span> sobre a sua operação.</h1>
+                        <p>Conte um pouco sobre a sua instituição e o time comercial retorna com os próximos passos.</p>
 
+                        <ul class="contatoInfo">
+                            <li><i class="bi bi-envelope"></i> fluxeteam@gmail.com</li>
+                            <li><i class="bi bi-telephone"></i> (19) 99482-0921 </li>
+                            <li><i class="bi bi-geo-alt"></i> Mococa, SP</li>
+                        </ul>
+
+                        <a class="ctaOutline" href="#" aria-label="Falar no WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                            <span>Falar no WhatsApp</span>
+                        </a>
+                    </div>
+
+                    <form class="formCard" method="POST" action="">
+                        <!-- Ajuste o "action" para o endpoint PHP que vai receber esse formulário -->
+                        <div class="formGroup">
+                            <label for="nomeContato">Nome</label>
+                            <input type="text" id="nomeContato" name="nome" placeholder="Seu nome" required>
+                        </div>
+
+                        <div class="formGroup">
+                            <label for="emailContato">E-mail</label>
+                            <input type="email" id="emailContato" name="email" placeholder="seuemail@empresa.com"
+                                required>
+                        </div>
+
+                        <div class="formGroup">
+                            <label for="mensagemContato">Mensagem</label>
+                            <textarea id="mensagemContato" name="mensagem" rows="4"
+                                placeholder="Conte um pouco sobre a sua instituição"></textarea>
+                        </div>
+
+                        <button class="formSubmit" type="submit">Enviar mensagem</button>
+                    </form>
+
+                </footer>
+            </section>
         </div>
     </div>
 
     <div id="page-transition-overlay">
-        <span class="page-transition-text">CARREGANDO...    </span>
+        <span class="page-transition-text">CARREGANDO... </span>
     </div>
     <script src="public/js/script.js"></script>
 </body>

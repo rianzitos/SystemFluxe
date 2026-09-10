@@ -24,6 +24,9 @@
     background: var(--amarelo);
 }
 
+
+/* estilização visual e a estrutura de uma linha de cartões de resumo dashboard */
+
 /* ===================== BUSCA ===================== */
 
 .busca-pessoas {
@@ -59,6 +62,8 @@
     color: var(--texto-muted);
 }
 
+
+/* a barra de pesquisa moderna e limpa para busca de pessoas, estruturada em uma única linha */
 /* ===================== GRUPOS DE PESSOAS ===================== */
 
 .grupo-pessoas {
@@ -100,6 +105,8 @@
     border-radius: 999px;
     white-space: nowrap;
 }
+
+/* cabeçalho de um grupo de listagem de pessoas (como uma divisão por setores, equipes ou status), incluindo um título com ícone e uma etiqueta (badge) de contagem. */
 
 /* ===================== LISTA DE PESSOAS ===================== */
 
@@ -193,6 +200,8 @@
     color: var(--texto-muted);
 }
 
+
+/* stilizando a lista e os cartões individuais de cada pessoa  */
 /* ===================== RESPONSIVO ===================== */
 
 @media (max-width: 1100px) {
@@ -210,3 +219,5 @@
         max-width: 160px;
     }
 }
+
+/* interface se adapte corretamente a telas menores, como tablets e celulares. */

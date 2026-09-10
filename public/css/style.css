@@ -2,6 +2,21 @@
    RESET E CONFIGURAÇÕES GERAIS
 ================================================== */
 
+:root {
+    --preto: #171717;
+    --grafite: #232323;
+    --amarelo: #FFC400;
+    --amarelo-secundario: #F4B400;
+    --amarelo-hover: #FFC933;
+    --branco: #FFFFFF;
+    --cinza-claro: #F3F3F3;
+    --cinza-medio: #A1A1A1;
+
+    --raio-padrao: 10px;
+    --sombra-padrao: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    --header-offset: 110px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -557,53 +572,160 @@ input:checked+label .descricao * {
    RODAPÉ
 ================================================== */
 
-#rodape {
+/* CONTATO RODAPÉ */
+#contato {
+    background-color: var(--grafite);
+    padding: 6vw 0;
+}
+
+.contatoGrid {
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
     display: flex;
+    flex-direction: row;
+    align-items: flex-start;
     justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background-color: #222;
-    color: #F5F5F5;
-    flex-wrap: wrap;
-    height: 22vh;
-    /* ajuda no responsivo */
+    gap: 4rem;
 }
 
-#divirodape {
-    width: 40%;
-    text-align: center;
-}
-
-#rodapeUl {
-    width: 20%;
-    list-style: none;
-    padding: 0;
-}
-
-#rodapeUl li {
-    list-style: none;
-    margin-bottom: 3%;
-}
-
-#textRodape {
+.contatoTexto {
+    width: 44%;
     display: flex;
-    justify-content: center;
-    font-size: 150%;
-    color: #F5F5F5;
+    flex-direction: column;
+    gap: 1.1rem;
 }
 
-#fluxeText {
-    color: #FFC400;
+.contatoTexto .miniTitulo h5 {
+    color: var(--branco);
 }
 
-.icone {
-    color: #FFC400;
-    margin-right: 2%;
+.contatoTexto h1 {
+    font-size: 2.6rem;
+    line-height: 1.15;
+    color: var(--branco);
 }
 
-h1,
-h3 {
-    margin: 5px 0;
+.contatoTexto h1 span {
+    color: var(--amarelo);
+}
+
+.contatoTexto>p {
+    font-size: 1.05rem;
+    color: var(--cinza-medio);
+    max-width: 46ch;
+}
+
+.contatoInfo {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.contatoInfo li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--branco);
+    font-size: 0.98rem;
+}
+
+.contatoInfo i {
+    color: var(--amarelo-secundario);
+    font-size: 1.15rem;
+}
+
+/* Botão de contorno reutilizado no Contato e no Footer */
+.ctaOutline {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--raio-padrao);
+    background-color: transparent;
+    border: 1.5px solid var(--amarelo-secundario);
+    color: var(--branco);
+    text-decoration: none;
+    font-weight: bold;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    transition: 0.3s ease;
+}
+
+.ctaOutline i {
+    font-size: 1.4rem;
+    color: var(--amarelo-secundario);
+    transition: 0.3s ease;
+}
+
+.ctaOutline:hover {
+    background-color: #25D366;
+    border-color: #25D366;
+}
+
+.ctaOutline:hover i {
+    color: var(--branco);
+}
+
+.formCard {
+    width: 48%;
+    background-color: var(--cinza-claro);
+    border-radius: var(--raio-padrao);
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.3rem;
+    box-shadow: var(--sombra-padrao);
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.formGroup label {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--preto);
+}
+
+.formGroup input,
+.formGroup textarea {
+    font-family: inherit;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    background-color: var(--branco);
+    color: var(--preto);
+    resize: vertical;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus {
+    outline: 2px solid var(--amarelo-secundario);
+    outline-offset: 1px;
+}
+
+.formSubmit {
+    margin-top: 0.3rem;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: var(--raio-padrao);
+    background-color: var(--amarelo);
+    color: var(--preto);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.formSubmit:hover {
+    background-color: var(--amarelo-hover);
 }
 
 /* ==================================================
@@ -840,6 +962,8 @@ h3 {
     border-radius: 2px;
 }
 
+
+
 .membro-desc {
     font-size: 0.82rem;
     color: #555;
@@ -905,6 +1029,10 @@ h3 {
 
 .equipe-banner strong {
     color: #FFC400;
+}
+
+#divirodape {
+    color: white;
 }
 
 /* ==================================================
