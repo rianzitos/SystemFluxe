@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="https://fluxeteam.com.br/public/img/logotipo.svg" width="300" align="middle" alt="Logo Fluxe" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://fluxeteam.com.br/public/img/logo_sicapda.png" width="300" align="middle" alt="Logo SICAPDA" />
+</p>
+
+---
+
 # SICAPDA
 
 **Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar**
