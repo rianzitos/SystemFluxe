@@ -350,16 +350,18 @@ body {
     font-size: larger;
     transition: 0.5s;
     cursor: pointer;
-}
-
-.botao a {
+    text-align: center;
+    padding: 1%;
     text-decoration: none;
-    color: white;
+    margin-top: 3vh;
+    position: relative !important;
+    display: inline-block !important;
+    transition: 0.5s ease !important;
 }
 
 .botao:hover {
-    transform: scale(1.1);
-    transition: 0.5s;
+    transform: scale(1.1) !important;
+    transition: 0.5s ease !important;
 }
 
 /* ==================================================
@@ -485,28 +487,38 @@ input:checked+label .descricao * {
 ================================================== */
 
 #butProject {
-    padding: 1.5%;
+    padding: 3%;
     border: none;
     background-color: #FFC400;
     font-weight: bold;
-    width: 60%;
+    width: 70%;
+    text-align: center;
     font-size: 100%;
     cursor: pointer;
-    transition: 0.5s;
+    transition: 0.5s !important;
     font-size: larger;
-    margin-top: 10%;
+    margin-top: 2vh;
     margin-left: 7.5%;
+    text-decoration: none;
+    color: #000;
+    display: inline-block !important;
+    position: relative !important;
 }
 
 #butProject:hover {
-    /* Aumenta o botão em 10% */
-    transform: scale(1.1);
-    transition: 0.5s;
+    transform: scale(1.1) !important;
+    transition: 0.5s ease !important;
 }
 
-#butProject a {
-    text-decoration: none;
-    color: #000;
+#butProject {
+    display: inline-block !important;
+    position: relative !important;
+    transform: scale(1) !important;
+    transition: transform 0.5s ease !important;
+}
+
+#butProject:hover {
+    transform: scale(1.1) !important;
 }
 
 #container-quadros {
@@ -670,6 +682,20 @@ input:checked+label .descricao * {
     color: var(--branco);
 }
 
+.miniTitulo h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--preto);
+    margin-top: 1vh;
+}
+
+.miniSlash {
+    background-color: var(--amarelo);
+    width: 3.8rem;
+    height: 0.3rem;
+    flex-shrink: 0;
+}
+
 .formCard {
     width: 48%;
     background-color: var(--cinza-claro);
@@ -693,8 +719,9 @@ input:checked+label .descricao * {
     color: var(--preto);
 }
 
-.formGroup input,
-.formGroup textarea {
+.inputsForm,
+#mensagemContato {
+    display: block;
     font-family: inherit;
     font-size: 0.95rem;
     padding: 0.75rem 1rem;
@@ -996,7 +1023,7 @@ input:checked+label .descricao * {
 }
 
 .equipe-foto-placeholder {
-    background: url('/img/equipe.svg');
+    background: url('/public/img/equipe.svg');
     background-size: cover;
     background-position-x: 30%;
 }
@@ -1332,7 +1359,46 @@ input:checked+label .descricao * {
         flex-direction: column;
         align-items: center;
     }
+
+    
+    .containerInfo {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .beneficiosGrid,
+    .contatoGrid {
+        flex-wrap: wrap;
+    }
+
+    .beneficiosTexto,
+    .spotlightCard,
+    .contatoTexto,
+    .formCard {
+        width: 100%;
+    }
+        .planosRow {
+        flex-wrap: wrap;
+    }
+
+    .planoCard {
+        width: 100%;
+        transform: none;
+    }
+
+    .planoDestaque:hover {
+        transform: translateY(-6px);
+    }
+
+    .planosFooter {
+        flex-wrap: wrap;
+    }
+
+    .planoFooterItem {
+        width: 45%;
+    }
 }
+
+
 
 /* --- Tablet retrato / celular grande (≤ 768px) --- */
 @media (max-width: 768px) {
@@ -1415,6 +1481,46 @@ input:checked+label .descricao * {
     #divirodape,
     #rodapeUl {
         width: 100%;
+    }
+
+    
+    .beneficiosTexto,
+    .contatoTexto {
+        align-items: center;
+        text-align: center;
+    }
+
+    .beneficiosTexto>p,
+    .contatoTexto>p {
+        max-width: none;
+    }
+
+    .checklist li {
+        text-align: left;
+    }
+
+    .contatoInfo {
+        align-items: center;
+    }
+
+    .ctaOutline {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .footerTop {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .footerBrand {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .containerInfo {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 }
 
@@ -1526,6 +1632,24 @@ input:checked+label .descricao * {
 
     .equipe-canto {
         display: none;
+    }
+
+    .miniTitulo h5 {
+        font-size: 1rem;
+    }
+
+    .sobreSistema h1,
+    .beneficiosTexto h1,
+    .contatoTexto h1 {
+        font-size: 1.8rem;
+    }
+
+    .footerBrand h3 {
+        font-size: 1.05rem;
+    }
+
+    .formCard {
+        padding: 1.5rem;
     }
 }
 
