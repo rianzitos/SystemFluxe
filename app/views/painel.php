@@ -113,6 +113,7 @@ $notificacoesNaoLidas = 2;
 
 $nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';
+$fotoPerfil = $_SESSION['usuario_foto'] ?? null;
 
 // Função pequena só pra deixar o HTML dos ícones mais limpo lá embaixo.
 function icone(string $nome): string
@@ -148,8 +149,8 @@ function icone(string $nome): string
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="../../public/css/painel.css">
-    <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/x-icon">
+    <link rel="stylesheet" href="/css/painel.css">
+    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
 
@@ -179,18 +180,20 @@ function icone(string $nome): string
             </div>
 
             <div class="sidebar-usuario">
-                <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
+                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
+                    <div class="avatar avatar-foto">
+                        <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
+                            alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">
+                    </div>
+                <?php else: ?>
+                    <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
+                <?php endif; ?>
                 <div class="sidebar-usuario-info">
                     <strong><?= htmlspecialchars($nomeUsuario) ?></strong>
                     <span><?= htmlspecialchars($perfilUsuario) ?> <i class="ponto-online"></i></span>
                 </div>
                 <a href="/logout" class="sair" title="Sair">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <path d="M16 17l5-5-5-5" />
-                        <path d="M21 12H9" />
-                    </svg>
+                    <i class="icone bi bi-box-arrow-right"></i>
                 </a>
             </div>
         </aside>
@@ -318,8 +321,8 @@ function icone(string $nome): string
             distribuicao: <?= json_encode($graficoDistribuicao, JSON_UNESCAPED_UNICODE) ?>
         };
     </script>
-    <script src="../../public/js/chart.umd.min.js"></script>
-    <script src="../../public/js/painel.js"></script>
+    <script src="/js/chart.umd.min.js"></script>
+    <script src="/js/painel.js"></script>
 </body>
 
 </html>

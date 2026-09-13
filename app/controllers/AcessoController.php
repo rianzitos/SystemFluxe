@@ -1,15 +1,18 @@
 <?php
 
-class AcessoController {
+class AcessoController
+{
     private Usuario $usuario;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->usuario = new Usuario();
     }
 
     // ─── LOGIN ────────────────────────────────────────────────────────────────
 
-    public function exibirLogin(): void {
+    public function exibirLogin(): void
+    {
         if (!empty($_SESSION['usuario_id'])) {
             $this->redirecionar('/painel');
         }
@@ -17,7 +20,8 @@ class AcessoController {
         require_once __DIR__ . '/../../app/views/login.php';
     }
 
-    public function processarLogin(): void {
+    public function processarLogin(): void
+    {
         $email = trim($_POST['email'] ?? '');
         $senha = $_POST['senha'] ?? '';
 
@@ -35,17 +39,19 @@ class AcessoController {
 
         session_regenerate_id(true);
 
-        $_SESSION['usuario_id']     = $usuario['id'];
-        $_SESSION['usuario_nome']   = $usuario['nome'];
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['usuario_nome'] = $usuario['nome'];
         $_SESSION['usuario_perfil'] = $usuario['perfil'];
-        $_SESSION['empresa_id']     = $usuario['empresa_id'];
+        $_SESSION['empresa_id'] = $usuario['empresa_id'];
+        $_SESSION['usuario_foto'] = $usuario['foto'] ?? null;
 
         $this->redirecionar('/painel');
     }
 
     // ─── CADASTRO ─────────────────────────────────────────────────────────────
 
-    public function exibirCadastro(): void {
+    public function exibirCadastro(): void
+    {
         if (!empty($_SESSION['usuario_id'])) {
             $this->redirecionar('/painel');
         }
@@ -58,7 +64,8 @@ class AcessoController {
      * Responde SEMPRE em JSON — quem chama é o próprio cadastro.php via fetch(),
      * então não há redirect nem sessão de flash aqui.
      */
-    public function processarCadastro(): void {
+    public function processarCadastro(): void
+    {
         $resultado = $this->salvarCadastro($_POST, $_FILES);
 
         if (!headers_sent()) {
@@ -72,72 +79,73 @@ class AcessoController {
      * Retorna sempre um array no formato:
      *   ['sucesso' => bool, 'mensagem' => string|null]
      */
-    private function salvarCadastro(array $post, array $files): array {
+    private function salvarCadastro(array $post, array $files): array
+    {
         // ─── Passo 1: Administrador ───
-        $admNome      = trim($post['admNome'] ?? '');
-        $admCpf       = trim($post['admCpf'] ?? '');
-        $admTelefone  = trim($post['admTelefone'] ?? '');
-        $admEmail     = trim($post['admEmail'] ?? '');
-        $admCargo     = trim($post['admCargo'] ?? '');
+        $admNome = trim($post['admNome'] ?? '');
+        $admCpf = trim($post['admCpf'] ?? '');
+        $admTelefone = trim($post['admTelefone'] ?? '');
+        $admEmail = trim($post['admEmail'] ?? '');
+        $admCargo = trim($post['admCargo'] ?? '');
         $admMatricula = trim($post['admMatricula'] ?? '');
 
         // ─── Passo 2: Segurança ───
-        $senha         = $post['senha'] ?? '';
+        $senha = $post['senha'] ?? '';
         $confirmaSenha = $post['confirmaSenha'] ?? '';
         $fa2Habilitado = ($post['fa2'] ?? 'nao') === 'sim';
-        $fa2Metodo     = $post['fa2metodo'] ?? null;
+        $fa2Metodo = $post['fa2metodo'] ?? null;
 
         // ─── Passo 3: Empresa ───
-        $razaoSocial  = trim($post['razaoSocial'] ?? '');
+        $razaoSocial = trim($post['razaoSocial'] ?? '');
         $nomeFantasia = trim($post['nomeFantasia'] ?? '');
-        $cnpj         = trim($post['cnpj'] ?? '');
+        $cnpj = trim($post['cnpj'] ?? '');
         $inscEstadual = trim($post['inscEstadual'] ?? '');
-        $segmento     = trim($post['segmento'] ?? '');
-        $qtdColab     = (int) ($post['qtdColab'] ?? 0);
-        $endereco     = trim($post['endereco'] ?? '');
-        $cep          = trim($post['cep'] ?? '');
-        $cidade       = trim($post['cidade'] ?? '');
-        $estado       = trim($post['estado'] ?? '');
-        $telEmpresa   = trim($post['telEmpresa'] ?? '');
-        $siteEmpresa  = trim($post['siteEmpresa'] ?? '');
-        $horarioFunc  = trim($post['horarioFunc'] ?? '');
-        $responsavel  = trim($post['responsavel'] ?? '');
-        $emailInst    = trim($post['emailInst'] ?? '');
+        $segmento = trim($post['segmento'] ?? '');
+        $qtdColab = (int) ($post['qtdColab'] ?? 0);
+        $endereco = trim($post['endereco'] ?? '');
+        $cep = trim($post['cep'] ?? '');
+        $cidade = trim($post['cidade'] ?? '');
+        $estado = trim($post['estado'] ?? '');
+        $telEmpresa = trim($post['telEmpresa'] ?? '');
+        $siteEmpresa = trim($post['siteEmpresa'] ?? '');
+        $horarioFunc = trim($post['horarioFunc'] ?? '');
+        $responsavel = trim($post['responsavel'] ?? '');
+        $emailInst = trim($post['emailInst'] ?? '');
 
         // ─── Passo 4: Configuração ───
-        $recursosAcesso   = $post['recursosAcesso'] ?? [];
+        $recursosAcesso = $post['recursosAcesso'] ?? [];
         $possuiRefeitorio = ($post['refeitorio'] ?? 'nao') === 'sim';
-        $mealCafe         = (int) ($post['mealCafe'] ?? 0);
-        $mealAlmoco       = (int) ($post['mealAlmoco'] ?? 0);
-        $mealJantar       = (int) ($post['mealJantar'] ?? 0);
-        $mealCeia         = (int) ($post['mealCeia'] ?? 0);
-        $controleAtual    = trim($post['controleAtual'] ?? 'Não');
-        $integracoes      = $post['integracoes'] ?? [];
+        $mealCafe = (int) ($post['mealCafe'] ?? 0);
+        $mealAlmoco = (int) ($post['mealAlmoco'] ?? 0);
+        $mealJantar = (int) ($post['mealJantar'] ?? 0);
+        $mealCeia = (int) ($post['mealCeia'] ?? 0);
+        $controleAtual = trim($post['controleAtual'] ?? 'Não');
+        $integracoes = $post['integracoes'] ?? [];
 
         // ─── Passo 5: Termos ───
         $aceiteTermos = isset($post['aceiteTermos']);
 
         // ─── Validação dos campos obrigatórios ───
         $obrigatorios = [
-            'Nome do administrador'     => $admNome,
-            'CPF'                       => $admCpf,
-            'Telefone do admin'         => $admTelefone,
-            'E-mail do admin'           => $admEmail,
-            'Cargo'                     => $admCargo,
-            'Senha'                     => $senha,
-            'Confirmação de senha'      => $confirmaSenha,
-            'Razão social'              => $razaoSocial,
-            'Nome fantasia'             => $nomeFantasia,
-            'CNPJ'                      => $cnpj,
-            'Segmento'                  => $segmento,
-            'Endereço'                  => $endereco,
-            'CEP'                       => $cep,
-            'Cidade'                    => $cidade,
-            'Estado'                    => $estado,
-            'Telefone da empresa'       => $telEmpresa,
-            'Horário de funcionamento'  => $horarioFunc,
+            'Nome do administrador' => $admNome,
+            'CPF' => $admCpf,
+            'Telefone do admin' => $admTelefone,
+            'E-mail do admin' => $admEmail,
+            'Cargo' => $admCargo,
+            'Senha' => $senha,
+            'Confirmação de senha' => $confirmaSenha,
+            'Razão social' => $razaoSocial,
+            'Nome fantasia' => $nomeFantasia,
+            'CNPJ' => $cnpj,
+            'Segmento' => $segmento,
+            'Endereço' => $endereco,
+            'CEP' => $cep,
+            'Cidade' => $cidade,
+            'Estado' => $estado,
+            'Telefone da empresa' => $telEmpresa,
+            'Horário de funcionamento' => $horarioFunc,
             'Responsável pelo contrato' => $responsavel,
-            'E-mail institucional'      => $emailInst,
+            'E-mail institucional' => $emailInst,
         ];
 
         foreach ($obrigatorios as $rotulo => $valor) {
@@ -162,9 +170,9 @@ class AcessoController {
             return ['sucesso' => false, 'mensagem' => 'As senhas não conferem.'];
         }
 
-        $cpfLimpo  = preg_replace('/\D/', '', $admCpf);
+        $cpfLimpo = preg_replace('/\D/', '', $admCpf);
         $cnpjLimpo = preg_replace('/\D/', '', $cnpj);
-        $cepLimpo  = preg_replace('/\D/', '', $cep);
+        $cepLimpo = preg_replace('/\D/', '', $cep);
 
         if (strlen($cpfLimpo) !== 11) {
             return ['sucesso' => false, 'mensagem' => 'CPF inválido.'];
@@ -202,46 +210,46 @@ class AcessoController {
             $db->beginTransaction();
 
             $empresaId = $empresa->criar([
-                'razao_social'             => $razaoSocial,
-                'nome_fantasia'            => $nomeFantasia,
-                'cnpj'                     => $cnpjLimpo,
-                'inscricao_estadual'       => $inscEstadual,
-                'segmento'                 => $segmento,
-                'qtd_colaboradores'        => $qtdColab,
-                'endereco'                 => $endereco,
-                'cep'                      => $cepLimpo,
-                'cidade'                   => $cidade,
-                'estado'                   => $estado,
-                'telefone'                 => $telEmpresa,
-                'site'                     => $siteEmpresa,
-                'horario_funcionamento'    => $horarioFunc,
-                'responsavel_contrato'     => $responsavel,
-                'email_institucional'      => $emailInst,
-                'possui_refeitorio'        => $possuiRefeitorio,
+                'razao_social' => $razaoSocial,
+                'nome_fantasia' => $nomeFantasia,
+                'cnpj' => $cnpjLimpo,
+                'inscricao_estadual' => $inscEstadual,
+                'segmento' => $segmento,
+                'qtd_colaboradores' => $qtdColab,
+                'endereco' => $endereco,
+                'cep' => $cepLimpo,
+                'cidade' => $cidade,
+                'estado' => $estado,
+                'telefone' => $telEmpresa,
+                'site' => $siteEmpresa,
+                'horario_funcionamento' => $horarioFunc,
+                'responsavel_contrato' => $responsavel,
+                'email_institucional' => $emailInst,
+                'possui_refeitorio' => $possuiRefeitorio,
                 'controle_atual_refeicoes' => $controleAtual,
-                'recursos_acesso'          => $recursosAcesso,
-                'integracoes'              => $integracoes,
+                'recursos_acesso' => $recursosAcesso,
+                'integracoes' => $integracoes,
             ]);
 
             $this->usuario->criar([
-                'nome'                    => $admNome,
-                'email'                   => $admEmail,
-                'senha'                   => $senha,
-                'cpf'                     => $cpfLimpo,
-                'telefone'                => $admTelefone,
-                'cargo'                   => $admCargo,
-                'matricula'               => $admMatricula,
-                'foto'                    => $fotoPath,
+                'nome' => $admNome,
+                'email' => $admEmail,
+                'senha' => $senha,
+                'cpf' => $cpfLimpo,
+                'telefone' => $admTelefone,
+                'cargo' => $admCargo,
+                'matricula' => $admMatricula,
+                'foto' => $fotoPath,
                 'dois_fatores_habilitado' => $fa2Habilitado,
-                'dois_fatores_metodo'     => $fa2Habilitado ? $fa2Metodo : null,
+                'dois_fatores_metodo' => $fa2Habilitado ? $fa2Metodo : null,
             ], $empresaId, 'admin');
 
             if ($possuiRefeitorio) {
                 (new Refeicao())->salvarMediasIniciais($empresaId, [
-                    'cafe'   => $mealCafe,
+                    'cafe' => $mealCafe,
                     'almoco' => $mealAlmoco,
                     'jantar' => $mealJantar,
-                    'ceia'   => $mealCeia,
+                    'ceia' => $mealCeia,
                 ]);
             }
 
@@ -252,11 +260,11 @@ class AcessoController {
         }
 
         return [
-            'sucesso'  => true,
+            'sucesso' => true,
             'mensagem' => 'Cadastro realizado com sucesso!',
-            'empresa'  => $nomeFantasia ?: $razaoSocial,
-            'admin'    => $admNome,
-            'email'    => $admEmail,
+            'empresa' => $nomeFantasia ?: $razaoSocial,
+            'admin' => $admNome,
+            'email' => $admEmail,
         ];
     }
 
@@ -264,7 +272,8 @@ class AcessoController {
      * Move e valida a foto de perfil enviada. Retorna o caminho relativo salvo
      * ou false em caso de falha.
      */
-    private function salvarFotoPerfil(array $arquivo): string|false {
+    private function salvarFotoPerfil(array $arquivo): string|false
+    {
         $permitidos = ['image/jpeg', 'image/png'];
         $tamanhoMax = 5 * 1024 * 1024; // 5MB
 
@@ -298,7 +307,8 @@ class AcessoController {
 
     // ─── LOGOUT ───────────────────────────────────────────────────────────────
 
-    public function logout(): void {
+    public function logout(): void
+    {
         session_unset();
         session_destroy();
         $this->redirecionar('/login');
@@ -306,12 +316,14 @@ class AcessoController {
 
     // ─── HELPERS ──────────────────────────────────────────────────────────────
 
-    private function redirecionar(string $rota): void {
+    private function redirecionar(string $rota): void
+    {
         header('Location: ' . $rota);
         exit;
     }
 
-    private function voltarComErro(string $pagina, string $mensagem): void {
+    private function voltarComErro(string $pagina, string $mensagem): void
+    {
         $_SESSION['flash_erro'] = $mensagem;
         $this->redirecionar('/' . $pagina);
     }

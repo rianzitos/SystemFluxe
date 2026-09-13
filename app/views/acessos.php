@@ -24,37 +24,37 @@ $paginaAtual = 'acessos';
 // Total Produzido / Total Desperdiçado / Média de Pessoas)
 $cardsResumo = [
     [
-        'chave'    => 'produzido',
-        'label'    => 'Total Produzido',
-        'valor'    => 1602,
-        'sufixo'   => ' kg',
+        'chave' => 'produzido',
+        'label' => 'Total Produzido',
+        'valor' => 1602,
+        'sufixo' => ' kg',
         'variacao' => 12.5,
         'positiva' => true,
-        'periodo'  => 'este mês',
-        'extra'    => 'Média: 53.4 kg/dia',
-        'icone'    => 'bi-graph-up-arrow',
+        'periodo' => 'este mês',
+        'extra' => 'Média: 53.4 kg/dia',
+        'icone' => 'bi-graph-up-arrow',
     ],
     [
-        'chave'    => 'desperdicado',
-        'label'    => 'Total Desperdiçado',
-        'valor'    => 193,
-        'sufixo'   => ' kg',
+        'chave' => 'desperdicado',
+        'label' => 'Total Desperdiçado',
+        'valor' => 193,
+        'sufixo' => ' kg',
         'variacao' => 8.1,
         'positiva' => false,
-        'periodo'  => 'este mês',
-        'extra'    => '12,0% do total',
-        'icone'    => 'bi-graph-down-arrow',
+        'periodo' => 'este mês',
+        'extra' => '12,0% do total',
+        'icone' => 'bi-graph-down-arrow',
     ],
     [
-        'chave'    => 'pessoas',
-        'label'    => 'Média de Pessoas',
-        'valor'    => 198,
-        'sufixo'   => '',
+        'chave' => 'pessoas',
+        'label' => 'Média de Pessoas',
+        'valor' => 198,
+        'sufixo' => '',
         'variacao' => 6.3,
         'positiva' => true,
-        'periodo'  => 'este mês',
-        'extra'    => 'Por dia útil',
-        'icone'    => 'bi-people-fill',
+        'periodo' => 'este mês',
+        'extra' => 'Por dia útil',
+        'icone' => 'bi-people-fill',
     ],
 ];
 
@@ -79,24 +79,24 @@ $graficoDesperdicio = [
 // Insights do mês (mesma ideia dos 4 cards inferiores da referência)
 $insights = [
     [
-        'label'   => 'Dia com maior fluxo',
-        'valor'   => 'Dia 15 - 245 pessoas',
-        'icone'   => 'trend-up',
+        'label' => 'Dia com maior fluxo',
+        'valor' => 'Dia 15 - 245 pessoas',
+        'icone' => 'trend-up',
     ],
     [
-        'label'   => 'Dia com menor desperdício',
-        'valor'   => 'Dia 2 - 2 kg',
-        'icone'   => 'trend-up',
+        'label' => 'Dia com menor desperdício',
+        'valor' => 'Dia 2 - 2 kg',
+        'icone' => 'trend-up',
     ],
     [
-        'label'   => 'Economia possível',
-        'valor'   => '-57,9 kg',
-        'icone'   => 'pulse',
+        'label' => 'Economia possível',
+        'valor' => '-57,9 kg',
+        'icone' => 'pulse',
     ],
     [
-        'label'   => 'Tendência',
-        'valor'   => 'Estável',
-        'icone'   => 'trend-up',
+        'label' => 'Tendência',
+        'valor' => 'Estável',
+        'icone' => 'trend-up',
     ],
 ];
 
@@ -113,29 +113,30 @@ $menu = [
 // Notificações não lidas (só pra alimentar o badge do sininho)
 $notificacoesNaoLidas = 2;
 
-$nomeUsuario   = $_SESSION['usuario_nome'] ?? 'Usuário';
+$nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';
+$fotoPerfil = $_SESSION['usuario_foto'] ?? null;
 
 // Função pequena só pra deixar o HTML dos ícones mais limpo lá embaixo.
 function icone(string $nome): string
 {
     $icones = [
-        'grid'      => '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
-        'link'      => '<path d="M9 12h6M8 7h1a4 4 0 0 1 0 8H8M16 17h-1a4 4 0 0 1 0-8h1"/>',
-        'users'     => '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6M16 8a3 3 0 1 1 0-6M22 20c0-2.7-2-5-5-5.5"/>',
+        'grid' => '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+        'link' => '<path d="M9 12h6M8 7h1a4 4 0 0 1 0 8H8M16 17h-1a4 4 0 0 1 0-8h1"/>',
+        'users' => '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6M16 8a3 3 0 1 1 0-6M22 20c0-2.7-2-5-5-5.5"/>',
         'clipboard' => '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 12l2 2 4-4"/>',
-        'meal'      => '<path d="M6 2v8a2 2 0 0 0 4 0V2M8 10v12M17 2c-1.7 0-3 2.2-3 5s1.3 5 3 5v10"/>',
-        'file'      => '<path d="M7 2h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5"/>',
-        'gear'      => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
-        'bell'      => '<path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
-        'calendar'  => '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-        'chevron'   => '<path d="M6 9l6 6 6-6"/>',
-        'trend-up'  => '<path d="M4 15l5-5 4 4 7-7"/><path d="M15 7h5v5"/>',
+        'meal' => '<path d="M6 2v8a2 2 0 0 0 4 0V2M8 10v12M17 2c-1.7 0-3 2.2-3 5s1.3 5 3 5v10"/>',
+        'file' => '<path d="M7 2h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v5h5"/>',
+        'gear' => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+        'bell' => '<path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
+        'calendar' => '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+        'chevron' => '<path d="M6 9l6 6 6-6"/>',
+        'trend-up' => '<path d="M4 15l5-5 4 4 7-7"/><path d="M15 7h5v5"/>',
         'trend-down' => '<path d="M4 9l5 5 4-4 7 7"/><path d="M15 17h5v-5"/>',
-        'pulse'     => '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
-        'shield'    => '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9.5 12l1.8 1.8L14.5 10"/>',
-        'badge'     => '<circle cx="12" cy="9" r="3.5"/><path d="M6 21c0-3 2.7-5 6-5s6 2 6 5"/>',
-        'door'      => '<rect x="5" y="3" width="12" height="18" rx="1"/><circle cx="14" cy="12" r="1"/>',
+        'pulse' => '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
+        'shield' => '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9.5 12l1.8 1.8L14.5 10"/>',
+        'badge' => '<circle cx="12" cy="9" r="3.5"/><path d="M6 21c0-3 2.7-5 6-5s6 2 6 5"/>',
+        'door' => '<rect x="5" y="3" width="12" height="18" rx="1"/><circle cx="14" cy="12" r="1"/>',
     ];
     return $icones[$nome] ?? '';
 }
@@ -148,10 +149,12 @@ function icone(string $nome): string
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acessos · SICAPDA</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../../public/css/painel.css">
-    <link rel="stylesheet" href="../../public/css/acessos.css">
-    <link rel="shortcut icon" href="../../public/img/logo_fluxe.png" type="image/x-icon">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/painel.css">
+    <link rel="stylesheet" href="/css/acessos.css">
+    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
 
@@ -159,7 +162,7 @@ function icone(string $nome): string
 
     <div class="layout">
 
-       <!-- ===================== SIDEBAR ===================== -->
+        <!-- ===================== SIDEBAR ===================== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-topo">
                 <div class="logo">
@@ -181,18 +184,20 @@ function icone(string $nome): string
             </div>
 
             <div class="sidebar-usuario">
-                <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
+                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
+                    <div class="avatar avatar-foto">
+                        <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
+                            alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">
+                    </div>
+                <?php else: ?>
+                    <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
+                <?php endif; ?>
                 <div class="sidebar-usuario-info">
                     <strong><?= htmlspecialchars($nomeUsuario) ?></strong>
                     <span><?= htmlspecialchars($perfilUsuario) ?> <i class="ponto-online"></i></span>
                 </div>
                 <a href="/logout" class="sair" title="Sair">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <path d="M16 17l5-5-5-5" />
-                        <path d="M21 12H9" />
-                    </svg>
+                    <i class="icone bi bi-box-arrow-right"></i>
                 </a>
             </div>
         </aside>
@@ -201,8 +206,8 @@ function icone(string $nome): string
         <div class="conteudo">
 
             <button class="btn-menu-mobile" id="btnMenuMobile" aria-label="Abrir menu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
                     <path d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
@@ -219,15 +224,16 @@ function icone(string $nome): string
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round"><?= icone('calendar') ?></svg>
                         <span id="labelPeriodo">Carregando período…</span>
-                        <svg class="seletor-data-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round"><?= icone('chevron') ?></svg>
+                        <svg class="seletor-data-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round"><?= icone('chevron') ?></svg>
                     </button>
 
                     <button class="sino" id="btnNotificacoes" aria-label="Notificações">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round"><?= icone('bell') ?></svg>
                         <?php if ($notificacoesNaoLidas > 0): ?>
-                            <span class="badge-sino"><?= (int)$notificacoesNaoLidas ?></span>
+                            <span class="badge-sino"><?= (int) $notificacoesNaoLidas ?></span>
                         <?php endif; ?>
                     </button>
                 </div>
@@ -242,12 +248,14 @@ function icone(string $nome): string
                         </div>
                         <p class="card-label"><?= htmlspecialchars($card['label']) ?></p>
                         <p class="card-valor">
-                            <?= number_format($card['valor'], 0, ',', '.') ?><?= htmlspecialchars($card['sufixo'] ?? '') ?>
+                            <?= number_format($card['valor'], 0, ',', '.') ?>     <?= htmlspecialchars($card['sufixo'] ?? '') ?>
                         </p>
                         <p class="card-variacao <?= $card['positiva'] ? 'positiva' : 'negativa' ?>">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round"><?= icone($card['positiva'] ? 'trend-up' : 'trend-down') ?></svg>
-                            <?= number_format($card['variacao'], 1, ',', '.') ?>% <span><?= htmlspecialchars($card['periodo']) ?></span>
+                                stroke-linecap="round"
+                                stroke-linejoin="round"><?= icone($card['positiva'] ? 'trend-up' : 'trend-down') ?></svg>
+                            <?= number_format($card['variacao'], 1, ',', '.') ?>%
+                            <span><?= htmlspecialchars($card['periodo']) ?></span>
                         </p>
                         <p class="card-extra"><?= htmlspecialchars($card['extra']) ?></p>
                     </div>
@@ -309,8 +317,8 @@ function icone(string $nome): string
             desperdicio: <?= json_encode($graficoDesperdicio, JSON_UNESCAPED_UNICODE) ?>
         };
     </script>
-    <script src="../../public/js/chart.umd.min.js"></script>
-    <script src="../../public/js/acessos.js"></script>
+    <script src="/js/chart.umd.min.js"></script>
+    <script src="/js/acessos.js"></script>
 </body>
 
 </html>

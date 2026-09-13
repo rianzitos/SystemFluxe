@@ -996,7 +996,7 @@ input:checked+label .descricao * {
 }
 
 .equipe-foto-placeholder {
-    background: url('/public/img/equipe.svg');
+    background: url('/img/equipe.svg');
     background-size: cover;
     background-position-x: 30%;
 }

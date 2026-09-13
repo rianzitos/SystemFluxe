@@ -12,7 +12,7 @@ class Usuario {
      */
     public function buscarPorEmail(string $email): array|false {
         $stmt = $this->db->prepare(
-            'SELECT id, nome, email, senha, perfil, empresa_id FROM usuarios WHERE email = ? LIMIT 1'
+            'SELECT id, nome, email, senha, perfil, empresa_id, foto FROM usuarios WHERE email = ? LIMIT 1'
         );
         $stmt->execute([$email]);
         return $stmt->fetch();
