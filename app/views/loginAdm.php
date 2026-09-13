@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificação de Administrador — Controle de Acesso</title>
-    <link rel="stylesheet" href="/css/styleLogin.css">
+    <link rel="stylesheet" href="public/css/styleLogin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
+    <link rel="shortcut icon" href="public/logo_fluxe.png" type="image/png">
 
     <!-- Estilo exclusivo desta página: apenas o aviso informativo do card.
          Não altera nada do styleLogin.css, para não afetar a tela de login. -->
@@ -39,7 +39,7 @@
 <body class="fundoAdm">
 
     <header class="headerLogin">
-        <img id="logotipo" src="/img/logotipo.svg" alt="Logotipo da empresa">
+        <img id="logotipo" src="public/logotipo.svg" alt="Logotipo da empresa">
 
         <a href="/">
             <button class="butHeader">
@@ -53,12 +53,12 @@
 
     <!-- LINHA DE CIRCUITO -->
     <div class="circuit-line">
-        <img src="/img/linhaCircuito.png" alt="Linha de circuito amarelo">
+        <img src="public/linhaCircuito.png" alt="Linha de circuito amarelo">
     </div>
 
     <!-- IMAGEM DO CIRCUITO -->
     <div class="circuit-decoration">
-        <img src="/img/circuito.png" alt="">
+        <img src="public/circuito.png" alt="">
     </div>
 
     <div class="layout-principal">
@@ -178,7 +178,7 @@
 
     <!-- CÍRCULO DECORATIVO (inferior direito) -->
     <div class="circle-decoration">
-        <img src="/img/circuloAmarelo.png" alt="">
+        <img src="public/circuloAmarelo.png" alt="">
     </div>
 
     <!-- PADRÃO DE PONTOS -->
@@ -187,7 +187,7 @@
     <!-- PADRÃO DE PONTOS AMARELO -->
     <div class="dots-decoration-amarelo"></div>
 
-    <script src="/js/scriptLogin.js"></script>
+    <script src="public/js/scriptLogin.js"></script>
 </body>
 
 </html>
