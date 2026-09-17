@@ -24,9 +24,9 @@ unset($_SESSION['flash_erro']);
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro — Controle de Acesso</title>
-  <link rel="stylesheet" href="public/css/styleCadastro.css">
+  <link rel="stylesheet" href="/css/styleCadastro.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-  <link rel="shortcut icon" href="public/img/logo_fluxe.png" type="image/png">
+  <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
 </head>
 <!-- logo fluxe, link de cadastro, icone -->
 <body>
@@ -35,10 +35,10 @@ unset($_SESSION['flash_erro']);
     <!-- ===================== LEFT SIDE ===================== -->
     <div class="side">
       <div class="deco-circle-bl"></div>
-      <div class="cubos"><img src="public/img/cubos_cadastro.png" alt="Cubos amarelos transparentes"></div>
+      <div class="cubos"><img src="/img/cubos_cadastro.png" alt="Cubos amarelos transparentes"></div>
       <div class="side-content">
         <div class="logo">
-          <img src="public/img/logotipo.svg" alt="Logo da Empresa">
+          <img src="/img/logotipo.svg" alt="Logo da Empresa">
         </div>
 <!-- barra lateral de cadastro -->
 
@@ -703,5 +703,5 @@ unset($_SESSION['flash_erro']);
 
   </div>
 
-  <script src="public/js/scriptCadastro.js"></script>
+  <script src="/js/scriptCadastro.js"></script>
 </body></html>

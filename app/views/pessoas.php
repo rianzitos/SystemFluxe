@@ -147,9 +147,9 @@ function icone(string $nome): string
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/painel.css">
-    <link rel="stylesheet" href="public/css/pessoas.css">
-    <link rel="shortcut icon" href="public/img/logo_fluxe.png" type="image/x-icon">
+    <link rel="stylesheet" href="/css/painel.css">
+    <link rel="stylesheet" href="/css/pessoas.css">
+    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
 
@@ -179,7 +179,7 @@ function icone(string $nome): string
             </div>
 
             <div class="sidebar-usuario">
-                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
+                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../..//' . $fotoPerfil)): ?>
                     <div class="avatar avatar-foto">
                         <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
                             alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">
@@ -287,7 +287,7 @@ function icone(string $nome): string
         </div>
     </div>
 
-    <script src="public/js/pessoas.js"></script>
+    <script src="/js/pessoas.js"></script>
 </body>
 
 </html>

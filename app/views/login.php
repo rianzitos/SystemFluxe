@@ -5,25 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — Controle de Acesso</title>
-    <link rel="stylesheet" href="public/css/styleLogin.css">
+    <link rel="stylesheet" href="/css/styleLogin.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="shortcut icon" href="public/img/logo_fluxe.png" type="image/png">
+    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
 </head>
 <!-- liga com outras paginas e mostra nosso icone -->
 
 <body class="fundo">
 
     <div id="loading-screen">
-        <div class="logo"><img class="logoImg" src="public/img/AnimacaoFluxe2.gif" alt="Animação da Logo"></div>
+        <div class="logo"><img class="logoImg" src="/img/AnimacaoFluxe2.gif" alt="Animação da Logo"></div>
         <!-- alt="Animação da Logo": Texto de acessibilidade que descreve a imagem para leitores de tela ou substitui o elemento caso o arquivo não carregue. -->
         <p class="loading-text">CARREGANDO...</p>
         <!-- mensagem pro usuario que vai entrar ao site -->
     </div>
 
     <header class="headerLogin">
-        <img id="logotipo" src="public/img/logotipo.svg" alt="Logotipo da empresa">
+        <img id="logotipo" src="/img/logotipo.svg" alt="Logotipo da empresa">
 
         <a href="/">
             <button class="butHeader">
@@ -37,12 +37,12 @@
 
     <!-- LINHA DE CIRCUITO -->
     <div class="circuit-line">
-        <img src="public/img/linhaCircuito.png" alt="Linha de circuito amarelo">
+        <img src="/img/linhaCircuito.png" alt="Linha de circuito amarelo">
     </div>
 
     <!-- IMAGEM DO CIRCUITO -->
     <div class="circuit-decoration">
-        <img src="public/img/circuito.png" alt="">
+        <img src="/img/circuito.png" alt="">
     </div>
 
     <div class="layout-principal">
@@ -182,7 +182,7 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
 
     <!-- CÍRCULO DECORATIVO (inferior direito) -->
     <div class="circle-decoration">
-        <img src="public/img/circuloAmarelo.png" alt="">
+        <img src="/img/circuloAmarelo.png" alt="">
     </div>
 
     <!-- PADRÃO DE PONTOS -->
@@ -192,7 +192,7 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
     <!-- PADRÃO DE PONTOS AMARELO -->
     <div class="dots-decoration-amarelo"></div>
 
-    <script src="public/js/scriptLogin.js"></script>
+    <script src="/js/scriptLogin.js"></script>
 </body>
 
 </html>
