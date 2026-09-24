@@ -12,7 +12,8 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 // PARA RODAR O PROJETO, EXECUTE O COMANDO ABAIXO DENTRO DA PASTA DO PROJETO:
 
 // php.exe -S localhost:8000 -t public app/routes/web.php
-
+// OU
+// & "C:\xampp\php\php.exe" -S localhost:8000 -t public app/routes/web.php
 // por este roteador, inclusive CSS, JS e imagens. O "DocumentRoot" real em
 // produção é a pasta public/, então é lá que verificamos se o caminho pedido
 // existe de fato — se existir, devolvemos `false` para o servidor embutido
