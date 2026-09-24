@@ -24,6 +24,24 @@
     --sombra: 0 1px 2px rgba(16, 17, 20, 0.04), 0 8px 24px rgba(16, 17, 20, 0.05);
 }
 
+/* Tema escuro — ativado via atributo data-tema="escuro" no <html>.
+   Esse atributo é setado por um script inline no <head> de cada página
+   (lê a preferência salva em localStorage por sicapda_tema em
+   configuracoes.php) e também pela troca de tema em tempo real na
+   própria tela de Configurações. Afeta só as cores do CONTEÚDO — a
+   sidebar já é sempre escura por padrão, então não muda. */
+html[data-tema="escuro"] {
+    --fundo: #121214;
+    --branco: #1B1B1F;
+    --texto: #F4F4F6;
+    --texto-muted: #9A9AA3;
+    --borda: #2C2C31;
+    --amarelo-suave: rgba(255, 193, 7, 0.14);
+    --sucesso-bg: rgba(22, 163, 74, 0.16);
+    --aviso-bg: rgba(217, 119, 6, 0.16);
+    --info-bg: rgba(37, 99, 235, 0.16);
+}
+
 * {
     box-sizing: border-box;
 }
@@ -630,6 +648,38 @@ h2,
 
 .alerta strong {
     color: var(--texto);
+}
+
+/* ===================== AJUSTES DE CONTRASTE NO TEMA ESCURO =====================
+   Alguns elementos usam cores fixas (não as variáveis de tema) porque fazem
+   parte da identidade da marca e não devem mudar — por isso essas correções
+   ficam isoladas aqui em vez de nas variáveis lá em cima. */
+
+/* A linha/ponto "Realizado" do gráfico usa --preto, que é quase invisível
+   sobre o fundo escuro. A bolinha da legenda é resolvida aqui; a linha do
+   gráfico em si (desenhada pelo Chart.js no painel.js) precisa da mesma
+   troca de cor lá no JS — ainda vou te pedir esse arquivo pra ajustar. */
+html[data-tema="escuro"] .ponto-realizado {
+    background: var(--texto);
+}
+
+/* Chip "baixo" da lista de previsão usa um cinza claro fixo (#EEF0F4) —
+   no escuro isso vira texto cinza sobre fundo cinza claro, quase ilegível. */
+html[data-tema="escuro"] .status-baixo {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--texto-muted);
+}
+
+/* Botão de notificação (sino) e o seletor de período: a borda ficava quase
+   invisível contra o novo fundo escuro. */
+html[data-tema="escuro"] .sino,
+html[data-tema="escuro"] .seletor-data,
+html[data-tema="escuro"] .btn-menu-mobile {
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+html[data-tema="escuro"] .badge-sino {
+    border-color: var(--fundo);
 }
 
 /* ===================== RESPONSIVO ===================== */

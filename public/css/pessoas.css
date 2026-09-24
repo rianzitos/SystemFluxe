@@ -202,6 +202,22 @@
 
 
 /* stilizando a lista e os cartões individuais de cada pessoa  */
+
+/* ===================== AJUSTES DE CONTRASTE NO TEMA ESCURO ===================== */
+
+/* O texto do badge ("128 presentes") usa um âmbar escuro fixo (#92660A),
+   pensado pra um fundo amarelo bem claro. No escuro o fundo vira um amarelo
+   translúcido sobre preto, e esse mesmo âmbar escuro quase some. */
+html[data-tema="escuro"] .badge-presentes {
+    color: var(--amarelo);
+}
+
+/* Avatar preto (.avatar-cor-2) some contra o fundo dos itens, que também
+   fica bem escuro no tema escuro — um contorno sutil resolve. */
+html[data-tema="escuro"] .avatar-cor-2 {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
 /* ===================== RESPONSIVO ===================== */
 
 @media (max-width: 1100px) {

@@ -1,0 +1,566 @@
+/* =========================================================
+   CONFIGURAÇÕES — SICAPDA by FLUXE
+   Depende de painel.css (variáveis --preto, --amarelo, --fundo etc.)
+   Carregar DEPOIS de painel.css.
+   ========================================================= */
+
+.config-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 18px;
+    align-items: start;
+}
+
+/* ===================== ABAS VERTICAIS ===================== */
+
+.config-abas {
+    background: var(--branco);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: sticky;
+    top: 28px;
+}
+
+.config-aba {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border: none;
+    background: none;
+    border-radius: var(--raio-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--texto-muted);
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.config-aba i {
+    font-size: 16px;
+    width: 18px;
+    text-align: center;
+}
+
+.config-aba:hover {
+    background: var(--fundo);
+    color: var(--texto);
+}
+
+.config-aba.ativa {
+    background: var(--amarelo-suave);
+    color: #92660A;
+    font-weight: 600;
+}
+
+/* ===================== PAINEL DE CONTEÚDO ===================== */
+
+.config-conteudo {
+    background: var(--branco);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra);
+    padding: 28px 30px;
+    min-height: 420px;
+}
+
+.config-painel {
+    display: none;
+}
+
+.config-painel.ativa {
+    display: block;
+    animation: config-fade 0.15s ease;
+}
+
+@keyframes config-fade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.config-painel h2 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.config-painel-desc {
+    margin: 0 0 24px;
+    font-size: 13.5px;
+    color: var(--texto-muted);
+}
+
+.config-bloco {
+    padding: 22px 0;
+    border-top: 1px solid var(--borda);
+}
+
+.config-bloco:first-of-type {
+    border-top: none;
+    padding-top: 4px;
+}
+
+.config-bloco h3 {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    font-weight: 600;
+}
+
+.config-bloco-desc {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--texto-muted);
+}
+
+/* ===================== PERFIL ===================== */
+
+.config-perfil-topo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 26px;
+    padding-bottom: 26px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.avatar-grande {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+}
+
+.config-perfil-nome {
+    display: block;
+    font-size: 15px;
+}
+
+.config-perfil-email {
+    display: block;
+    font-size: 13px;
+    color: var(--texto-muted);
+    margin: 2px 0 6px;
+}
+
+.link-acao {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amarelo-ativa, #92660A);
+    cursor: pointer;
+}
+
+.link-acao:hover {
+    text-decoration: underline;
+}
+
+/* ===================== FORMULÁRIOS ===================== */
+
+.config-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 20px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.campo label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto-muted);
+}
+
+.campo input,
+.campo select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-sm);
+    background: var(--fundo);
+    color: var(--texto);
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.campo input:focus,
+.campo select:focus {
+    border-color: var(--amarelo);
+    background: var(--branco);
+}
+
+.campo-erro {
+    grid-column: 1 / -1;
+    margin: -8px 0 0;
+    font-size: 12.5px;
+    color: #DC2626;
+}
+
+.config-form-acoes {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+
+.btn-primario {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--amarelo);
+    color: var(--preto);
+    border: none;
+    border-radius: var(--raio-sm);
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease;
+}
+
+.btn-primario:hover {
+    filter: brightness(0.93);
+}
+
+.btn-secundario {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--branco);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-sm);
+    padding: 9px 16px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-secundario:hover {
+    background: var(--fundo);
+}
+
+.btn-texto {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #DC2626;
+    cursor: pointer;
+}
+
+.btn-texto:hover {
+    text-decoration: underline;
+}
+
+.config-btn-adicionar {
+    margin-top: 16px;
+}
+
+/* ===================== APARÊNCIA — TEMA ===================== */
+
+.tema-opcoes {
+    display: flex;
+    gap: 14px;
+}
+
+.tema-opcao {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 2px solid transparent;
+    border-radius: var(--raio-sm);
+    padding: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-muted);
+    cursor: pointer;
+}
+
+.tema-preview {
+    width: 84px;
+    height: 56px;
+    border-radius: 10px;
+    border: 1px solid var(--borda);
+    display: block;
+}
+
+.tema-preview-claro {
+    background: linear-gradient(135deg, #FFFFFF 60%, #F4F5F9 60%);
+}
+
+.tema-preview-escuro {
+    background: linear-gradient(135deg, #26262B 60%, #17171A 60%);
+}
+
+.tema-preview-sistema {
+    background: linear-gradient(135deg, #FFFFFF 50%, #17171A 50%);
+}
+
+.tema-opcao.ativa {
+    border-color: var(--amarelo);
+    color: var(--texto);
+}
+
+/* ===================== TOGGLES / SWITCH ===================== */
+
+.lista-toggles {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--borda);
+}
+
+.item-toggle:last-child {
+    border-bottom: none;
+}
+
+.item-toggle-bloco {
+    border-bottom: none;
+    padding: 4px 0;
+}
+
+.item-toggle strong {
+    display: block;
+    font-size: 14px;
+}
+
+.item-toggle p {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    color: var(--texto-muted);
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-trilho {
+    position: absolute;
+    inset: 0;
+    background: #D1D5DB;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.switch-trilho::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.15s ease;
+}
+
+.switch input:checked+.switch-trilho {
+    background: var(--amarelo);
+}
+
+.switch input:checked+.switch-trilho::before {
+    transform: translateX(18px);
+}
+
+/* ===================== DISPOSITIVOS IOT ===================== */
+
+.lista-dispositivos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-dispositivo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--fundo);
+    border-radius: var(--raio-sm);
+}
+
+.item-dispositivo-status {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.item-dispositivo-status.status-online {
+    background: var(--sucesso);
+    box-shadow: 0 0 0 3px var(--sucesso-bg);
+}
+
+.item-dispositivo-status.status-offline {
+    background: #9CA3AF;
+    box-shadow: 0 0 0 3px #E5E7EB;
+}
+
+.item-dispositivo-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.item-dispositivo-info strong {
+    font-size: 13.5px;
+}
+
+.token-mascarado {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+    color: var(--texto-muted);
+}
+
+.item-dispositivo-meta {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.status-texto {
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.status-texto-online {
+    color: var(--sucesso);
+}
+
+.status-texto-offline {
+    color: #6B7280;
+}
+
+.item-dispositivo-tempo {
+    font-size: 11.5px;
+    color: var(--texto-muted);
+}
+
+/* ===================== SESSÕES ATIVAS ===================== */
+
+.lista-sessoes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-sessao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--fundo);
+    border-radius: var(--raio-sm);
+}
+
+.item-sessao>i {
+    font-size: 18px;
+    color: var(--texto-muted);
+}
+
+.item-sessao-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+}
+
+.item-sessao-info span {
+    color: var(--texto-muted);
+    font-size: 12px;
+}
+
+.tag-atual {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--sucesso);
+    background: var(--sucesso-bg);
+    padding: 2px 8px;
+    border-radius: 999px;
+    vertical-align: middle;
+}
+
+.item-sessao .btn-texto {
+    margin-left: auto;
+}
+
+/* ===================== TEMA ESCURO — ajustes específicos desta página =====================
+   As variáveis de cor do tema escuro (--fundo, --branco, --texto etc.) ficam
+   em painel.css, porque esse arquivo é carregado em todas as páginas. Aqui
+   só os detalhes que são exclusivos da tela de Configurações. */
+
+html[data-tema="escuro"] .config-aba.ativa {
+    color: var(--amarelo);
+}
+
+html[data-tema="escuro"] .campo input,
+html[data-tema="escuro"] .campo select {
+    background: #101012;
+}
+
+/* ===================== RESPONSIVO ===================== */
+
+@media (max-width: 900px) {
+    .config-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .config-abas {
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .config-aba span {
+        white-space: nowrap;
+    }
+
+    .config-form {
+        grid-template-columns: 1fr;
+    }
+}

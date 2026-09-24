@@ -145,6 +145,23 @@ function icone(string $nome): string
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel · SICAPDA</title>
+
+    <!-- Aplica o tema salvo (claro/escuro/sistema) antes do CSS carregar, pra evitar
+         o "flash" da tela clara antes de escurecer. Esse mesmo bloco precisa estar
+         em toda página que usa painel.css (acessos.php, pessoas.php, relatorios.php
+         etc.) — é o que faz a preferência escolhida em Configurações valer aqui também. -->
+    <script>
+        (function () {
+            var tema = localStorage.getItem('sicapda_tema') || 'claro';
+            if (tema === 'sistema') {
+                tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
+            }
+            if (tema === 'escuro') {
+                document.documentElement.setAttribute('data-tema', 'escuro');
+            }
+        })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
@@ -180,7 +197,7 @@ function icone(string $nome): string
             </div>
 
             <div class="sidebar-usuario">
-                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../..//' . $fotoPerfil)): ?>
+                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
                     <div class="avatar avatar-foto">
                         <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
                             alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">

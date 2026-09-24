@@ -83,6 +83,12 @@ if ($uri === '/') {
 // invasores através do AuthMiddleware e só exibe a tela protegida
 // (pessoas.php) se o usuário estiver logado.
 
+} elseif ($uri === '/configuracoes') {
+    AuthMiddleware::autenticado();
+    require_once __DIR__ . '/../views/configuracoes.php';
+//cria a rota de pessoas, seguindo o mesmo padrão das anteriores: bloqueia
+// invasores através do AuthMiddleware e só exibe a tela protegida
+// (pessoas.php) se o usuário estiver logado.
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
 } else {
