@@ -8,105 +8,24 @@ require_once __DIR__ . '/../../config/app.php';
 AuthMiddleware::autenticado();
 
 // -----------------------------------------------------------------------
-// DADOS DA PÁGINA DE PESSOAS
-// -----------------------------------------------------------------------
-// Os dados abaixo são estáticos (mock), no mesmo espírito de painel.php e
-// acessos.php, só para a tela ter o que exibir enquanto o back-end não tem
-// a consulta real (ex: Acesso::buscarPresentesAgora()). Quando estiver
-// pronto, é só substituir os arrays abaixo pelo retorno do Model — a
-// estrutura já está pronta pro HTML consumir sem precisar mudar nada.
+// DADOS DA PÁGINA DE PESSOAS — quem está no local agora, vindo do banco
+// (último registro autorizado de hoje é uma entrada). Veja Acesso::presentesAgora().
 // -----------------------------------------------------------------------
 
 $paginaAtual = 'pessoas';
 
-// Cards de resumo do topo (4 cards: Total + 3 categorias, adaptadas pro
-// contexto de indústria em vez de escola/professores).
-$cardsResumo = [
-    [
-        'chave' => 'total',
-        'label' => 'Total Presente',
-        'valor' => 160,
-        'extra' => 'Colaboradores no local',
-        'icone' => 'bi-people-fill',
-    ],
-    [
-        'chave' => 'operadores',
-        'label' => 'Operadores de Produção',
-        'valor' => 128,
-        'extra' => 'presentes agora',
-        'icone' => 'bi-gear-fill',
-    ],
-    [
-        'chave' => 'supervisores',
-        'label' => 'Supervisores',
-        'valor' => 19,
-        'extra' => 'presentes agora',
-        'icone' => 'bi-person-check-fill',
-    ],
-    [
-        'chave' => 'prestadores',
-        'label' => 'Prestadores de Serviço',
-        'valor' => 13,
-        'extra' => 'presentes agora',
-        'icone' => 'bi-briefcase-fill',
-    ],
-];
+$painel = new Painel(Pagina::empresaId());
+$dadosPessoas = $painel->pessoas();
 
-// Grupos exibidos abaixo da busca, cada um com sua lista de presentes.
-// 'restantes' é só pra não precisar listar os 128 operadores um por um —
-// mostra uma amostra e resume o resto, como um sistema real faria.
-$grupos = [
-    [
-        'chave' => 'operadores',
-        'titulo' => 'Operadores de Produção',
-        'icone' => 'gear',
-        'presentes' => 128,
-        'pessoas' => [
-            ['nome' => 'João Silva', 'funcao' => 'Operador de Produção', 'entrada' => '06:45'],
-            ['nome' => 'Marcos Pereira', 'funcao' => 'Operador de Produção', 'entrada' => '06:50'],
-            ['nome' => 'Juliana Rocha', 'funcao' => 'Operadora de Produção', 'entrada' => '06:52'],
-            ['nome' => 'Carla Mendes', 'funcao' => 'Operadora de Produção', 'entrada' => '07:00'],
-            ['nome' => 'Rafael Souza', 'funcao' => 'Operador de Produção', 'entrada' => '07:05'],
-        ],
-        'restantes' => 123,
-    ],
-    [
-        'chave' => 'supervisores',
-        'titulo' => 'Supervisores',
-        'icone' => 'badge',
-        'presentes' => 19,
-        'pessoas' => [
-            ['nome' => 'Carlos Oliveira', 'funcao' => 'Supervisor de Linha', 'entrada' => '06:30'],
-            ['nome' => 'Ana Costa', 'funcao' => 'Supervisora de Qualidade', 'entrada' => '06:40'],
-            ['nome' => 'Fernando Dias', 'funcao' => 'Supervisor de Turno', 'entrada' => '06:35'],
-        ],
-        'restantes' => 16,
-    ],
-    [
-        'chave' => 'prestadores',
-        'titulo' => 'Prestadores de Serviço',
-        'icone' => 'briefcase',
-        'presentes' => 13,
-        'pessoas' => [
-            ['nome' => 'Pedro Lima', 'funcao' => 'Manutenção Terceirizada', 'entrada' => '07:10'],
-            ['nome' => 'Lucia Ferreira', 'funcao' => 'Limpeza', 'entrada' => '06:20'],
-        ],
-        'restantes' => 11,
-    ],
-];
+$cardsResumo = $dadosPessoas['cardsResumo'];
+$grupos = $dadosPessoas['grupos'];
+$notificacoesNaoLidas = $painel->totalAlertas();
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.
-$menu = [
-    ['chave' => 'painel', 'rota' => '/painel', 'label' => 'Painel', 'icone' => 'bi-pie-chart-fill'],
-    ['chave' => 'acessos', 'rota' => '/acessos', 'label' => 'Análise mensal', 'icone' => 'bi-calendar'],
-    ['chave' => 'pessoas', 'rota' => '/pessoas', 'label' => 'Pessoas', 'icone' => ' bi-people-fill'],
-    ['chave' => 'previsao', 'rota' => '/assistente', 'label' => 'Assistente IA', 'icone' => 'bi-chat-left'],
-    ['chave' => 'relatorios', 'rota' => '/relatorios', 'label' => 'Relatórios', 'icone' => 'bi-clipboard-data'],
-    ['chave' => 'config', 'rota' => '/configuracoes', 'label' => 'Configurações', 'icone' => 'bi-gear-fill'],
-];
+$menu = Pagina::menu();
 
-// Notificações não lidas (só pra alimentar o badge do sininho)
-$notificacoesNaoLidas = 2;
+// Badge do sino: quantidade de alertas ativos (calculados com dados reais)
+$notificacoesNaoLidas = $notificacoesNaoLidas ?? 0;
 
 $nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';

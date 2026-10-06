@@ -128,6 +128,7 @@ unset($_SESSION['flash_erro']);
           </div>
 
           <form id="wizardForm" method="POST" enctype="multipart/form-data" novalidate>
+            <?= CsrfMiddleware::campo() ?>
             <!-- STEP 1 -->
             <div class="step-panel active" data-panel="1">
               <h3>Dados do Administrador</h3>

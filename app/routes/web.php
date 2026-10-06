@@ -90,6 +90,25 @@ if ($uri === '/') {
 //cria a rota de pessoas, seguindo o mesmo padrão das anteriores: bloqueia
 // invasores através do AuthMiddleware e só exibe a tela protegida
 // (pessoas.php) se o usuário estiver logado.
+} elseif ($uri === '/relatorios') {
+    AuthMiddleware::autenticado();
+    (new RelatorioController())->exibir();
+// Relatórios: filtros, indicadores e tabela de registros de acesso.
+
+} elseif ($uri === '/relatorios/exportar') {
+    AuthMiddleware::autenticado();
+    (new RelatorioController())->exportar();
+// Mesmo filtro da tela de relatórios, baixado como CSV.
+
+} elseif ($uri === '/assistente') {
+    AuthMiddleware::autenticado();
+    (new DemandaController())->exibir();
+// Assistente virtual: tela de chat com previsões calculadas em PHP.
+
+} elseif ($uri === '/assistente/perguntar' && $metodo === 'POST') {
+    (new DemandaController())->perguntar();
+// Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).
+
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
 } else {

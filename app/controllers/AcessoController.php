@@ -22,6 +22,11 @@ class AcessoController
 
     public function processarLogin(): void
     {
+        if (!CsrfMiddleware::valido()) {
+            $this->voltarComErro('login', 'Sessão expirada. Tente novamente.');
+            return;
+        }
+
         $email = trim($_POST['email'] ?? '');
         $senha = $_POST['senha'] ?? '';
 
@@ -32,7 +37,12 @@ class AcessoController
 
         $usuario = $this->usuario->buscarPorEmail($email);
 
-        if (!$usuario || !password_verify($senha, $usuario['senha'])) {
+        // Compara com um hash falso quando o e-mail não existe: o tempo de resposta
+        // fica igual e não dá para descobrir quais e-mails estão cadastrados.
+        $hash = $usuario['senha'] ?? '$2y$10$usesomesillystringforeusesomesillystringfore.Ou3n7RQYhXJm';
+        $senhaOk = password_verify($senha, $hash);
+
+        if (!$usuario || !$senhaOk) {
             $this->voltarComErro('login', 'E-mail ou senha inválidos.');
             return;
         }
@@ -66,6 +76,8 @@ class AcessoController
      */
     public function processarCadastro(): void
     {
+        CsrfMiddleware::validar();
+
         $resultado = $this->salvarCadastro($_POST, $_FILES);
 
         if (!headers_sent()) {

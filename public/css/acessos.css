@@ -171,3 +171,30 @@
         grid-template-columns: 1fr;
     }
 }
+/* Seletor de mês (formulário GET com <select>) */
+.seletor-mes {
+    margin: 0;
+}
+
+.seletor-mes select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--texto);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    padding-right: 4px;
+}
+
+.seletor-mes select option {
+    background: var(--branco);
+    color: var(--texto);
+}
+
+.seletor-mes:focus-within {
+    border-color: var(--amarelo);
+    box-shadow: 0 0 0 3px var(--amarelo-suave);
+}

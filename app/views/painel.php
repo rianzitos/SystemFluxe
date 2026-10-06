@@ -8,108 +8,28 @@ require_once __DIR__ . '/../../config/app.php';
 AuthMiddleware::autenticado();
 
 // -----------------------------------------------------------------------
-// DADOS DO PAINEL
-// -----------------------------------------------------------------------
-// Por enquanto os dados abaixo são estáticos (mock) só para a página ter
-// o que exibir enquanto o resto do sistema não está pronto. Quando vocês
-// criarem o Model/Controller do painel, é só substituir cada bloco pela
-// consulta real no banco — a estrutura dos arrays já está pronta para
-// receber esses valores sem precisar mexer no HTML abaixo.
+// DADOS DO PAINEL — vêm do banco (model Painel), filtrados pela empresa do
+// usuário logado. Veja app/models/Painel.php e app/models/Previsao.php.
 // -----------------------------------------------------------------------
 
 $paginaAtual = 'painel';
 
-// Cards de resumo do topo (equivalente aos 4 cards do design de referência)
-$cardsResumo = [
-    [
-        'chave' => 'usuarios',
-        'label' => 'Usuários Ativos',
-        'valor' => 1248,
-        'variacao' => 12.5,
-        'periodo' => 'este mês',
-        'icone' => 'icone bi-person-fill',
-    ],
-    [
-        'chave' => 'acessos',
-        'label' => 'Acessos Realizados',
-        'valor' => 3842,
-        'variacao' => 18.2,
-        'periodo' => 'este mês',
-        'icone' => 'icone bi-door-open-fill',
-    ],
-    [
-        'chave' => 'refeicoes',
-        'label' => 'Refeições Previstas',
-        'valor' => 5736,
-        'variacao' => 9.4,
-        'periodo' => 'este mês',
-        'icone' => 'icone bi-cup-hot-fill',
-    ],
-    [
-        'chave' => 'acuracia',
-        'label' => 'Acurácia da Previsão',
-        'valor' => 87,
-        'sufixo' => '%',
-        'variacao' => 6.7,
-        'periodo' => 'este mês',
-        'icone' => 'icone bi-graph-up-arrow',
-    ],
-];
+$painel = new Painel(Pagina::empresaId());
+$dadosPainel = $painel->painel();
 
-// Gráfico de linha: Previsão de Demanda (Previsto x Realizado)
-$graficoDemanda = [
-    'labels' => ['01/05', '08/05', '15/05', '22/05', '29/05'],
-    'previsto' => [180, 460, 650, 590, 900],
-    'realizado' => [150, 390, 510, 430, 650],
-];
-
-// Gráfico de rosca: Distribuição de Refeições
-$graficoDistribuicao = [
-    'labels' => ['Almoço', 'Jantar', 'Lanche', 'Outros'],
-    'valores' => [45, 30, 15, 10],
-    'cores' => ['#FFC107', '#0D0D0D', '#6B7280', '#D1D5DB'],
-];
-
-// Previsão para as próximas horas (lista lateral)
-$previsaoProximasHoras = [
-    ['hora' => '13:00', 'status' => 'normal', 'pessoas' => 198],
-    ['hora' => '14:00', 'status' => 'normal', 'pessoas' => 156],
-    ['hora' => '15:00', 'status' => 'baixo', 'pessoas' => 89],
-    ['hora' => '16:00', 'status' => 'alto', 'pessoas' => 247],
-];
-
-// Alertas e recomendações
-$alertas = [
-    [
-        'tipo' => 'aviso',
-        'titulo' => 'Desperdício acima da meta',
-        'descricao' => 'Reduzir produção em 5kg amanhã',
-    ],
-    [
-        'tipo' => 'info',
-        'titulo' => 'Pico de fluxo detectado',
-        'descricao' => '12:00 – 12:30 com 247 pessoas',
-    ],
-    [
-        'tipo' => 'sucesso',
-        'titulo' => 'Produção otimizada',
-        'descricao' => 'Economia de 8kg esta semana',
-    ],
-];
+$cardsResumo = $dadosPainel['cardsResumo'];
+$graficoDemanda = $dadosPainel['graficoDemanda'];
+$graficoDistribuicao = $dadosPainel['graficoDistribuicao'];
+$previsaoProximasHoras = $dadosPainel['previsaoProximasHoras'];
+$alertas = $dadosPainel['alertas'];
+$notificacoesNaoLidas = count($alertas);
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.
 // Trocar o "href" pelas rotas reais do seu app/routes/web.php.
-$menu = [
-    ['chave' => 'painel', 'rota' => '/painel', 'label' => 'Painel', 'icone' => 'bi-pie-chart-fill'],
-    ['chave' => 'acessos', 'rota' => '/acessos', 'label' => 'Análise mensal', 'icone' => 'bi-calendar'],
-    ['chave' => 'pessoas', 'rota' => '/pessoas', 'label' => 'Pessoas', 'icone' => ' bi-people-fill'],
-    ['chave' => 'previsao', 'rota' => '/assistente', 'label' => 'Assistente IA', 'icone' => 'bi-chat-left'],
-    ['chave' => 'relatorios', 'rota' => '/relatorios', 'label' => 'Relatórios', 'icone' => 'bi-clipboard-data'],
-    ['chave' => 'config', 'rota' => '/configuracoes', 'label' => 'Configurações', 'icone' => 'bi-gear-fill'],
-];
+$menu = Pagina::menu();
 
-// Notificações não lidas (só pra alimentar o badge do sininho)
-$notificacoesNaoLidas = 2;
+// Badge do sino: quantidade de alertas ativos (calculados com dados reais)
+$notificacoesNaoLidas = $notificacoesNaoLidas ?? 0;
 
 $nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';
@@ -129,6 +49,7 @@ function icone(string $nome): string
         'bell' => '<path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z"/><path d="M10 18a2 2 0 0 0 4 0"/>',
         'calendar' => '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
         'trend-up' => '<path d="M4 15l5-5 4 4 7-7"/><path d="M15 7h5v5"/>',
+        'trend-down' => '<path d="M4 9l5 5 4-4 7 7"/><path d="M15 17h5v-5"/>',
         'chevron' => '<path d="M6 9l6 6 6-6"/>',
         'alert' => '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
         'pulse' => '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
@@ -258,14 +179,19 @@ function icone(string $nome): string
                         </div>
                         <p class="card-label"><?= htmlspecialchars($card['label']) ?></p>
                         <p class="card-valor">
-                            <?= number_format($card['valor'], 0, ',', '.') ?>     <?= htmlspecialchars($card['sufixo'] ?? '') ?>
+                            <?= $card['valor'] === null ? '—' : number_format($card['valor'], 0, ',', '.') . htmlspecialchars($card['sufixo'] ?? '') ?>
                         </p>
-                        <p class="card-variacao positiva">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round"><?= icone('trend-up') ?></svg>
-                            <?= number_format($card['variacao'], 1, ',', '.') ?>%
-                            <span><?= htmlspecialchars($card['periodo']) ?></span>
-                        </p>
+                        <?php if ($card['variacao'] !== null): ?>
+                            <?php $sobe = $card['variacao'] >= 0; ?>
+                            <p class="card-variacao <?= $sobe ? 'positiva' : 'negativa' ?>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round"><?= icone($sobe ? 'trend-up' : 'trend-down') ?></svg>
+                                <?= ($sobe ? '+' : '') . number_format($card['variacao'], 1, ',', '.') ?>%
+                                <span><?= htmlspecialchars($card['periodo']) ?></span>
+                            </p>
+                        <?php else: ?>
+                            <p class="card-variacao"><span>Sem base de comparação</span></p>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </section>
@@ -296,6 +222,9 @@ function icone(string $nome): string
             <section class="painel-inferior">
                 <div class="painel-card">
                     <h2>Previsão · Próximas Horas</h2>
+                    <?php if (!$previsaoProximasHoras): ?>
+                        <p class="sem-dados">Sem movimento previsto para as próximas horas (fora do expediente ou sem histórico suficiente).</p>
+                    <?php endif; ?>
                     <ul class="lista-previsao">
                         <?php foreach ($previsaoProximasHoras as $item): ?>
                             <li>
@@ -312,6 +241,9 @@ function icone(string $nome): string
                 <div class="painel-card">
                     <h2>Alertas e Recomendações</h2>
                     <div class="lista-alertas">
+                        <?php if (!$alertas): ?>
+                            <p class="sem-dados">Nenhum alerta no momento. Tudo dentro do esperado.</p>
+                        <?php endif; ?>
                         <?php foreach ($alertas as $alerta): ?>
                             <div class="alerta alerta-<?= htmlspecialchars($alerta['tipo']) ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
