@@ -8,110 +8,32 @@ require_once __DIR__ . '/../../config/app.php';
 AuthMiddleware::autenticado();
 
 // -----------------------------------------------------------------------
-// DADOS DA PÁGINA DE ACESSOS
-// -----------------------------------------------------------------------
-// Os dados abaixo são estáticos (mock), no mesmo espírito do painel.php,
-// só para a tela ter o que exibir enquanto o AcessoController/Acesso não
-// tem as consultas reais no banco. Quando o back-end estiver pronto, é só
-// substituir cada bloco pelo retorno do Model (Acesso::buscarResumoMensal(),
-// por exemplo) sem precisar mexer no HTML abaixo — os arrays já têm o
-// formato certo.
+// DADOS DA ANÁLISE MENSAL — vêm do banco (model Painel), filtrados pela
+// empresa do usuário logado. O mês é escolhido em ?mes=AAAA-MM.
 // -----------------------------------------------------------------------
 
 $paginaAtual = 'acessos';
 
-// Cards de resumo do topo (3 cards, iguais aos da referência de "Análise Mensal":
-// Total Produzido / Total Desperdiçado / Média de Pessoas)
-$cardsResumo = [
-    [
-        'chave' => 'produzido',
-        'label' => 'Total Produzido',
-        'valor' => 1602,
-        'sufixo' => ' kg',
-        'variacao' => 12.5,
-        'positiva' => true,
-        'periodo' => 'este mês',
-        'extra' => 'Média: 53.4 kg/dia',
-        'icone' => 'bi-graph-up-arrow',
-    ],
-    [
-        'chave' => 'desperdicado',
-        'label' => 'Total Desperdiçado',
-        'valor' => 193,
-        'sufixo' => ' kg',
-        'variacao' => 8.1,
-        'positiva' => false,
-        'periodo' => 'este mês',
-        'extra' => '12,0% do total',
-        'icone' => 'bi-graph-down-arrow',
-    ],
-    [
-        'chave' => 'pessoas',
-        'label' => 'Média de Pessoas',
-        'valor' => 198,
-        'sufixo' => '',
-        'variacao' => 6.3,
-        'positiva' => true,
-        'periodo' => 'este mês',
-        'extra' => 'Por dia útil',
-        'icone' => 'bi-people-fill',
-    ],
-];
+$painel = new Painel(Pagina::empresaId());
+$mesesDisponiveis = $painel->mesesDisponiveis();
+$mesSelecionado = (string) ($_GET['mes'] ?? '');
+if (!isset($mesesDisponiveis[$mesSelecionado])) {
+    $mesSelecionado = array_key_first($mesesDisponiveis);
+}
+$analise = $painel->analiseMensal($mesSelecionado);
 
-// Gráfico de área: Número de Pessoas por Dia (linha 1-30)
-$graficoPessoasDia = [
-    'labels' => range(1, 30),
-    'valores' => [165, 148, 172, 210, 218, 138, 152, 158, 163, 246, 199, 190, 187, 195, 168, 196, 172, 190, 141, 178, 209, 196, 188, 231, 199, 195, 199, 232, 168, 200],
-];
-
-// Gráfico de barras: Produção Diária (kg)
-$graficoProducao = [
-    'labels' => range(1, 30),
-    'valores' => [46, 65, 58, 61, 66, 52, 47, 63, 59, 64, 55, 51, 60, 68, 57, 62, 65, 54, 58, 61, 66, 59, 63, 68, 71, 66, 60, 71, 43, 63],
-];
-
-// Gráfico de barras: Desperdício Diário (kg)
-$graficoDesperdicio = [
-    'labels' => range(1, 30),
-    'valores' => [7, 3, 5, 6, 4, 8, 6, 4, 9, 8, 5, 3, 9, 9, 5, 4, 5, 4, 6, 9, 3, 5, 6, 4, 8, 7, 6, 8, 3, 4],
-];
-
-// Insights do mês (mesma ideia dos 4 cards inferiores da referência)
-$insights = [
-    [
-        'label' => 'Dia com maior fluxo',
-        'valor' => 'Dia 15 - 245 pessoas',
-        'icone' => 'trend-up',
-    ],
-    [
-        'label' => 'Dia com menor desperdício',
-        'valor' => 'Dia 2 - 2 kg',
-        'icone' => 'trend-up',
-    ],
-    [
-        'label' => 'Economia possível',
-        'valor' => '-57,9 kg',
-        'icone' => 'pulse',
-    ],
-    [
-        'label' => 'Tendência',
-        'valor' => 'Estável',
-        'icone' => 'trend-up',
-    ],
-];
+$cardsResumo = $analise['cardsResumo'];
+$graficoPessoasDia = $analise['graficoPessoasDia'];
+$graficoProducao = $analise['graficoProducao'];
+$graficoDesperdicio = $analise['graficoDesperdicio'];
+$insights = $analise['insights'];
+$notificacoesNaoLidas = $painel->totalAlertas();
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.
-$menu = [
-    ['chave' => 'painel', 'rota' => '/painel', 'label' => 'Painel', 'icone' => 'bi-pie-chart-fill'],
-    ['chave' => 'acessos', 'rota' => '/acessos', 'label' => 'Análise mensal', 'icone' => 'bi-calendar'],
-    ['chave' => 'pessoas', 'rota' => '/pessoas', 'label' => 'Pessoas', 'icone' => ' bi-people-fill'],
-    ['chave' => 'previsao', 'rota' => '/assistente', 'label' => 'Assistente IA', 'icone' => 'bi-chat-left'],
-    ['chave' => 'relatorios', 'rota' => '/relatorios', 'label' => 'Relatórios', 'icone' => 'bi-clipboard-data'],
-    ['chave' => 'config', 'rota' => '/configuracoes', 'label' => 'Configurações', 'icone' => 'bi-gear-fill'],
-];
+$menu = Pagina::menu();
 
-// Notificações não lidas (só pra alimentar o badge do sininho)
-$notificacoesNaoLidas = 2;
+// Badge do sino: quantidade de alertas ativos (calculados com dados reais)
+$notificacoesNaoLidas = $notificacoesNaoLidas ?? 0;
 
 $nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';
@@ -237,14 +159,17 @@ function icone(string $nome): string
                 </div>
 
                 <div class="cabecalho-acoes">
-                    <button class="seletor-data" id="seletorMes" type="button">
+                    <form method="get" action="/acessos" class="seletor-data seletor-mes">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round"><?= icone('calendar') ?></svg>
-                        <span id="labelPeriodo">Carregando período…</span>
-                        <svg class="seletor-data-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round"><?= icone('chevron') ?></svg>
-                    </button>
+                        <select name="mes" id="seletorMes" aria-label="Mês de análise" onchange="this.form.submit()">
+                            <?php foreach ($mesesDisponiveis as $valor => $rotulo): ?>
+                                <option value="<?= htmlspecialchars($valor) ?>" <?= $valor === $mesSelecionado ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($rotulo) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
 
                     <button class="sino" id="btnNotificacoes" aria-label="Notificações">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -267,13 +192,17 @@ function icone(string $nome): string
                         <p class="card-valor">
                             <?= number_format($card['valor'], 0, ',', '.') ?>     <?= htmlspecialchars($card['sufixo'] ?? '') ?>
                         </p>
-                        <p class="card-variacao <?= $card['positiva'] ? 'positiva' : 'negativa' ?>">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"><?= icone($card['positiva'] ? 'trend-up' : 'trend-down') ?></svg>
-                            <?= number_format($card['variacao'], 1, ',', '.') ?>%
-                            <span><?= htmlspecialchars($card['periodo']) ?></span>
-                        </p>
+                        <?php if ($card['variacao'] !== null): ?>
+                            <p class="card-variacao <?= $card['positiva'] ? 'positiva' : 'negativa' ?>">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"><?= icone($card['variacao'] >= 0 ? 'trend-up' : 'trend-down') ?></svg>
+                                <?= ($card['variacao'] >= 0 ? '+' : '') . number_format($card['variacao'], 1, ',', '.') ?>%
+                                <span><?= htmlspecialchars($card['periodo']) ?></span>
+                            </p>
+                        <?php else: ?>
+                            <p class="card-variacao"><span>Sem mês anterior para comparar</span></p>
+                        <?php endif; ?>
                         <p class="card-extra"><?= htmlspecialchars($card['extra']) ?></p>
                     </div>
                 <?php endforeach; ?>

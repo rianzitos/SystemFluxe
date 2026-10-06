@@ -7,7 +7,13 @@ class Database
     public static function connect(): PDO
     {
         if (self::$instance === null) {
-            $env = parse_ini_file(__DIR__ . '/../config/.env');
+            $env = @parse_ini_file(__DIR__ . '/../config/.env');
+            if ($env === false) {
+                // Não vaza caminhos/credenciais na tela: loga e devolve erro genérico.
+                error_log('SICAPDA: config/.env não encontrado ou inválido.');
+                http_response_code(500);
+                exit('Erro de configuração do servidor.');
+            }
 // parse_ini_file: Lê o arquivo .env para carregar as credenciais secretas do banco de 
 // dados (host, usuário e senha).
             $dsn = "mysql:host={$env['DB_HOST']};port={$env['DB_PORT']};dbname={$env['DB_NAME']};charset=utf8mb4";

@@ -1,5 +1,3 @@
-<!-- AuthMiddleware.php -->
-
 <?php
 
 class AuthMiddleware {

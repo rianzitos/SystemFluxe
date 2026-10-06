@@ -724,3 +724,9 @@ html[data-tema="escuro"] .badge-sino {
         grid-template-columns: 1fr;
     }
 }
+/* Mensagem de lista vazia (sem histórico/alertas) */
+.sem-dados {
+    margin: 0 0 8px;
+    font-size: 13.5px;
+    color: var(--texto-muted);
+}

@@ -107,6 +107,7 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
                 <?php endif; ?>
 
                 <form class="form" action="/login" method="POST">
+                    <?= CsrfMiddleware::campo() ?>
                     <div class="inputs">
                         <!-- unset e endif: Apaga a mensagem de sucesso da memória e fecha a
   condição aberta anteriormente.<form>: Abre o formulário enviando os dados em
