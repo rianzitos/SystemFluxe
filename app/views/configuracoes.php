@@ -30,11 +30,20 @@ $menu = [
 
 $notificacoesNaoLidas = 2;
 
-$nomeUsuario = $_SESSION['usuario_nome'] ?? 'Usuário';
+// Dados reais do usuário logado (lidos do banco, não só da sessão)
+$dadosUsuario = (new Usuario())->buscarPerfilCompleto((int) $_SESSION['usuario_id']);
+if (!$dadosUsuario) {
+    // Usuário removido do banco com a sessão ainda aberta
+    header('Location: /logout');
+    exit;
+}
+
+$nomeUsuario = $dadosUsuario['nome'];
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? '—';
-$fotoPerfil = $_SESSION['usuario_foto'] ?? null;
-$emailUsuario = $_SESSION['usuario_email'] ?? '—';
-$instituicaoUsuario = $_SESSION['usuario_instituicao'] ?? '—';
+$fotoPerfil = $dadosUsuario['foto'] ?? null;
+$emailUsuario = $dadosUsuario['email'];
+$cargoUsuario = $dadosUsuario['cargo'] ?? '';
+$instituicaoUsuario = $dadosUsuario['empresa_nome'] ?? '—';
 
 // Abas da página (equivalente ao menu vertical "Perfil / Notificações / Sistema..." do design de referência)
 $abas = [
@@ -73,6 +82,7 @@ $sessoesAtivas = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configurações · SICAPDA</title>
+    <meta name="csrf-token" content="<?= htmlspecialchars(CsrfMiddleware::token()) ?>">
 
     <!-- Aplica o tema salvo (claro/escuro/sistema) antes do CSS carregar, pra evitar
          o "flash" da tela clara antes de escurecer. Mesmo bloco deve estar em toda
@@ -195,7 +205,7 @@ $sessoesAtivas = [
                     <section class="config-painel ativa" data-aba-painel="perfil">
                         <h2>Informações Pessoais</h2>
 
-                        <div class="config-perfil-topo">
+                        <div class="config-perfil-topo" id="perfilTopo">
                             <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
                                 <div class="avatar avatar-foto avatar-grande">
                                     <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
@@ -207,34 +217,40 @@ $sessoesAtivas = [
                                 </div>
                             <?php endif; ?>
                             <div>
-                                <strong class="config-perfil-nome"><?= htmlspecialchars($nomeUsuario) ?></strong>
-                                <span class="config-perfil-email"><?= htmlspecialchars($emailUsuario) ?></span>
+                                <strong class="config-perfil-nome" id="perfilNomeTopo"><?= htmlspecialchars($nomeUsuario) ?></strong>
+                                <span class="config-perfil-email" id="perfilEmailTopo"><?= htmlspecialchars($emailUsuario) ?></span>
                                 <label class="link-acao" for="inputFotoPerfil">Alterar foto</label>
-                                <input type="file" id="inputFotoPerfil" name="foto_perfil" accept="image/*" hidden>
+                                <input type="file" id="inputFotoPerfil" name="foto_perfil" accept="image/jpeg,image/png" hidden>
                             </div>
                         </div>
 
                         <form class="config-form" id="formPerfil" autocomplete="off">
                             <div class="campo">
                                 <label for="perfilNome">Nome completo</label>
-                                <input type="text" id="perfilNome" name="nome"
+                                <input type="text" id="perfilNome" name="nome" maxlength="150" required
                                     value="<?= htmlspecialchars($nomeUsuario) ?>">
                             </div>
                             <div class="campo">
                                 <label for="perfilEmail">E-mail</label>
-                                <input type="email" id="perfilEmail" name="email"
+                                <input type="email" id="perfilEmail" name="email" maxlength="150" required
                                     value="<?= htmlspecialchars($emailUsuario) ?>">
                             </div>
                             <div class="campo">
                                 <label for="perfilCargo">Cargo</label>
-                                <input type="text" id="perfilCargo" name="cargo"
-                                    value="<?= htmlspecialchars($perfilUsuario) ?>">
+                                <input type="text" id="perfilCargo" name="cargo" maxlength="100"
+                                    value="<?= htmlspecialchars($cargoUsuario) ?>">
                             </div>
                             <div class="campo">
                                 <label for="perfilInstituicao">Instituição</label>
-                                <input type="text" id="perfilInstituicao" name="instituicao"
+                                <input type="text" id="perfilInstituicao" name="instituicao" readonly
                                     value="<?= htmlspecialchars($instituicaoUsuario) ?>">
                             </div>
+                            <div class="campo" id="campoSenhaEmail" hidden>
+                                <label for="perfilSenhaAtual">Senha atual (necessária para alterar o e-mail)</label>
+                                <input type="password" id="perfilSenhaAtual" name="senha_atual"
+                                    autocomplete="current-password">
+                            </div>
+                            <p class="campo-erro" id="msgPerfil" hidden></p>
 
                             <div class="config-form-acoes">
                                 <button type="submit" class="btn-primario">
@@ -377,17 +393,17 @@ $sessoesAtivas = [
                             <form class="config-form" id="formSenha" autocomplete="off">
                                 <div class="campo">
                                     <label for="senhaAtual">Senha atual</label>
-                                    <input type="password" id="senhaAtual" name="senha_atual">
+                                    <input type="password" id="senhaAtual" name="senha_atual" autocomplete="current-password" required>
                                 </div>
                                 <div class="campo">
                                     <label for="senhaNova">Nova senha</label>
-                                    <input type="password" id="senhaNova" name="senha_nova">
+                                    <input type="password" id="senhaNova" name="senha_nova" autocomplete="new-password" minlength="8" maxlength="72" required>
                                 </div>
                                 <div class="campo">
                                     <label for="senhaConfirmar">Confirmar nova senha</label>
-                                    <input type="password" id="senhaConfirmar" name="senha_confirmar">
+                                    <input type="password" id="senhaConfirmar" name="senha_confirmar" autocomplete="new-password" minlength="8" maxlength="72" required>
                                 </div>
-                                <p class="campo-erro" id="erroSenha" hidden>As senhas não coincidem.</p>
+                                <p class="campo-erro" id="erroSenha" hidden></p>
                                 <div class="config-form-acoes">
                                     <button type="submit" class="btn-primario">
                                         <i class="bi bi-shield-check"></i> Atualizar senha

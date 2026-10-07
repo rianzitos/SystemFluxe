@@ -90,6 +90,14 @@ if ($uri === '/') {
 //cria a rota de pessoas, seguindo o mesmo padrão das anteriores: bloqueia
 // invasores através do AuthMiddleware e só exibe a tela protegida
 // (pessoas.php) se o usuário estiver logado.
+} elseif ($uri === '/configuracoes/perfil' && $metodo === 'POST') {
+    (new ConfiguracaoController())->atualizarPerfil();
+} elseif ($uri === '/configuracoes/senha' && $metodo === 'POST') {
+    (new ConfiguracaoController())->atualizarSenha();
+} elseif ($uri === '/configuracoes/foto' && $metodo === 'POST') {
+    (new ConfiguracaoController())->atualizarFoto();
+// Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
+
 } elseif ($uri === '/relatorios') {
     AuthMiddleware::autenticado();
     (new RelatorioController())->exibir();
