@@ -2,7 +2,7 @@
 
 class RelatorioController
 {
-    private const POR_PAGINA = 20;
+    public const POR_PAGINA = 20;
     private const MAX_DIAS_INTERVALO = 366;
 
     private Acesso $acesso;
@@ -58,10 +58,15 @@ class RelatorioController
     public function exportar(): void
     {
         AuthMiddleware::autenticado();
+        $this->enviarCsv(Pagina::empresaId());
+    }
 
+    /** Gera o CSV dos filtros atuais ($_GET) para a empresa — usado pela web (sessão) e pela API (token). */
+    public function enviarCsv(int $empresaId): never
+    {
         $f = $this->filtros();
         $registros = $this->acesso->registrosParaExportar(
-            Pagina::empresaId(), $f['de'], $f['ate'], $f['busca'], $f['categoria']
+            $empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria']
         );
 
         $nomeArquivo = 'relatorio-acessos_' . $f['de'] . '_a_' . $f['ate'] . '.csv';
@@ -91,7 +96,7 @@ class RelatorioController
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /** Lê e valida os filtros da query string (nunca confia no que veio da URL). */
-    private function filtros(): array
+    public function filtros(): array
     {
         $hoje = new DateTimeImmutable('today');
 

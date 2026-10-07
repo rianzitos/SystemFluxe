@@ -109,6 +109,12 @@ if ($uri === '/') {
     (new DemandaController())->perguntar();
 // Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).
 
+// ─── API JSON (aplicativo mobile fluxe_app) ──────────────────────────────────
+
+} elseif (str_starts_with($uri, '/api/')) {
+    (new ApiController())->despachar($uri, $metodo);
+// Autenticação por Bearer token (ApiAuthMiddleware), não por sessão.
+
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
 } else {
