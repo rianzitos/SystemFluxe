@@ -17,10 +17,20 @@ class ApiAuthMiddleware
     {
         $env = @parse_ini_file(__DIR__ . '/../../config/.env') ?: [];
         $segredo = (string) ($env['API_SECRET'] ?? '');
+        if (strlen($segredo) >= 32) {
+            return $segredo;
+        }
 
+        // Sem API_SECRET no .env: gera um uma única vez e guarda em storage/ (fora de public/, fora do Git).
+        $arquivo = __DIR__ . '/../../storage/api_secret.key';
+        $segredo = trim((string) @file_get_contents($arquivo));
         if (strlen($segredo) < 32) {
-            error_log('SICAPDA API: defina API_SECRET (mín. 32 caracteres) em config/.env.');
-            Api::erro(500, 'API não configurada no servidor.');
+            $segredo = bin2hex(random_bytes(32));
+            if (@file_put_contents($arquivo, $segredo, LOCK_EX) === false) {
+                error_log('SICAPDA API: defina API_SECRET (mín. 32 caracteres) em config/.env ou permita escrita em storage/.');
+                Api::erro(500, 'API não configurada no servidor.');
+            }
+            @chmod($arquivo, 0600);
         }
         return $segredo;
     }

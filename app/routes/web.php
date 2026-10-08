@@ -3,6 +3,15 @@
 require_once __DIR__ . '/../../config/app.php';
 
 $uri    = strtok($_SERVER['REQUEST_URI'], '?'); // remove query string
+
+// Site dentro de uma subpasta (ex.: XAMPP em http://host/SystemFluxe/public): tira o prefixo da pasta
+// para que as rotas (/login, /api/login...) funcionem como se o site estivesse na raiz.
+if (PHP_SAPI !== 'cli-server') {
+    $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+    if ($base !== '' && ($uri === $base || str_starts_with($uri, $base . '/'))) {
+        $uri = substr($uri, strlen($base)) ?: '/';
+    }
+}
 $metodo = $_SERVER['REQUEST_METHOD'];
 //require_once: Carrega o arquivo de configuração global da aplicação apenas uma
 //vez.strtok: Limpa a URL do navegador removendo os parâmetros após a interrogação (?).$_SERVER['REQUEST_METHOD']:
