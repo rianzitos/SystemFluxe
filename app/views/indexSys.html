@@ -1,7 +1,17 @@
 <?php
-// Dados do aplicativo mobile (APK) usados nas seções "Aplicativo" e "Baixar".
+// Dados do aplicativo (Windows e Android) usados nas seções "Aplicativo" e "Baixar".
 // Veja app/models/AppMobile.php e storage/downloads/LEIA-ME.md.
-$app = AppMobile::info();
+$apps = AppMobile::todas();                                  // windows e android
+$aparelho = AppMobile::aparelhoDoVisitante();                // windows | android | ios | mac | linux | outro
+$disponiveis = array_filter($apps, fn($a) => $a['disponivel']);
+$algum = $disponiveis !== [];
+// Instalador do aparelho de quem está vendo a página (null no iPhone, Mac, Linux...)
+$foco = $disponiveis[$aparelho] ?? null;
+// Os demais instaladores disponíveis (ou todos, se o aparelho não tem o seu)
+$outros = array_filter($disponiveis, fn($a) => $a['plataforma'] !== $aparelho);
+// O aparelho é Windows ou Android, mas o instalador dele ainda não foi publicado
+$faltaDoAparelho = isset($apps[$aparelho]) && !$apps[$aparelho]['disponivel'];
+$iconeDe = ['windows' => 'bi-windows', 'android' => 'bi-android2'];
 $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 ?>
 <!DOCTYPE html>
@@ -11,7 +21,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SICAPDA</title>
-    <meta name="description" content="SICAPDA: controle de acesso e previsão de demanda alimentar. Agora também em aplicativo Android, com os mesmos dados da versão web.">
+    <meta name="description" content="SICAPDA: controle de acesso e previsão de demanda alimentar. Agora também em aplicativo para Windows e Android, com os mesmos dados da versão web.">
     <link rel="stylesheet" href="/css/styleSys.css">
     <link rel="stylesheet" href="/css/appMobile.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -60,7 +70,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 
             <div id="containerSICAPDA">
                 <a class="heroAppBadge" href="#aplicativo">
-                    <span>Novo</span> Aplicativo para Android <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    <span>Novo</span> Aplicativo para Windows e Android <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </a>
                 <h1>SICA<span>PDA</span></h1>
                 <h2>Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar.</h2>
@@ -165,20 +175,20 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
             <div class="appHeroTexto">
                 <div class="miniTitulo">
                     <div class="miniSlash"></div>
-                    <p class="miniRotulo">Aplicativo mobile</p>
+                    <p class="miniRotulo">Aplicativo para PC e celular</p>
                 </div>
                 <h2 id="appHeroTitulo">O SICAPDA na palma da sua <span>mão</span>.</h2>
                 <p>Acompanhe acessos, previsões de refeições e relatórios em tempo real, de onde você estiver. Mesmo
-                    login e mesmos dados da versão web, em um aplicativo feito para o celular.</p>
+                    login e mesmos dados da versão web, em um aplicativo para computador e celular.</p>
 
                 <ul class="appChips">
-                    <li><i class="bi bi-android2" aria-hidden="true"></i> Android</li>
+                    <li><i class="bi bi-windows" aria-hidden="true"></i> <i class="bi bi-android2" aria-hidden="true"></i> Windows e Android</li>
                     <li><i class="bi bi-moon-stars" aria-hidden="true"></i> Tema claro e escuro</li>
                     <li><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Dados sincronizados</li>
                 </ul>
 
                 <div class="appAcoes">
-                    <a class="appBtn appBtnAmarelo" href="<?= $app['disponivel'] ? $h($app['url']) : '#baixar' ?>">
+                    <a class="appBtn appBtnAmarelo" href="<?= $foco ? $h($foco['url']) : '#baixar' ?>">
                         <i class="bi bi-download" aria-hidden="true"></i> Baixar o aplicativo
                     </a>
                     <a class="appBtn appBtnContorno" href="#appTelas">
@@ -187,10 +197,13 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 </div>
 
                 <p class="appMeta">
-                    <?php if ($app['disponivel']): ?>
-                        <?= $app['versao'] ? 'Versão ' . $h($app['versao']) . ' · ' : '' ?><?= $h($app['tamanho']) ?> · <?= $h($app['android_minimo']) ?>
+                    <?php if ($foco): ?>
+                        <?= $foco['versao'] ? 'Versão ' . $h($foco['versao']) . ' · ' : '' ?><?= $h($foco['tamanho']) ?> · <?= $h($foco['requer']) ?>
+                    <?php elseif ($algum): ?>
+                        <?php $ref = reset($disponiveis); ?>
+                        <?= $ref['versao'] ? 'Versão ' . $h($ref['versao']) . ' · ' : '' ?>Para <?= $h(implode(' e ', array_column($disponiveis, 'rotulo'))) ?>
                     <?php else: ?>
-                        O instalador para Android será disponibilizado aqui em breve.
+                        O instalador para Windows e Android será disponibilizado aqui em breve.
                     <?php endif; ?>
                 </p>
             </div>
@@ -362,7 +375,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 <article class="appCard">
                     <span class="appCardIcone"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i></span>
                     <h3>Acesso protegido</h3>
-                    <p>Sessão por token assinado, guardado no armazenamento seguro do Android. A senha não fica salva
+                    <p>Sessão por token assinado, guardado no armazenamento seguro do aparelho. A senha não fica salva
                         no aparelho.</p>
                 </article>
                 <article class="appCard">
@@ -374,8 +387,8 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 <article class="appCard">
                     <span class="appCardIcone"><i class="bi bi-file-earmark-spreadsheet-fill" aria-hidden="true"></i></span>
                     <h3>Relatórios em CSV</h3>
-                    <p>Filtre os registros de acesso e compartilhe o arquivo CSV direto do celular, por e-mail ou
-                        mensagem.</p>
+                    <p>Filtre os registros de acesso e exporte em CSV: no celular, compartilhe por e-mail ou mensagem;
+                        no computador, o arquivo vai para a pasta Downloads.</p>
                 </article>
                 <article class="appCard">
                     <span class="appCardIcone"><i class="bi bi-moon-stars-fill" aria-hidden="true"></i></span>
@@ -395,7 +408,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                     <div class="fluxoNo">
                         <span class="fluxoIcone"><i class="bi bi-phone-fill" aria-hidden="true"></i></span>
                         <strong>Aplicativo</strong>
-                        <small>no seu celular</small>
+                        <small>no celular ou no PC</small>
                     </div>
                     <div class="fluxoSeta" aria-hidden="true"><i class="bi bi-arrow-left-right"></i></div>
                     <div class="fluxoNo fluxoCentro">
@@ -417,7 +430,6 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 
     <section id="baixar" class="appBaixar" aria-labelledby="baixarTitulo">
         <div class="appContainer">
-
             <div class="appBaixarGrid">
 
                 <div class="appBaixarTexto">
@@ -425,20 +437,32 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                         <div class="miniSlash"></div>
                         <p class="miniRotulo">Download</p>
                     </div>
-                    <h2 id="baixarTitulo">Instale o SICAPDA no seu <span>Android</span>.</h2>
-                    <p>Baixe o instalador (APK), instale e entre com o mesmo e-mail e senha da versão web. Leva menos
-                        de um minuto.</p>
+                    <h2 id="baixarTitulo">Instale o SICAPDA no seu <span>computador ou celular</span>.</h2>
+                    <p>Baixe o instalador, instale e entre com o mesmo e-mail e senha da versão web. Leva menos de um
+                        minuto.</p>
 
                     <ol class="appPassos">
                         <li>
                             <div><strong>Baixe o arquivo</strong>
-                                <span>Toque em “Baixar APK”. O arquivo vai para a pasta de downloads do celular.</span>
+                                <span>Clique no botão de download. O arquivo vai para a pasta de downloads do
+                                    aparelho.</span>
                             </div>
                         </li>
                         <li>
-                            <div><strong>Permita a instalação</strong>
-                                <span>Abra o arquivo. Se o Android pedir, toque em “Configurações” e ative “Permitir
-                                    desta fonte” para o navegador ou o gerenciador de arquivos.</span></div>
+                            <div><strong>Instale</strong>
+                                <?php if ($aparelho === 'windows'): ?>
+                                    <span>Abra o instalador e siga as telas. Se o Windows avisar “O Windows protegeu o seu
+                                        computador”, clique em “Mais informações” e depois em “Executar assim
+                                        mesmo”.</span>
+                                <?php elseif ($aparelho === 'android'): ?>
+                                    <span>Abra o arquivo. Se o Android pedir, toque em “Configurações” e ative “Permitir
+                                        desta fonte” para o navegador ou o gerenciador de arquivos.</span>
+                                <?php else: ?>
+                                    <span>Abra o arquivo baixado e siga as telas. No Windows, se aparecer “O Windows
+                                        protegeu o seu computador”, clique em “Mais informações” e “Executar assim mesmo”.
+                                        No Android, permita a instalação desta fonte quando o celular pedir.</span>
+                                <?php endif; ?>
+                            </div>
                         </li>
                         <li>
                             <div><strong>Entre com a sua conta</strong>
@@ -446,74 +470,89 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                         </li>
                     </ol>
 
-                    <p class="appAvisoIos" id="appAvisoIos" hidden>
-                        <i class="bi bi-apple" aria-hidden="true"></i>
-                        <span>Você está em um iPhone ou iPad: o instalador é só para Android. Acesse a <a
-                                href="/login">versão web</a> pelo navegador.</span>
-                    </p>
+                    <?php
+                    $avisos = [
+                        'mac'   => 'No Mac (e no iPad) o aplicativo ainda não está disponível.',
+                        'linux' => 'No Linux o aplicativo ainda não está disponível.',
+                    ];
+                    ?>
+                    <?php if (isset($avisos[$aparelho])): ?>
+                        <p class="appAvisoIos" id="appAvisoIos">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span><?= $h($avisos[$aparelho]) ?> Use a <a href="/login">versão web</a> pelo
+                                navegador.</span>
+                        </p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="appBaixarCartao">
                     <div class="cartaoTopo">
                         <img src="/img/app/app-icone.png" alt="" width="72" height="72" loading="lazy" decoding="async">
                         <div>
-                            <h3>SICAPDA para Android</h3>
-                            <span>by Fluxe</span>
+                            <h3>Aplicativo SICAPDA</h3>
+                            <span>Windows e Android · by Fluxe</span>
                         </div>
-                        <?php if (!$app['disponivel']): ?>
+                        <?php if (!$algum): ?>
                             <span class="cartaoSelo">Em breve</span>
                         <?php endif; ?>
                     </div>
 
-                    <?php if ($app['disponivel']): ?>
-                        <div class="cartaoCorpo">
-                            <div class="cartaoInfo">
-                                <dl class="appDados">
-                                    <?php if ($app['versao']): ?>
-                                        <dt>Versão</dt>
-                                        <dd><?= $h($app['versao']) ?></dd>
-                                    <?php endif; ?>
-                                    <dt>Tamanho</dt>
-                                    <dd><?= $h($app['tamanho']) ?></dd>
-                                    <dt>Atualizado em</dt>
-                                    <dd><time datetime="<?= $h($app['atualizado_iso']) ?>"><?= $h($app['atualizado_em']) ?></time></dd>
-                                    <dt>Requer</dt>
-                                    <dd><?= $h($app['android_minimo']) ?></dd>
-                                </dl>
+                    <?php if ($aparelho === 'ios'): ?>
+                        <?php /* iPhone/iPad: não há instalador, o caminho é a versão web */ ?>
+                        <p class="cartaoVazio">O aplicativo ainda é só para Windows e Android. No iPhone e no iPad, use a
+                            versão web pelo navegador.</p>
+                        <a class="appBtn appBtnAmarelo appBtnCheio" href="/login">
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Acessar a versão web
+                        </a>
+                    <?php elseif ($algum): ?>
+                        <?php $ref = $foco ?? reset($disponiveis); ?>
+                        <dl class="appDados">
+                            <?php if ($ref['versao']): ?>
+                                <dt>Versão</dt>
+                                <dd><?= $h($ref['versao']) ?></dd>
+                            <?php endif; ?>
+                            <?php if ($foco): ?>
+                                <dt>Tamanho</dt>
+                                <dd><?= $h($foco['tamanho']) ?></dd>
+                            <?php endif; ?>
+                            <dt>Atualizado em</dt>
+                            <dd><time datetime="<?= $h($ref['atualizado_iso']) ?>"><?= $h($ref['atualizado_em']) ?></time></dd>
+                            <dt><?= $foco ? 'Requer' : 'Disponível para' ?></dt>
+                            <dd><?= $foco ? $h($foco['requer']) : implode('<br>', array_map(fn($a) => $h($a['requer']), $disponiveis)) ?></dd>
+                        </dl>
 
-                                <a class="appBtn appBtnAmarelo appBtnCheio" href="<?= $h($app['url']) ?>">
-                                    <i class="bi bi-download" aria-hidden="true"></i> Baixar APK
-                                </a>
-                                <p class="cartaoNota">Prefere o navegador? <a href="/login">Acesse a versão web</a>.</p>
-                            </div>
+                        <?php if ($faltaDoAparelho): ?>
+                            <p class="cartaoVazio">O instalador para <?= $h($apps[$aparelho]['rotulo']) ?> ainda não foi publicado.
+                                Enquanto isso, você pode usar a versão web no navegador<?= $outros ? ' ou baixar para outro aparelho' : '' ?>.</p>
+                        <?php endif; ?>
 
-                            <div class="appQrBloco" id="appQrBloco" hidden>
-                                <div class="appQr" id="appQr" role="img"
-                                    aria-label="QR code que abre o download do aplicativo no celular"></div>
-                                <p><i class="bi bi-qr-code-scan" aria-hidden="true"></i> Escaneie com a câmera do celular</p>
-                            </div>
-                        </div>
-
-                        <?php if ($app['sha256']): ?>
-                            <div class="appHashBloco">
-                                <span>SHA-256 do arquivo</span>
-                                <div class="appHashLinha">
-                                    <code id="appHash"><?= $h($app['sha256']) ?></code>
-                                    <button type="button" class="appCopiar" data-copiar="#appHash"
-                                        aria-label="Copiar o código SHA-256">
-                                        <i class="bi bi-clipboard" aria-hidden="true"></i> <span>Copiar</span>
-                                    </button>
-                                </div>
-                                <small>Confira se o código do arquivo baixado é igual a este para ter certeza de que ele
-                                    não foi alterado.</small>
+                        <?php if ($foco): ?>
+                            <a class="appBtn appBtnAmarelo appBtnCheio" href="<?= $h($foco['url']) ?>">
+                                <i class="bi bi-download" aria-hidden="true"></i> Baixar para <?= $h($foco['rotulo']) ?>
+                            </a>
+                            <?php foreach ($outros as $o): ?>
+                                <p class="cartaoNota">Precisa em outro aparelho?
+                                    <a href="<?= $h($o['url']) ?>">Baixar para <?= $h($o['rotulo']) ?></a></p>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="appOpcoes">
+                                <?php $primeira = true; ?>
+                                <?php foreach ($disponiveis as $o): ?>
+                                    <a class="appBtn <?= $primeira ? 'appBtnAmarelo' : 'appBtnClaro' ?> appBtnCheio"
+                                        href="<?= $h($o['url']) ?>">
+                                        <i class="bi <?= $h($iconeDe[$o['plataforma']] ?? 'bi-download') ?>" aria-hidden="true"></i>
+                                        Baixar para <?= $h($o['rotulo']) ?> <small>· <?= $h($o['tamanho']) ?></small>
+                                    </a>
+                                    <?php $primeira = false; ?>
+                                <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
+                        <p class="cartaoNota">Prefere o navegador? <a href="/login">Acesse a versão web</a>.</p>
                     <?php else: ?>
                         <p class="cartaoVazio">O instalador ainda não foi publicado. Assim que estiver disponível, o botão
-                            de download aparece aqui. Enquanto isso, a versão web funciona normalmente no navegador do
-                            celular.</p>
+                            de download aparece aqui. Enquanto isso, a versão web funciona normalmente no navegador.</p>
                         <span class="appBtn appBtnAmarelo appBtnCheio is-desativado" aria-disabled="true">
-                            <i class="bi bi-download" aria-hidden="true"></i> Baixar APK
+                            <i class="bi bi-download" aria-hidden="true"></i> Baixar aplicativo
                         </span>
                         <p class="cartaoNota"><a href="/login">Acessar a versão web</a></p>
                     <?php endif; ?>
@@ -526,15 +565,17 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 <div class="appFaqLista">
                     <details name="appFaq">
                         <summary><span>O aplicativo é seguro?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
-                        <p>O arquivo é gerado pela equipe da Fluxe.<?= $app['sha256'] ? ' Para conferir que ele não foi alterado, compare o código SHA-256 mostrado acima com o do arquivo baixado.' : '' ?>
-                            O aplicativo só pede acesso à internet e guarda apenas o token de sessão, de forma
-                            criptografada.</p>
+                        <p>O aplicativo é gerado pela equipe da Fluxe. Ele só se comunica com o servidor do SICAPDA pela
+                            internet e guarda apenas o token de sessão, protegido pelo sistema do aparelho. A sua senha
+                            não fica salva.</p>
                     </details>
                     <details name="appFaq">
-                        <summary><span>Por que o Android avisa sobre “fonte desconhecida”?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
-                        <p>Porque o aplicativo é instalado fora da Google Play. É um aviso padrão do Android para
-                            qualquer APK baixado de um site. Basta permitir a instalação para o navegador (ou
-                            gerenciador de arquivos) e, se quiser, desfazer a permissão depois.</p>
+                        <summary><span>Por que o Windows ou o Android avisam sobre “aplicativo desconhecido”?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
+                        <p>Porque o aplicativo é instalado por este site, e não pela Microsoft Store ou pela Google Play,
+                            e o instalador ainda não tem assinatura digital paga. É um aviso padrão para qualquer
+                            programa novo. No Windows, clique em “Mais informações” e depois em “Executar assim mesmo”.
+                            No Android, permita a instalação para o navegador (ou gerenciador de arquivos) e, se quiser,
+                            desfaça a permissão depois.</p>
                     </details>
                     <details name="appFaq">
                         <summary><span>Preciso criar uma conta nova?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
@@ -543,18 +584,19 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                     <details name="appFaq">
                         <summary><span>Funciona sem internet?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
                         <p>Não. O aplicativo consulta o servidor em tempo real para mostrar acessos e previsões, então
-                            precisa de conexão (Wi-Fi ou dados móveis).</p>
+                            precisa de conexão (Wi-Fi, cabo ou dados móveis).</p>
                     </details>
                     <details name="appFaq">
-                        <summary><span>E no iPhone?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
-                        <p>Por enquanto o instalador é só para Android. No iPhone, acesse a versão web pelo navegador:
-                            ela também funciona bem no celular.</p>
+                        <summary><span>E no iPhone ou no Mac?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
+                        <p>Por enquanto o aplicativo é só para Windows e Android. No iPhone, iPad ou Mac, acesse a versão
+                            web pelo navegador: ela também funciona bem no celular.</p>
                     </details>
                     <details name="appFaq">
                         <summary><span>Como atualizo para uma versão nova?</span><i class="bi bi-chevron-down" aria-hidden="true"></i></summary>
-                        <p>Baixe o APK mais recente nesta página e instale por cima da versão atual. Se o Android
-                            recusar a atualização, desinstale a versão antiga e instale a nova: basta entrar de novo
-                            com a sua conta.</p>
+                        <p>Baixe o instalador mais recente nesta página e abra por cima da versão atual: no Windows ele
+                            atualiza o programa sozinho; no Android, instale o novo arquivo. Se o Android recusar a
+                            atualização, desinstale a versão antiga e instale a nova: basta entrar de novo com a sua
+                            conta.</p>
                     </details>
                 </div>
             </div>
@@ -781,7 +823,6 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
     </footer>
 
     <script src="/js/scriptSys.js"></script>
-    <script src="/js/qrcode.min.js" defer></script>
     <script src="/js/appMobile.js" defer></script>
 
 </body>

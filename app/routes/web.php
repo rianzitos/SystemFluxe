@@ -37,11 +37,15 @@ if ($uri === '/') {
 
 } elseif ($uri === '/app') {
     (new AppMobileController())->atalho();
-// atalho curto que leva à seção de download do aplicativo (útil em QR codes e materiais impressos).
+// atalho curto que leva à seção de download do aplicativo (útil em materiais impressos e divulgação).
 
 } elseif ($uri === '/app/baixar') {
     (new AppMobileController())->baixar();
-// entrega o APK do aplicativo mobile (storage/downloads/SICAPDA.apk). Público, não exige login.
+// escolhe o instalador pelo aparelho de quem pediu (Windows ou Android); nos demais leva à página de download.
+
+} elseif (preg_match('#^/app/baixar/(windows|android)$#', $uri, $plataforma)) {
+    (new AppMobileController())->baixar($plataforma[1]);
+// entrega o instalador (storage/downloads/SICAPDA-Setup.exe ou SICAPDA.apk). Público, não exige login.
 
 } elseif ($uri === '/login') {
     if ($metodo === 'POST') {

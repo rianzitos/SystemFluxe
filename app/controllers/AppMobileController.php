@@ -1,27 +1,33 @@
 <?php
 
 /**
- * Download do aplicativo mobile (APK).
+ * Download do aplicativo do SICAPDA (instalador para Windows e APK para Android).
  *
- *   GET /app          → atalho curto para a seção de download da página /sicapda
- *   GET|HEAD /app/baixar → entrega o APK (público, sem login)
+ *   GET /app                    → atalho curto para a seção de download da página /sicapda
+ *   GET|HEAD /app/baixar        → escolhe o instalador pelo aparelho de quem pediu (Windows ou Android);
+ *                                 nos demais (iPhone, Mac, Linux...) leva para a página, onde dá para escolher
+ *   GET|HEAD /app/baixar/windows | /app/baixar/android → entrega o arquivo (público, sem login)
  *
- * O arquivo é servido por PHP (e não direto da pasta public/) para garantir o Content-Type e o
+ * Os arquivos são servidos por PHP (e não direto da pasta public/) para garantir o Content-Type e o
  * nome corretos em qualquer servidor, aceitar retomada de download (Range) e revalidação
- * (ETag / If-Modified-Since). Nenhum dado vindo do usuário entra no caminho do arquivo.
+ * (ETag / If-Modified-Since). Nenhum dado vindo do usuário entra no caminho do arquivo: a plataforma
+ * só pode ser uma das chaves conhecidas de AppMobile.
  */
 class AppMobileController
 {
     private const TAMANHO_BLOCO = 65536;
 
-    /** GET /app — bom para QR codes e materiais impressos. */
+    /** GET /app — atalho curto para materiais impressos e divulgação. */
     public function atalho(): void
     {
         header('Location: /sicapda#baixar', true, 302);
         exit;
     }
 
-    public function baixar(): void
+    /**
+     * @param string|null $plataforma windows | android; null = escolher pelo aparelho de quem pediu
+     */
+    public function baixar(?string $plataforma = null): void
     {
         $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         if ($metodo !== 'GET' && $metodo !== 'HEAD') {
@@ -30,12 +36,25 @@ class AppMobileController
             exit;
         }
 
-        $info = AppMobile::info();
-        if (!$info['disponivel']) {
-            $this->indisponivel($metodo);
+        if ($plataforma === null) {
+            // O destino depende do aparelho: nada de guardar esta resposta em cache.
+            header('Vary: User-Agent');
+            header('Cache-Control: no-store');
+            $detectada = AppMobile::plataformaDoVisitante();
+            header('Location: ' . ($detectada !== null ? AppMobile::URL_DOWNLOAD . '/' . $detectada : '/sicapda#baixar'), true, 302);
+            exit;
+        }
+        if (!AppMobile::plataformaValida($plataforma)) {
+            http_response_code(404);
+            exit;
         }
 
-        $caminho = AppMobile::caminhoApk();
+        $info = AppMobile::info($plataforma);
+        if (!$info['disponivel']) {
+            $this->indisponivel($metodo, $info['rotulo']);
+        }
+
+        $caminho = AppMobile::caminho($plataforma);
         $tamanho = $info['tamanho_bytes'];
         $mtime = (int) filemtime($caminho);
         // ETag barata (não calcula o hash de dezenas de MB a cada requisição)
@@ -54,7 +73,7 @@ class AppMobileController
         header_remove('Pragma');
         header_remove('Expires');
 
-        header('Content-Type: application/vnd.android.package-archive');
+        header('Content-Type: ' . $info['mime']);
         header('Content-Disposition: attachment; filename="' . $info['nome_arquivo'] . '"');
         header('Accept-Ranges: bytes');
         header('ETag: ' . $etag);
@@ -178,7 +197,7 @@ class AppMobileController
         return false;
     }
 
-    private function indisponivel(string $metodo): never
+    private function indisponivel(string $metodo, string $rotulo): never
     {
         http_response_code(404);
         header('Content-Type: text/html; charset=utf-8');
@@ -190,7 +209,8 @@ class AppMobileController
                 . '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;'
                 . 'background:#171717;color:#fff;font-family:sans-serif;text-align:center;padding:1.5rem">'
                 . '<main><h1 style="margin:0 0 .6rem">Aplicativo ainda não disponível</h1>'
-                . '<p style="margin:0 0 1.4rem;color:#b8b8b8">O instalador do SICAPDA para Android será publicado em breve.</p>'
+                . '<p style="margin:0 0 1.4rem;color:#b8b8b8">O instalador do SICAPDA para '
+                . htmlspecialchars($rotulo, ENT_QUOTES, 'UTF-8') . ' será publicado em breve.</p>'
                 . '<a href="/sicapda#baixar" style="display:inline-block;background:#FFC400;color:#171717;'
                 . 'font-weight:bold;text-decoration:none;padding:.85rem 1.5rem;border-radius:10px">Voltar à página do SICAPDA</a>'
                 . '</main></body></html>';
