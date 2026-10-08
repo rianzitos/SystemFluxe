@@ -1,0 +1,1563 @@
+/* =====================================================================
+   APLICATIVO MOBILE — seções da página /sicapda
+   Usa as variáveis e a identidade de styleSys.css (preto, grafite, amarelo FLUXE,
+   miniTitulo com traço amarelo, títulos com <span> amarelo, cantos de 10px).
+
+   Seções:  #aplicativo (apresentação)  #appTelas (abas + celular)
+            #appRecursos (cards + integração)  #baixar (download, passos, FAQ)
+===================================================================== */
+
+#aplicativo,
+#appTelas,
+#appRecursos,
+#baixar {
+    scroll-margin-top: var(--header-offset);
+}
+
+.appContainer {
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.appCentro {
+    justify-content: center;
+}
+
+/* ---------------------------------------------------------------------
+   Selo "Novo" no hero da página (leva para #aplicativo)
+--------------------------------------------------------------------- */
+.heroAppBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    padding: 0.35rem 0.95rem 0.35rem 0.4rem;
+    border-radius: 999px;
+    background: var(--preto);
+    color: var(--branco);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.heroAppBadge span {
+    background: var(--amarelo);
+    color: var(--preto);
+    border-radius: 999px;
+    padding: 0.18rem 0.65rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.heroAppBadge i {
+    color: var(--amarelo);
+    transition: transform 0.3s ease;
+}
+
+.heroAppBadge:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-padrao);
+}
+
+.heroAppBadge:hover i {
+    transform: translateX(3px);
+}
+
+.heroAppBadge:focus-visible {
+    outline: 3px solid var(--amarelo-secundario);
+    outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------
+   Botões das seções do app
+--------------------------------------------------------------------- */
+.appBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 50px;
+    padding: 0 1.6rem;
+    border-radius: var(--raio-padrao);
+    border: 1.5px solid transparent;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.appBtn i {
+    font-size: 1.2rem;
+}
+
+.appBtnAmarelo {
+    background-color: var(--amarelo);
+    color: var(--preto);
+}
+
+.appBtnAmarelo:hover {
+    background-color: var(--amarelo-hover);
+    transform: scale(1.04);
+}
+
+.appBtnContorno {
+    background-color: transparent;
+    color: var(--branco);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.appBtnContorno:hover {
+    background-color: var(--branco);
+    border-color: var(--branco);
+    color: var(--preto);
+}
+
+.appBtnCheio {
+    width: 100%;
+}
+
+.appBtn:focus-visible {
+    outline: 3px solid var(--amarelo-hover);
+    outline-offset: 3px;
+}
+
+.appBtn.is-desativado {
+    background-color: #d6d6d6;
+    color: #6b6b6b;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+   Celular (moldura) — usado nas duas seções com imagens
+   --w define a largura; tudo o mais é proporcional a ela.
+--------------------------------------------------------------------- */
+.celular {
+    --w: 260px;
+    position: relative;
+    width: var(--w);
+    margin: 0;
+    padding: calc(var(--w) * 0.034);
+    background: linear-gradient(145deg, #34343a 0%, #101012 38%, #1d1d21 100%);
+    border-radius: calc(var(--w) * 0.15);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 0 0 calc(var(--w) * 0.006) #050505,
+        0 calc(var(--w) * 0.16) calc(var(--w) * 0.3) calc(var(--w) * -0.06) rgba(0, 0, 0, 0.65),
+        0 calc(var(--w) * 0.05) calc(var(--w) * 0.1) rgba(0, 0, 0, 0.3);
+}
+
+/* botões laterais */
+.celular::before,
+.celular::after {
+    content: "";
+    position: absolute;
+    width: calc(var(--w) * 0.014);
+    background: #202024;
+    border-radius: 2px;
+}
+
+.celular::before {
+    right: calc(var(--w) * -0.013);
+    top: 23%;
+    height: 11%;
+}
+
+.celular::after {
+    left: calc(var(--w) * -0.013);
+    top: 17%;
+    height: 7%;
+    box-shadow: 0 calc(var(--w) * 0.19) 0 #202024;
+}
+
+.celularTela {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    isolation: isolate;
+    background: #000;
+    border-radius: calc(var(--w) * 0.118);
+}
+
+.celularTela img {
+    grid-area: 1 / 1;
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* câmera frontal (furinho) */
+.celularTela::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    top: calc(var(--w) * 0.027);
+    left: 50%;
+    width: calc(var(--w) * 0.04);
+    aspect-ratio: 1;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #232733, #050506 62%);
+    box-shadow: 0 0 0 calc(var(--w) * 0.006) rgba(0, 0, 0, 0.9);
+}
+
+/* reflexo suave no vidro */
+.celularTela::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(118deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0) 30%);
+}
+
+/* ---------------------------------------------------------------------
+   1) APRESENTAÇÃO — fundo escuro
+--------------------------------------------------------------------- */
+.appHero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--preto);
+    color: var(--branco);
+    padding: 6vw 0;
+}
+
+.appHero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.3px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(ellipse at 72% 45%, #000 0%, transparent 72%);
+    mask-image: radial-gradient(ellipse at 72% 45%, #000 0%, transparent 72%);
+}
+
+.appHeroGrid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+.appHeroTexto {
+    width: 46%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+/* Rótulo acima do título ("Aplicativo mobile", "Download"…): é um <p> e não um <h5> para não
+   quebrar a ordem dos títulos (leitores de tela), mas tem o mesmo visual do .miniTitulo h5 da página. */
+.miniTitulo .miniRotulo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--preto);
+}
+
+@media (max-width: 480px) {
+    .miniTitulo .miniRotulo {
+        font-size: 1rem;
+    }
+}
+
+.appHero .miniRotulo {
+    color: var(--branco);
+}
+
+.appHeroTexto h2 {
+    font-size: clamp(2.2rem, 3.4vw, 3.1rem);
+    line-height: 1.12;
+}
+
+.appHeroTexto h2 span {
+    color: var(--amarelo);
+}
+
+.appHeroTexto > p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #cfcfcf;
+    max-width: 48ch;
+}
+
+.appChips {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.appChips li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: #f1f1f1;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.appChips i {
+    color: var(--amarelo);
+}
+
+.appAcoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.4rem;
+}
+
+.appHeroTexto > .appMeta {
+    font-size: 0.9rem;
+    color: var(--cinza-medio);
+}
+
+/* palco: círculo amarelo + 3 celulares + cartões flutuantes */
+.appPalco {
+    position: relative;
+    flex-shrink: 0;
+    width: 50%;
+    max-width: 640px;
+    aspect-ratio: 1 / 1.04;
+}
+
+.appCirculo {
+    position: absolute;
+    left: 13%;
+    top: 15%;
+    width: 74%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 24%, var(--amarelo-hover) 0%, var(--amarelo) 40%, var(--amarelo-secundario) 100%);
+    box-shadow: 0 0 140px rgba(255, 196, 0, 0.22);
+}
+
+.appPalco .celular {
+    position: absolute;
+}
+
+.celularCentro {
+    --w: 270px;
+    left: 50%;
+    top: 1%;
+    z-index: 3;
+    transform: translateX(-50%);
+}
+
+.celularLado {
+    --w: 212px;
+    top: 16%;
+    z-index: 2;
+}
+
+.celularEsq {
+    left: 1%;
+    transform: rotate(-7deg);
+}
+
+.celularDir {
+    right: 1%;
+    top: 21%;
+    transform: rotate(7deg);
+}
+
+/* escala proporcional ao palco quando o navegador suporta container query units */
+@supports (width: 1cqw) {
+    .appPalco {
+        container-type: inline-size;
+    }
+
+    .appPalco .celularCentro {
+        --w: 42cqw;
+    }
+
+    .appPalco .celularLado {
+        --w: 33cqw;
+    }
+}
+
+.appFlutua {
+    /* tamanho base; com container query units o cartão acompanha a largura do palco */
+    font-size: 16px;
+    position: absolute;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    padding: 0.65em 1em 0.65em 0.7em;
+    border-radius: 0.9em;
+    background: rgba(255, 255, 255, 0.97);
+    color: var(--preto);
+    box-shadow: 0 0.9em 1.9em rgba(0, 0, 0, 0.35);
+    animation: appFlutua 6s ease-in-out infinite alternate;
+}
+
+@supports (width: 1cqw) {
+    .appFlutua {
+        font-size: clamp(10px, 2.5cqw, 16px);
+    }
+}
+
+.appFlutua i {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 2.15em;
+    height: 2.15em;
+    border-radius: 50%;
+    background: var(--amarelo);
+    font-size: 1.1em;
+}
+
+.appFlutua strong {
+    display: block;
+    font-size: 1.05em;
+    line-height: 1.15;
+}
+
+.appFlutua span {
+    display: block;
+    font-size: 0.78em;
+    color: #4a4a4a;
+    white-space: nowrap;
+}
+
+.appFlutua1 {
+    left: -3%;
+    top: 3%;
+}
+
+.appFlutua2 {
+    right: -3%;
+    top: 44%;
+    animation-delay: -2s;
+}
+
+.appFlutua3 {
+    left: 3%;
+    bottom: 7%;
+    animation-delay: -4s;
+}
+
+@keyframes appFlutua {
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(-10px);
+    }
+}
+
+/* ---------------------------------------------------------------------
+   2) TELAS — abas + celular (fundo claro, como "Sobre o sistema")
+--------------------------------------------------------------------- */
+.appTelas {
+    background: linear-gradient(to right, #f9f8fd, #ebecf4);
+    padding: 6vw 0;
+}
+
+.appTelasGrid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+.appTelasTexto {
+    width: 52%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.appTelasTexto h2,
+.appRecursosTopo h2,
+.appBaixarTexto h2 {
+    font-size: 2.6rem;
+    line-height: 1.15;
+}
+
+/* parágrafos: evita palavra órfã na última linha */
+.appHeroTexto > p,
+.appTelasTexto > p,
+.appRecursosTopo > p,
+.appBaixarTexto > p,
+.appCard p,
+.appIntegracaoTexto p {
+    text-wrap: pretty;
+}
+
+/* quebra de linha equilibrada nos títulos (evita palavra órfã na última linha) */
+.appHeroTexto h2,
+.appTelasTexto h2,
+.appRecursosTopo h2,
+.appBaixarTexto h2,
+.appIntegracaoTexto h3 {
+    text-wrap: balance;
+}
+
+.appTelasTexto h2 span,
+.appRecursosTopo h2 span {
+    color: var(--amarelo-secundario);
+}
+
+.appTelasTexto > p,
+.appRecursosTopo > p {
+    font-size: 1.05rem;
+    color: #3d3d3d;
+    max-width: 50ch;
+    line-height: 1.55;
+}
+
+.appAbas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.8rem;
+}
+
+.appAba {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1px solid transparent;
+    border-left: 4px solid transparent;
+    border-radius: var(--raio-padrao);
+    background: transparent;
+    color: var(--preto);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.appAba:hover {
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.appAba.is-ativa {
+    background: var(--branco);
+    border-color: #e2e2e2;
+    border-left-color: var(--amarelo);
+    box-shadow: var(--sombra-padrao);
+}
+
+.appAba:focus-visible {
+    outline: 3px solid var(--preto);
+    outline-offset: 2px;
+}
+
+.abaIcone {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--amarelo);
+    font-size: 1.1rem;
+}
+
+.abaTexto strong {
+    display: block;
+    font-size: 1.05rem;
+    margin-bottom: 0.15rem;
+}
+
+.abaTexto small {
+    display: block;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: #4a4a4a;
+}
+
+/* visualizador do celular */
+.appTelaPalco {
+    position: relative;
+    flex-shrink: 0;
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.appTelaCirculo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(100%, 470px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 24%, var(--amarelo-hover) 0%, var(--amarelo) 42%, var(--amarelo-secundario) 100%);
+}
+
+.appTelaAnel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(122%, 570px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid rgba(23, 23, 23, 0.1);
+}
+
+.appTelaPainel {
+    position: relative;
+    z-index: 2;
+}
+
+.celularGrande {
+    --w: clamp(230px, 22vw, 310px);
+}
+
+.appTelaImg {
+    opacity: 0;
+    transition: opacity 0.45s ease;
+}
+
+.appTelaImg.is-ativa {
+    opacity: 1;
+}
+
+.appLegenda {
+    position: relative;
+    z-index: 2;
+    display: none;
+    margin-top: 1.4rem;
+    max-width: 34ch;
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: #262626; /* mais escuro que o texto comum: a sombra do celular passa por baixo da legenda */
+}
+
+/* ---------------------------------------------------------------------
+   3) RECURSOS + INTEGRAÇÃO (fundo claro)
+--------------------------------------------------------------------- */
+.appRecursos {
+    background: linear-gradient(to bottom, #ffffff, #fafafa);
+    padding: 6vw 0;
+}
+
+.appRecursosTopo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
+}
+
+.appRecursosTopo h2 {
+    max-width: 28ch;
+}
+
+.appCards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+}
+
+.appCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 2rem 1.8rem;
+    background: var(--branco);
+    border: 1px solid #e2e2e2;
+    border-radius: var(--raio-padrao);
+    box-shadow: var(--sombra-padrao);
+    transition: 0.3s ease;
+}
+
+.appCard:hover {
+    transform: translateY(-6px);
+}
+
+.appCardIcone {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--amarelo);
+    font-size: 1.2rem;
+}
+
+.appCard h3 {
+    font-size: 1.15rem;
+    color: var(--preto);
+}
+
+.appCard p {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: #3d3d3d;
+}
+
+.appIntegracao {
+    display: flex;
+    align-items: center;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    margin-top: 3.5rem;
+    padding: clamp(1.6rem, 3vw, 2.6rem);
+    border-radius: 16px;
+    background: var(--preto);
+    color: var(--branco);
+}
+
+.appIntegracaoTexto {
+    flex: 0 1 34%;
+}
+
+.appIntegracaoTexto h3 {
+    font-size: 1.45rem;
+    line-height: 1.25;
+    margin-bottom: 0.7rem;
+}
+
+.appIntegracaoTexto p {
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: #cfcfcf;
+}
+
+.appFluxo {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.fluxoNo {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    width: 150px;
+    padding: 1.2rem 0.8rem;
+    text-align: center;
+    background: var(--grafite);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+}
+
+.fluxoNo strong {
+    font-size: 0.98rem;
+}
+
+.fluxoNo small {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    color: #b8b8b8;
+}
+
+.fluxoCentro {
+    width: 190px;
+    border-color: rgba(255, 196, 0, 0.55);
+    box-shadow: 0 0 0 4px rgba(255, 196, 0, 0.1);
+}
+
+.fluxoIcone {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 0.3rem;
+    border-radius: 50%;
+    background: var(--amarelo);
+    color: var(--preto);
+    font-size: 1.25rem;
+}
+
+.fluxoSeta {
+    position: relative;
+    flex: 1 1 56px;
+    min-width: 44px;
+    max-width: 90px;
+    display: grid;
+    place-items: center;
+}
+
+/* linha tracejada "andando" entre os blocos */
+.fluxoSeta::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 3px;
+    transform: translateY(-50%);
+    background: repeating-linear-gradient(90deg, var(--amarelo) 0 8px, transparent 8px 16px);
+    background-size: 16px 3px;
+    animation: fluxoAnda 1s linear infinite;
+}
+
+.fluxoSeta i {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--preto);
+    color: var(--amarelo);
+    font-size: 1rem;
+}
+
+@keyframes fluxoAnda {
+    from {
+        background-position-x: 0;
+    }
+
+    to {
+        background-position-x: 16px;
+    }
+}
+
+/* ---------------------------------------------------------------------
+   4) DOWNLOAD (fundo grafite, como "Contato")
+--------------------------------------------------------------------- */
+.appBaixar {
+    background-color: var(--grafite);
+    color: var(--branco);
+    padding: 6vw 0;
+}
+
+.appBaixarGrid {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4rem;
+}
+
+.appBaixarTexto {
+    width: 42%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.appBaixar .miniRotulo {
+    color: var(--branco);
+}
+
+.appBaixarTexto h2 {
+    color: var(--branco);
+}
+
+.appBaixarTexto h2 span {
+    color: var(--amarelo);
+}
+
+.appBaixarTexto > p {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    color: var(--cinza-medio);
+    max-width: 46ch;
+}
+
+.appPassos {
+    list-style: none;
+    counter-reset: passo;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    margin-top: 0.6rem;
+}
+
+.appPassos li {
+    counter-increment: passo;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.appPassos li::before {
+    content: counter(passo);
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--amarelo);
+    color: var(--preto);
+    font-weight: bold;
+}
+
+.appPassos strong {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--branco);
+}
+
+.appPassos span {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #b8b8b8;
+}
+
+.appAvisoIos {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.9rem 1rem;
+    border-radius: var(--raio-padrao);
+    border: 1px solid rgba(255, 196, 0, 0.45);
+    background: rgba(255, 196, 0, 0.08);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #f1f1f1;
+}
+
+.appAvisoIos i {
+    color: var(--amarelo);
+    font-size: 1.2rem;
+}
+
+.appAvisoIos a {
+    color: var(--amarelo);
+}
+
+.appAvisoIos[hidden] {
+    display: none;
+}
+
+/* cartão de download (cinza claro, como o formulário de contato) */
+.appBaixarCartao {
+    width: 52%;
+    padding: 2.2rem;
+    border-radius: var(--raio-padrao);
+    background-color: var(--cinza-claro);
+    color: var(--preto);
+    box-shadow: var(--sombra-padrao);
+}
+
+.cartaoTopo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.cartaoTopo img {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.cartaoTopo h3 {
+    font-size: 1.3rem;
+}
+
+.cartaoTopo span {
+    font-size: 0.9rem;
+    color: #6b6b6b;
+}
+
+.cartaoSelo {
+    margin-left: auto;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    background-color: #fff3cd;
+    color: #a17400 !important;
+    font-size: 0.82rem !important;
+    font-weight: bold;
+}
+
+.cartaoCorpo {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 1.8rem;
+    margin-top: 1.4rem;
+}
+
+.appDados {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.6rem 1.2rem;
+    margin-bottom: 1.4rem;
+    font-size: 0.95rem;
+}
+
+.appDados dt {
+    color: #6b6b6b;
+}
+
+.appDados dd {
+    font-weight: 600;
+    color: var(--preto);
+}
+
+.cartaoNota {
+    margin-top: 0.9rem;
+    font-size: 0.88rem;
+    color: #4a4a4a;
+    text-align: center;
+}
+
+.cartaoNota a {
+    color: var(--preto);
+    font-weight: bold;
+}
+
+.cartaoVazio {
+    margin: 1.3rem 0;
+    font-size: 0.97rem;
+    line-height: 1.55;
+    color: #3d3d3d;
+}
+
+.appBaixarCartao .appBtn:focus-visible,
+.appBaixarCartao a:focus-visible,
+.appBaixarCartao button:focus-visible {
+    outline: 3px solid var(--preto);
+    outline-offset: 3px;
+}
+
+/* QR code */
+.appQrBloco {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    width: 170px;
+    text-align: center;
+}
+
+.appQrBloco[hidden] {
+    display: none;
+}
+
+.appQr {
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--branco);
+    border: 1px solid #e2e2e2;
+}
+
+.appQr svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.appQrBloco p {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: #4a4a4a;
+}
+
+.appQrBloco p i {
+    margin-right: 0.15rem;
+}
+
+/* SHA-256 */
+.appHashBloco {
+    margin-top: 1.6rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid #dcdcdc;
+}
+
+.appHashBloco > span {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: #4a4a4a;
+}
+
+.appHashLinha {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.appHashLinha code {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #dcdcdc;
+    background: var(--branco);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--preto);
+    overflow-wrap: anywhere;
+}
+
+.appCopiar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 40px;
+    padding: 0 0.9rem;
+    border: 1.5px solid #dcdcdc;
+    border-radius: 8px;
+    background: var(--branco);
+    color: var(--preto);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.appCopiar:hover {
+    background: var(--preto);
+    border-color: var(--preto);
+    color: var(--branco);
+}
+
+.appCopiar.is-copiado {
+    background: var(--amarelo);
+    border-color: var(--amarelo);
+    color: var(--preto);
+}
+
+.appHashBloco small {
+    display: block;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #6b6b6b;
+}
+
+/* perguntas frequentes */
+.appFaq {
+    margin-top: 5rem;
+}
+
+.appFaq h2 {
+    font-size: 1.7rem;
+    color: var(--branco);
+}
+
+.appFaqLista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    align-items: start;
+    gap: 0.9rem 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.appFaq details {
+    padding: 0 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--raio-padrao);
+    background: rgba(255, 255, 255, 0.04);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.appFaq details[open] {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 196, 0, 0.5);
+}
+
+.appFaq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.05rem 0;
+    font-weight: bold;
+    color: var(--branco);
+    cursor: pointer;
+    list-style: none;
+}
+
+.appFaq summary::-webkit-details-marker {
+    display: none;
+}
+
+.appFaq summary i {
+    flex-shrink: 0;
+    color: var(--amarelo);
+    transition: transform 0.3s ease;
+}
+
+.appFaq details[open] summary i {
+    transform: rotate(180deg);
+}
+
+.appFaq summary:focus-visible {
+    outline: 3px solid var(--amarelo-hover);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.appFaq details p {
+    padding-bottom: 1.15rem;
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: #b8b8b8;
+}
+
+/* Telas de toque (celular/tablet): o QR não faz sentido, o botão resolve. */
+@media (pointer: coarse) {
+    .appQrBloco {
+        display: none !important;
+    }
+
+    .cartaoCorpo {
+        grid-template-columns: 1fr;
+    }
+}
+
+.is-android .appQrBloco {
+    display: none !important;
+}
+
+/* ---------------------------------------------------------------------
+   Movimento reduzido
+--------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+
+    .appFlutua,
+    .fluxoSeta::before {
+        animation: none;
+    }
+
+    .appTelaImg,
+    .appCard,
+    .appBtn,
+    .appAba {
+        transition: none;
+    }
+}
+
+/* =====================================================================
+   RESPONSIVIDADE (mesmos pontos de quebra do restante da página)
+===================================================================== */
+
+/* Tablets */
+@media (max-width: 1024px) {
+
+    .appHeroTexto {
+        width: 48%;
+    }
+
+    .appPalco {
+        width: 48%;
+    }
+
+    .appTelasTexto {
+        width: 54%;
+    }
+
+    .appTelaPalco {
+        width: 40%;
+    }
+
+    .appCards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .appIntegracao {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .appIntegracaoTexto {
+        flex: none;
+    }
+
+    .appBaixarGrid {
+        flex-wrap: wrap;
+    }
+
+    .appBaixarTexto,
+    .appBaixarCartao {
+        width: 100%;
+    }
+
+    .appBaixarTexto > p {
+        max-width: none;
+    }
+}
+
+/* Abas viram uma fileira rolável acima do celular */
+@media (max-width: 900px) {
+
+    .appHeroGrid {
+        flex-direction: column;
+        gap: 3rem;
+        text-align: center;
+    }
+
+    .appHeroTexto {
+        width: 100%;
+        align-items: center;
+    }
+
+    .appHeroTexto > p {
+        max-width: none;
+    }
+
+    .appChips,
+    .appAcoes {
+        justify-content: center;
+    }
+
+    .appPalco {
+        width: 100%;
+        max-width: 560px;
+    }
+
+    .appTelasGrid {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .appTelasTexto {
+        width: 100%;
+        align-items: center;
+        text-align: center;
+    }
+
+    .appTelasTexto > p {
+        max-width: none;
+    }
+
+    .appAbas {
+        flex-direction: row;
+        gap: 0.5rem;
+        width: 100vw;
+        padding: 0.2rem 5vw 0.6rem;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
+    }
+
+    .appAbas::-webkit-scrollbar {
+        display: none;
+    }
+
+    .appAba {
+        flex: 0 0 auto;
+        width: auto;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 1rem 0.5rem 0.55rem;
+        border: 1px solid #dcdcdc;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.7);
+        scroll-snap-align: center;
+    }
+
+    .appAba.is-ativa {
+        border-color: var(--amarelo);
+        background: var(--amarelo);
+        box-shadow: none;
+    }
+
+    .abaIcone {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+        background: var(--branco);
+    }
+
+    .appAba.is-ativa .abaIcone {
+        background: var(--preto);
+        color: var(--amarelo);
+    }
+
+    .abaTexto strong {
+        margin: 0;
+        font-size: 0.92rem;
+        white-space: nowrap;
+    }
+
+    .abaTexto small {
+        display: none;
+    }
+
+    .appTelaPalco {
+        width: 100%;
+        padding: 1rem 0;
+    }
+
+    .celularGrande {
+        --w: min(270px, 66vw);
+    }
+
+    .appLegenda {
+        display: block;
+    }
+}
+
+/* Celulares */
+@media (max-width: 768px) {
+
+    .appHero {
+        padding: 12vw 0;
+    }
+
+    .appTelas,
+    .appRecursos,
+    .appBaixar {
+        padding: 12vw 0;
+    }
+
+    .appTelasTexto h2,
+    .appRecursosTopo h2,
+    .appBaixarTexto h2 {
+        font-size: 2.1rem;
+    }
+
+    .appBaixarTexto {
+        align-items: flex-start;
+    }
+
+    .appBaixarCartao {
+        padding: 1.6rem;
+    }
+
+    .cartaoCorpo {
+        grid-template-columns: 1fr;
+    }
+
+    .appQrBloco {
+        margin: 0 auto;
+    }
+
+    .appFlutua1 {
+        left: -1%;
+    }
+
+    .appFlutua2 {
+        right: -1%;
+    }
+
+    .appCards {
+        grid-template-columns: 1fr;
+        margin-top: 2rem;
+    }
+
+    .appFluxo {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .fluxoNo,
+    .fluxoCentro {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .fluxoSeta {
+        flex: 0 0 56px;
+        width: 100%;
+        max-width: none;
+        min-height: 56px;
+    }
+
+    .fluxoSeta::before {
+        left: 50%;
+        right: auto;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        height: auto;
+        transform: translateX(-50%);
+        background: repeating-linear-gradient(180deg, var(--amarelo) 0 8px, transparent 8px 16px);
+        background-size: 3px 16px;
+        animation-name: fluxoAndaVertical;
+    }
+
+    .fluxoSeta i {
+        transform: rotate(90deg);
+    }
+
+    @keyframes fluxoAndaVertical {
+        from {
+            background-position-y: 0;
+        }
+
+        to {
+            background-position-y: 16px;
+        }
+    }
+
+    .appFaqLista {
+        grid-template-columns: 1fr;
+    }
+
+    .appFaq {
+        margin-top: 3.5rem;
+    }
+
+    .appHashLinha {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .appCopiar {
+        justify-content: center;
+    }
+}
+
+/* Celulares pequenos */
+@media (max-width: 480px) {
+
+    .appHeroTexto h2 {
+        font-size: 2.1rem;
+    }
+
+    .appTelasTexto h2,
+    .appRecursosTopo h2,
+    .appBaixarTexto h2 {
+        font-size: 1.8rem;
+    }
+
+    .appBtn {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .appFlutua3 {
+        display: none;
+    }
+
+    .cartaoTopo {
+        flex-wrap: wrap;
+    }
+
+    .cartaoTopo img {
+        width: 60px;
+        height: 60px;
+    }
+
+    .cartaoSelo {
+        margin-left: 0;
+    }
+}

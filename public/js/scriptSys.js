@@ -139,6 +139,7 @@ if (typeof ScrollReveal !== 'undefined') {
     });
 
     // -------- HERO --------
+    sr.reveal('.heroAppBadge', { origin: 'left', distance: '20px', duration: 700 });
     sr.reveal('#containerSICAPDA h1', { origin: 'left', distance: '30px' });
     sr.reveal('#containerSICAPDA h2', { origin: 'left', distance: '30px', delay: 120 });
     sr.reveal('#containerSICAPDA .slash', { origin: 'left', distance: '20px', delay: 200, duration: 600 });
@@ -160,6 +161,39 @@ if (typeof ScrollReveal !== 'undefined') {
     sr.reveal('.sobreSistema p', { origin: 'left', delay: 180 });
     sr.reveal('.sobreSistema .botaoSobre', { origin: 'left', delay: 260 });
     sr.reveal('#imagemSobre', { origin: 'right', distance: '60px', delay: 150 });
+
+    // -------- APLICATIVO MOBILE --------
+    // Listas aparecem em cascata com um reveal POR ITEM (delay crescente). Não uso "interval" aqui:
+    // o interval do ScrollReveal monta uma sequência que trava itens quando a página "pula"
+    // (barra de rolagem arrastada, Home/End, grids com 2ª linha).
+    const emCascata = (seletor, opcoes, passo, colunas = 0) => {
+        document.querySelectorAll(seletor).forEach((el, i) => {
+            const posicao = colunas ? i % colunas : i;
+            sr.reveal(el, Object.assign({}, opcoes, { delay: (opcoes.delay || 0) + posicao * passo }));
+        });
+    };
+
+    sr.reveal('.appHeroTexto .miniTitulo', { origin: 'left' });
+    sr.reveal('.appHeroTexto h2', { origin: 'left', delay: 100 });
+    sr.reveal('.appHeroTexto > p', { origin: 'left', delay: 180 });
+    sr.reveal('.appChips', { origin: 'left', delay: 240 });
+    sr.reveal('.appAcoes', { origin: 'bottom', delay: 300 });
+    sr.reveal('.appPalco', { origin: 'right', distance: '60px', delay: 150 });
+
+    sr.reveal('.appTelasTexto .miniTitulo', { origin: 'left' });
+    sr.reveal('.appTelasTexto h2', { origin: 'left', delay: 100 });
+    sr.reveal('.appTelasTexto > p', { origin: 'left', delay: 180 });
+    emCascata('.appAba', { origin: 'left', distance: '30px', duration: 700 }, 90);
+    sr.reveal('.appTelaPalco', { origin: 'right', distance: '60px', delay: 150 });
+
+    emCascata('.appRecursosTopo > *', { origin: 'top' }, 100);
+    emCascata('.appCard', { origin: 'bottom', distance: '40px', duration: 700 }, 120, 3);
+    sr.reveal('.appIntegracao', { origin: 'bottom', distance: '40px' });
+
+    emCascata('.appBaixarTexto > :not(.appAvisoIos)', { origin: 'left' }, 100);
+    sr.reveal('.appBaixarCartao', { origin: 'right', distance: '50px', delay: 150 });
+    sr.reveal('.appFaq h2', { origin: 'top' });
+    emCascata('.appFaqLista details', { origin: 'bottom', distance: '20px', duration: 600 }, 90, 2);
 
     // -------- PLANOS E PREÇOS --------
     sr.reveal('.precosMiniTitulo', { origin: 'top' });

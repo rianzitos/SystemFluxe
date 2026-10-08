@@ -35,6 +35,14 @@ if ($uri === '/') {
     require_once __DIR__ . '/../views/indexSys.html';
 // /sicapda exibe a landing de apresentação do sistema SICAPDA.
 
+} elseif ($uri === '/app') {
+    (new AppMobileController())->atalho();
+// atalho curto que leva à seção de download do aplicativo (útil em QR codes e materiais impressos).
+
+} elseif ($uri === '/app/baixar') {
+    (new AppMobileController())->baixar();
+// entrega o APK do aplicativo mobile (storage/downloads/SICAPDA.apk). Público, não exige login.
+
 } elseif ($uri === '/login') {
     if ($metodo === 'POST') {
         (new AcessoController())->processarLogin();
