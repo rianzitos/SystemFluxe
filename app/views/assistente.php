@@ -16,7 +16,7 @@ $tipoIcone = ['aviso' => 'bi-exclamation-circle-fill', 'info' => 'bi-info-circle
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistente IA · SICAPDA</title>
+    <title>Assistente Virtual · SICAPDA</title>
     <meta name="csrf-token" content="<?= htmlspecialchars(CsrfMiddleware::token()) ?>">
 
 <?php require __DIR__ . '/partials/tema.php'; ?>
@@ -44,7 +44,7 @@ $tipoIcone = ['aviso' => 'bi-exclamation-circle-fill', 'info' => 'bi-info-circle
 
             <header class="cabecalho">
                 <div>
-                    <h1>Assistente IA</h1>
+                    <h1>Assistente Virtual</h1>
                     <p>Tire suas dúvidas, obtenha insights e previsões em tempo real.</p>
                 </div>
 

@@ -1,9 +1,8 @@
 /* =====================================================================
-   APLICATIVO MOBILE — comportamento das seções da página /sicapda
+   APLICATIVO — comportamento das seções do app na página /sicapda
    • Abas das telas (setas, Home/End, troca suave da imagem do celular)
-   • QR code de download (gerado no navegador para o endereço real do site)
-   • Botão "Copiar" do SHA-256
-   • Aviso para iPhone/iPad (o instalador é só Android)
+   O botão de download e o aviso para iPhone/Mac/Linux são montados no servidor (PHP),
+   pelo aparelho de quem abriu a página; aqui não há nada a fazer para eles.
 ===================================================================== */
 (() => {
     'use strict';
@@ -67,103 +66,4 @@
             }
         });
     });
-
-    /* ------------------------------------------------------------------
-       QR code (qrcode-generator, MIT) — aponta para /app/baixar do próprio site
-    ------------------------------------------------------------------ */
-    const qrBloco = $('#appQrBloco');
-    const qrAlvo = $('#appQr');
-
-    if (qrBloco && qrAlvo && typeof window.qrcode === 'function') {
-        try {
-            const endereco = new URL('/app/baixar', window.location.origin).href;
-            const qr = window.qrcode(0, 'M');
-            qr.addData(endereco);
-            qr.make();
-            qrAlvo.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
-
-            const svg = qrAlvo.querySelector('svg');
-            if (svg) svg.setAttribute('aria-hidden', 'true');
-
-            qrBloco.hidden = false;
-        } catch (erro) {
-            // Sem QR: o botão de download continua funcionando.
-            qrBloco.hidden = true;
-        }
-    }
-
-    /* ------------------------------------------------------------------
-       Copiar SHA-256
-    ------------------------------------------------------------------ */
-    async function copiarTexto(texto) {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(texto);
-            return;
-        }
-        // Fallback (http fora de localhost, navegadores antigos)
-        const campo = document.createElement('textarea');
-        campo.value = texto;
-        campo.setAttribute('readonly', '');
-        campo.style.cssText = 'position:fixed;top:-1000px;opacity:0';
-        document.body.appendChild(campo);
-        campo.select();
-        try {
-            if (!document.execCommand('copy')) throw new Error('copy');
-        } finally {
-            document.body.removeChild(campo);
-        }
-    }
-
-    $$('[data-copiar]').forEach((botao) => {
-        const rotulo = $('span', botao);
-        const icone = $('i', botao);
-        const textoOriginal = rotulo ? rotulo.textContent : '';
-        const iconeOriginal = icone ? icone.className : '';
-        let temporizador;
-
-        botao.addEventListener('click', async () => {
-            const alvo = $(botao.dataset.copiar);
-            if (!alvo) return;
-
-            let ok = true;
-            try {
-                await copiarTexto(alvo.textContent.trim());
-            } catch (erro) {
-                ok = false;
-            }
-
-            clearTimeout(temporizador);
-            botao.classList.toggle('is-copiado', ok);
-            if (rotulo) rotulo.textContent = ok ? 'Copiado!' : 'Selecione e copie';
-            if (icone) icone.className = ok ? 'bi bi-check2' : iconeOriginal;
-
-            if (!ok) {
-                // Deixa o código selecionado para o usuário copiar manualmente.
-                const selecao = window.getSelection();
-                const faixa = document.createRange();
-                faixa.selectNodeContents(alvo);
-                selecao.removeAllRanges();
-                selecao.addRange(faixa);
-            }
-
-            temporizador = setTimeout(() => {
-                botao.classList.remove('is-copiado');
-                if (rotulo) rotulo.textContent = textoOriginal;
-                if (icone) icone.className = iconeOriginal;
-            }, 2200);
-        });
-    });
-
-    /* ------------------------------------------------------------------
-       Plataforma: aviso no iPhone/iPad; no Android o QR não faz sentido
-    ------------------------------------------------------------------ */
-    const agente = navigator.userAgent || '';
-    const ehIos = /iPhone|iPad|iPod/i.test(agente) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const ehAndroid = /Android/i.test(agente);
-
-    document.documentElement.classList.toggle('is-android', ehAndroid);
-    document.documentElement.classList.toggle('is-ios', ehIos);
-
-    const avisoIos = $('#appAvisoIos');
-    if (avisoIos) avisoIos.hidden = !ehIos;
 })();
