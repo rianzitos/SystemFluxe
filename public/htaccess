@@ -9,6 +9,9 @@
 
 RewriteEngine On
 
+# Repassa o cabeçalho Authorization (Bearer token da API do app) ao PHP; o Apache/CGI o remove por padrão.
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Se o caminho pedido já existe como arquivo ou diretório real, serve normalmente.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

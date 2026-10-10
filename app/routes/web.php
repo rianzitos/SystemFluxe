@@ -3,6 +3,15 @@
 require_once __DIR__ . '/../../config/app.php';
 
 $uri    = strtok($_SERVER['REQUEST_URI'], '?'); // remove query string
+
+// Site dentro de uma subpasta (ex.: XAMPP em http://host/SystemFluxe/public): tira o prefixo da pasta
+// para que as rotas (/login, /api/login...) funcionem como se o site estivesse na raiz.
+if (PHP_SAPI !== 'cli-server') {
+    $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+    if ($base !== '' && ($uri === $base || str_starts_with($uri, $base . '/'))) {
+        $uri = substr($uri, strlen($base)) ?: '/';
+    }
+}
 $metodo = $_SERVER['REQUEST_METHOD'];
 //require_once: Carrega o arquivo de configuração global da aplicação apenas uma
 //vez.strtok: Limpa a URL do navegador removendo os parâmetros após a interrogação (?).$_SERVER['REQUEST_METHOD']:
@@ -34,6 +43,18 @@ if ($uri === '/') {
 } elseif ($uri === '/sicapda') {
     require_once __DIR__ . '/../views/indexSys.html';
 // /sicapda exibe a landing de apresentação do sistema SICAPDA.
+
+} elseif ($uri === '/app') {
+    (new AppMobileController())->atalho();
+// atalho curto que leva à seção de download do aplicativo (útil em materiais impressos e divulgação).
+
+} elseif ($uri === '/app/baixar') {
+    (new AppMobileController())->baixar();
+// escolhe o instalador pelo aparelho de quem pediu (Windows ou Android); nos demais leva à página de download.
+
+} elseif (preg_match('#^/app/baixar/(windows|android)$#', $uri, $plataforma)) {
+    (new AppMobileController())->baixar($plataforma[1]);
+// entrega o instalador (storage/downloads/SICAPDA-Setup.exe ou SICAPDA.apk). Público, não exige login.
 
 } elseif ($uri === '/login') {
     if ($metodo === 'POST') {
@@ -116,6 +137,12 @@ if ($uri === '/') {
 } elseif ($uri === '/assistente/perguntar' && $metodo === 'POST') {
     (new DemandaController())->perguntar();
 // Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).
+
+// ─── API JSON (aplicativo mobile fluxe_app) ──────────────────────────────────
+
+} elseif (str_starts_with($uri, '/api/')) {
+    (new ApiController())->despachar($uri, $metodo);
+// Autenticação por Bearer token (ApiAuthMiddleware), não por sessão.
 
 // ─── 404 ─────────────────────────────────────────────────────────────────────
 
