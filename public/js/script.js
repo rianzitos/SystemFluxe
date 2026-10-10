@@ -13,9 +13,6 @@ const temGsap = typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefin
 const temLenis = typeof Lenis !== 'undefined';
 const temScrollReveal = typeof ScrollReveal !== 'undefined';
 
-// Quem pede "reduzir movimento" no sistema recebe rolagem nativa e sem animações
-const reduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 /* ---------------------------------------------------
    Rolagem suave (Lenis sincronizado com o GSAP)
 --------------------------------------------------- */
@@ -25,7 +22,7 @@ if (temGsap) {
     gsap.registerPlugin(ScrollTrigger);
 }
 
-if (temLenis && !reduzirMovimento) {
+if (temLenis) {
     // Em telas de toque o Lenis não interfere: a rolagem nativa do celular já é fluida
     lenis = new Lenis({
         duration: 1.2,
@@ -99,6 +96,7 @@ const menu = document.getElementById('menu');
 
 let ultimoScrollY = window.scrollY;
 let headerAgendado = false;
+let scrollAoAbrirMenu = 0; // posição da página quando o menu foi aberto
 
 function atualizarHeader() {
     headerAgendado = false;
@@ -109,6 +107,9 @@ function atualizarHeader() {
     const diferenca = atual - ultimoScrollY;
 
     header.classList.toggle('header-scrolled', atual > 100);
+
+    // Rolou bastante com o menu aberto: fecha o painel
+    if (menu.classList.contains('open') && Math.abs(atual - scrollAoAbrirMenu) > 80) fecharMenu();
 
     if (atual <= 100 || menu.classList.contains('open')) {
         header.classList.remove('header-hidden');
@@ -142,6 +143,7 @@ function fecharMenu() {
 }
 
 hamburgerBtn.addEventListener('click', () => {
+    scrollAoAbrirMenu = window.scrollY;
     const aberto = menu.classList.toggle('open');
     hamburgerBtn.classList.toggle('active', aberto);
     hamburgerBtn.setAttribute('aria-expanded', String(aberto));
@@ -151,6 +153,11 @@ hamburgerBtn.addEventListener('click', () => {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') fecharMenu();
+});
+
+// Tocar/clicar fora do header fecha o painel
+document.addEventListener('click', (e) => {
+    if (menu.classList.contains('open') && !header.contains(e.target)) fecharMenu();
 });
 
 document.querySelectorAll('.itemMenu').forEach(link => {
@@ -183,9 +190,9 @@ document.querySelectorAll('a[href^="#"]').forEach(link => {
                 lenis.scrollTo(alvo, { offset: descendo ? 0 : -header.offsetHeight, duration: 1.4 });
             }
         } else if (noTopo) {
-            window.scrollTo({ top: 0, behavior: reduzirMovimento ? 'auto' : 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-            alvo.scrollIntoView({ behavior: reduzirMovimento ? 'auto' : 'smooth', block: 'start' });
+            alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         history.replaceState(null, '', id);
@@ -223,10 +230,8 @@ if (botaoTema) {
     botaoTema.addEventListener('click', () => {
         const novoTema = raiz.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
 
-        if (!reduzirMovimento) {
-            raiz.classList.add('tema-animando');
-            setTimeout(() => raiz.classList.remove('tema-animando'), 500);
-        }
+        raiz.classList.add('tema-animando');
+        setTimeout(() => raiz.classList.remove('tema-animando'), 500);
 
         aplicarTema(novoTema);
 
@@ -249,7 +254,7 @@ const transitionOverlay = document.getElementById('page-transition-overlay');
 document.querySelectorAll('#butProject, [data-transicao]').forEach(link => {
     link.addEventListener('click', (e) => {
         const comModificador = e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
-        if (comModificador || !transitionOverlay || reduzirMovimento) return;
+        if (comModificador || !transitionOverlay) return;
 
         e.preventDefault();
 
@@ -280,7 +285,7 @@ window.addEventListener('pageshow', (e) => {
 /* ---------------------------------------------------
    ScrollReveal — animações de entrada ao rolar a página
 --------------------------------------------------- */
-if (temScrollReveal && !reduzirMovimento) {
+if (temScrollReveal) {
     const revelar = ScrollReveal({
         distance: '40px',
         duration: 900,
@@ -342,9 +347,9 @@ if (temScrollReveal && !reduzirMovimento) {
 
 /* ---------------------------------------------------
    GSAP + ScrollTrigger — entrada dos cards das implementações
-   Sem GSAP (ou com "reduzir movimento") os cards simplesmente aparecem.
+   Sem GSAP os cards simplesmente aparecem.
 --------------------------------------------------- */
-if (temGsap && !reduzirMovimento) {
+if (temGsap) {
     gsap.from('.impl-card', {
         y: 60,
         opacity: 0,

@@ -808,7 +808,9 @@ input:checked+label .descricao * {
     color: var(--texto);
     border: 1px solid var(--borda);
     box-shadow: var(--sombra-card);
-    transition: transform 0.45s cubic-bezier(.22, .8, .24, 1), box-shadow 0.45s ease, border-color 0.45s ease;
+    /* A mesma transição vale para entrar e sair do hover, então o card volta suavemente */
+    transition: transform 0.65s cubic-bezier(.22, .8, .24, 1), box-shadow 0.65s ease, border-color 0.65s ease;
+    will-change: transform;
 }
 
 /* Variante escura (mantém a alternância claro/escuro dos cards originais) */
@@ -824,9 +826,9 @@ input:checked+label .descricao * {
 
 .impl-card__corpo:hover,
 .impl-card__corpo:focus-within {
-    transform: translateY(-8px);
+    transform: translateY(-10px) scale(1.035);
     border-color: #FFC400;
-    box-shadow: 0px 14px 34px -6px #a98202;
+    box-shadow: 0px 18px 40px -8px #a98202;
 }
 
 /* ---------- Imagem do projeto ---------- */
@@ -846,12 +848,13 @@ input:checked+label .descricao * {
     object-fit: cover;
     /* Algumas ilustrações têm margem branca; o zoom por card recorta só a foto */
     transform: scale(var(--zoom, 1));
-    transition: transform 0.7s cubic-bezier(.22, .8, .24, 1);
+    transition: transform 1s cubic-bezier(.22, .8, .24, 1);
+    will-change: transform;
 }
 
 .impl-card__corpo:hover .impl-card__img,
 .impl-card__corpo:focus-within .impl-card__img {
-    transform: scale(calc(var(--zoom, 1) * 1.07));
+    transform: scale(calc(var(--zoom, 1) * 1.12));
 }
 
 .impl-card__midia::after {
@@ -966,7 +969,7 @@ input:checked+label .descricao * {
     background-color: #FFC400;
     color: #171717;
     font-size: 1rem;
-    transition: transform 0.35s ease;
+    transition: transform 0.5s cubic-bezier(.22, .8, .24, 1);
 }
 
 .impl-card__corpo:hover .impl-card__link i,
@@ -1379,40 +1382,23 @@ input:checked+label .descricao * {
     line-height: 1.55;
 }
 
-/* Foto central da equipe */
+/* Foto central da equipe
+   É uma <img> com altura automática: a foto aparece inteira (todos os integrantes),
+   sempre na proporção original, sem ser cortada como acontecia com o background "cover". */
 .equipe-foto-central {
     flex: 1;
-    max-width: 480px;
+    max-width: 600px;
     min-width: 260px;
+    align-self: center;
 }
 
-.equipe-foto-placeholder {
+.equipe-foto {
+    display: block;
     width: 100%;
-    height: 100%;
-    min-height: 260px;
-    background: #f0f0f0;
+    height: auto;
     border-radius: 18px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.equipe-foto-icon {
-    font-size: 48px;
-    color: #ccc;
-}
-
-.equipe-foto-placeholder {
-    background: url('/img/equipeAtualizada.webp');
-    background-size: cover;
-    background-position-x: 30%;
-}
-
-
-.equipe-foto-central img {
-    width: 40rem
+    background: var(--superficie-2);
+    box-shadow: var(--sombra-suave);
 }
 
 
@@ -1521,7 +1507,6 @@ input:checked+label .descricao * {
 
     /* Header / hambúrguer */
     #container-header {
-        flex-wrap: wrap;
         padding: 12px 5%;
         z-index: 200;
     }
@@ -1534,34 +1519,78 @@ input:checked+label .descricao * {
         display: flex;
     }
 
-    /* Logo | botões na primeira linha; menu aberto ocupa a linha de baixo */
-    .header-tools {
-        order: 2;
-    }
-
+    /* Menu aberto como painel flutuante logo abaixo do header: não empurra o
+       conteúdo da página para baixo e abre/fecha com animação. */
     #menu {
-        order: 3;
-        display: none;
-        width: 100%;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        width: auto;
         margin: 0;
+        padding: 6px 5% 22px;
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
-        padding: 15px 0;
+        justify-content: flex-start;
+        gap: 0;
+        background-color: #222;
+        border-top: 1px solid rgba(255, 196, 0, 0.18);
+        box-shadow: 0 26px 40px -14px rgba(0, 0, 0, 0.6);
+
+        /* fechado: invisível, sem clique e sem foco do teclado */
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-14px);
+        clip-path: inset(0 0 100% 0);
+        transition:
+            opacity 0.35s ease,
+            transform 0.5s cubic-bezier(.22, .8, .24, 1),
+            clip-path 0.5s cubic-bezier(.22, .8, .24, 1),
+            visibility 0s linear 0.5s;
     }
 
     #menu.open {
-        display: flex;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+        clip-path: inset(0 0 -60px 0);
+        transition-delay: 0s;
     }
 
+    /* Itens entram um depois do outro */
     #menu li {
         width: 100%;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
     }
+
+    #menu li:last-child {
+        border-bottom: none;
+    }
+
+    #menu.open li {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.45s ease, transform 0.55s cubic-bezier(.22, .8, .24, 1);
+        transition-delay: calc(var(--i, 0) * 55ms + 120ms);
+    }
+
+    #menu li:nth-child(1) { --i: 0; }
+    #menu li:nth-child(2) { --i: 1; }
+    #menu li:nth-child(3) { --i: 2; }
+    #menu li:nth-child(4) { --i: 3; }
+    #menu li:nth-child(5) { --i: 4; }
+    #menu li:nth-child(6) { --i: 5; }
 
     #menu a {
         font-size: 100%;
-        display: block;
-        padding: 6px 0;
+        display: inline-block;
+        min-width: 0;
+        padding: 14px 0;
     }
 
     /* Decorativos que causam overflow */
@@ -1712,12 +1741,8 @@ input:checked+label .descricao * {
 
     .equipe-foto-central {
         width: 100%;
-        max-width: 100%;
+        max-width: 640px;
         order: -1;
-    }
-
-    .equipe-foto-placeholder {
-        min-height: 320px;
     }
 
     .membro-card {
@@ -2100,23 +2125,6 @@ input:checked+label .descricao * {
 
 #page-transition-overlay.active .page-transition-text {
     opacity: 1;
-}
-
-/* ==================================================
-   ACESSIBILIDADE: REDUZIR MOVIMENTO
-================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-
-    .fundoIndex::before {
-        animation: none;
-    }
-
-    .impl-card__corpo,
-    .impl-card__img,
-    .impl-card__link i {
-        transition: none;
-    }
 }
 
 /* Transição suave de cores ao alternar o tema (classe aplicada por ~0,5s via JS) */
