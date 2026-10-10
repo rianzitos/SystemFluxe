@@ -1405,7 +1405,7 @@ input:checked+label .descricao * {
 }
 
 .equipe-foto-placeholder {
-    background: url('/img/equipe.svg');
+    background: url('/img/equipeAtualizada.webp');
     background-size: cover;
     background-position-x: 30%;
 }
