@@ -5,7 +5,19 @@
     <!-- Define codificação e responsividade; título da página; importa CSS local, fontes do Google e ícones (favicon e Bootstrap Icons); otimiza carregamento de fontes; inclui ScrollReveal para animações na rolagem -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <title>Fluxe</title>
+    <!-- Aplica o tema salvo (ou o do sistema) antes da primeira pintura, evitando "piscar" de claro para escuro -->
+    <script>
+        (function () {
+            var tema = 'light';
+            try {
+                tema = localStorage.getItem('fluxe-tema')
+                    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            } catch (e) { }
+            document.documentElement.setAttribute('data-theme', tema);
+        })();
+    </script>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <!--links para conectar outras páginas-->
@@ -17,11 +29,13 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"> <!--identidade da empresa-->
     <link rel="manifest" href="/site.webmanifest">
     <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
-    <script src="https://unpkg.com/scrollreveal"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <!-- "defer" mantém a ordem de execução, mas não trava a renderização enquanto os scripts baixam -->
+    <script defer src="https://unpkg.com/scrollreveal@4.0.9/dist/scrollreveal.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script defer src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <script defer src="/js/script.js"></script>
 </head>
 
 <body class="fundoIndex">
@@ -50,17 +64,27 @@
                     <li><a class="itemMenu" href="#contato">Contato </a></li>
                 </ul> <!--Cabeçalho da página inícial-->
 
-                <button class="hamburger" id="hamburgerBtn" aria-label="Abrir menu" aria-expanded="false">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
+                <div class="header-tools">
+                    <!-- Alternador de tema claro/escuro -->
+                    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Ativar tema escuro"
+                        title="Alternar tema">
+                        <i class="bi bi-moon-stars-fill theme-icon-moon" aria-hidden="true"></i>
+                        <i class="bi bi-sun-fill theme-icon-sun" aria-hidden="true"></i>
+                    </button>
+
+                    <button class="hamburger" id="hamburgerBtn" aria-label="Abrir menu" aria-expanded="false"
+                        aria-controls="menu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                </div>
 
             </header>
             <div class="meio-circulo"></div> <!-- Forma decorativa em meia lua -->
 
             <nav class="nav">
-                <div class="container inicio">
+                <div class="container inicio" id="inicio">
 
                     <div class="box">
 
@@ -78,7 +102,7 @@
                     </div>
                     <div class="quadrado-amarelo"></div>
                     <div class="imageBox"> <!-- Imagem principal -->
-                        <img id="imagemUm" src="/img/cartaoFluxe.svg" alt="">
+                        <img id="imagemUm" src="/img/cartaoFluxe.svg" alt="Cartões de visita da Fluxe" fetchpriority="high">
                     </div>
                     <div class="bolinhas"></div> <!-- Bolinhas decorativas -->
 
@@ -108,7 +132,7 @@
                         <label for="inovacao" class="card"> <!-- Card de inovação -->
                             <div class="row">
                                 <div class="circle ideia"><!-- Ícone do card -->
-                                    <img class="iconImg" src="/img/idea.svg" alt="Imagem Ideia">
+                                    <img class="iconImg" loading="lazy" decoding="async" src="/img/idea.svg" alt="Imagem Ideia">
                                 </div>
                                 <div class="descricao">
                                     <h1>INOVAÇÃO</h1> <!-- Texto do card -->
@@ -128,7 +152,7 @@
                         <label for="target" class="card"><!-- Card com informações sobre resultados -->
                             <div class="row">
                                 <div class="circle target"><!-- Card com informações sobre resultados -->
-                                    <img class="iconImg" src="/img/target.png" alt="Imagem Foco">
+                                    <img class="iconImg" loading="lazy" decoding="async" src="/img/target.png" alt="Imagem Foco">
                                 </div>
                                 <div class="descricao">
                                     <h1>FOCO EM RESULTADOS</h1>
@@ -147,7 +171,7 @@
                         <label for="people" class="card"><!-- Card sobre parceria -->
                             <div class="row">
                                 <div class="circle people"> <!-- Ícone do card -->
-                                    <img class="iconImg" src="/img/people.png" alt="Imagem Parceria">
+                                    <img class="iconImg" loading="lazy" decoding="async" src="/img/people.png" alt="Imagem Parceria">
                                 </div>
                                 <div class="descricao">
                                     <h1>PARCERIA</h1>
@@ -166,86 +190,116 @@
 
                 </div>
 
-                <div class="container implementacoes"> <!-- Área das principais implementações -->
+                <div class="container implementacoes" id="solucoes"> <!-- Área das principais implementações -->
 
                     <div class="container-circuito">
-                        <img src="/img/circuitoSistema.png" alt="Circuito tecnológico">
+                        <img src="/img/circuitoSistema.png" alt="Circuito tecnológico" loading="lazy" decoding="async">
                     </div>
 
-                    <div class="box-sobre">
+                    <div class="impl-conteudo">
 
                         <h1 class="subTitulo">Principais <span>Implementações</span></h1>
                         <div class="slash"></div>
+                        <p class="impl-intro">Frentes do <strong>SICAPDA</strong>, nosso principal projeto: controle de
+                            acesso e planejamento de refeições reunidos em um único painel de gestão.</p>
 
-                        <div id="container-quadros"> <!-- Container com os quadros dos projetos -->
-                            <div class="quadro quadro1">
+                        <!-- Cards dos projetos: conteúdo sempre visível (não depende de hover, funciona no celular) -->
+                        <ul class="impl-grid">
 
-                                <h2>
-                                    Sistema de Controle de Acesso
-                                </h2>
+                            <!-- PROJETO 1 -->
+                            <li class="impl-card impl-card--escuro">
+                                <article class="impl-card__corpo">
+                                    <div class="impl-card__midia">
+                                        <img class="impl-card__img" style="--zoom: 1.6"
+                                            src="/img/cartaoAcesso.svg" alt="Cartão sendo aproximado de um leitor de acesso"
+                                            loading="lazy" decoding="async">
+                                        <span class="impl-card__tag"><b>01</b> Acesso</span>
+                                    </div>
+                                    <h2 class="impl-card__titulo">Sistema de Controle de Acesso</h2>
+                                    <p class="impl-card__texto">Solução completa para gestão e controle de acesso com
+                                        tecnologia inteligente.</p>
+                                    <ul class="impl-card__chips">
+                                        <li>Senha</li>
+                                        <li>Cartão RFID</li>
+                                        <li>Biometria</li>
+                                    </ul>
+                                    <a class="impl-card__link" href="/sicapda" data-transicao>
+                                        Conhecer no SICAPDA <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                    </a>
+                                </article>
+                            </li>
 
-                                <div id="projeto1" class="infoProjeto">
-                                    <p>
-                                        Solução completa para gestão e controle de acesso com tecnologia inteligente.
-                                    </p>
-                                    <img class="imgQuadro" src="/img/cartaoAcesso.svg" alt="Imagem Grupo">
-                                    <!-- Imagem do projeto -->
-                                </div>
+                            <!-- PROJETO 2 -->
+                            <li class="impl-card">
+                                <article class="impl-card__corpo">
+                                    <div class="impl-card__midia">
+                                        <img class="impl-card__img" style="--zoom: 1.85"
+                                            src="/img/tablet.svg" alt="Pessoa consultando um tablet ao lado de alimentos"
+                                            loading="lazy" decoding="async">
+                                        <span class="impl-card__tag"><b>02</b> Previsão</span>
+                                    </div>
+                                    <h2 class="impl-card__titulo">Previsão de Demanda Alimentar</h2>
+                                    <p class="impl-card__texto">Sistema inteligente que prevê a demanda de refeições e
+                                        reduz desperdícios.</p>
+                                    <ul class="impl-card__chips">
+                                        <li>Café</li>
+                                        <li>Almoço</li>
+                                        <li>Jantar</li>
+                                        <li>Ceia</li>
+                                    </ul>
+                                    <a class="impl-card__link" href="/sicapda" data-transicao>
+                                        Conhecer no SICAPDA <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                    </a>
+                                </article>
+                            </li>
 
-                            </div>
+                            <!-- PROJETO 3 -->
+                            <li class="impl-card impl-card--escuro">
+                                <article class="impl-card__corpo">
+                                    <div class="impl-card__midia">
+                                        <img class="impl-card__img" style="--zoom: 1"
+                                            src="/img/dashboardSistema.svg" alt="Painel geral do SICAPDA com gráficos e indicadores"
+                                            loading="lazy" decoding="async">
+                                        <span class="impl-card__tag"><b>03</b> Analytics</span>
+                                    </div>
+                                    <h2 class="impl-card__titulo">Dashboard em Tempo Real</h2>
+                                    <p class="impl-card__texto">Dashboards interativos para acompanhamento e tomada de
+                                        decisão em tempo real.</p>
+                                    <ul class="impl-card__chips">
+                                        <li>Acessos</li>
+                                        <li>Consumo</li>
+                                        <li>Relatórios</li>
+                                    </ul>
+                                    <a class="impl-card__link" href="/sicapda" data-transicao>
+                                        Conhecer no SICAPDA <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                    </a>
+                                </article>
+                            </li>
 
-                            <!-- QUADRO 2 -->
-                            <div class="quadro quadro2">
+                            <!-- PROJETO 4 -->
+                            <li class="impl-card">
+                                <article class="impl-card__corpo">
+                                    <div class="impl-card__midia">
+                                        <img class="impl-card__img" style="--zoom: 1"
+                                            src="/img/cozinha.svg" alt="Pessoas sendo atendidas em um refeitório"
+                                            loading="lazy" decoding="async">
+                                        <span class="impl-card__tag"><b>04</b> Operação</span>
+                                    </div>
+                                    <h2 class="impl-card__titulo">Gestão de Refeitórios</h2>
+                                    <p class="impl-card__texto">Plataforma integrada para otimizar a gestão de
+                                        refeitórios institucionais.</p>
+                                    <ul class="impl-card__chips">
+                                        <li>Turnos</li>
+                                        <li>Cadastros</li>
+                                        <li>Integrações</li>
+                                    </ul>
+                                    <a class="impl-card__link" href="/sicapda" data-transicao>
+                                        Conhecer no SICAPDA <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                                    </a>
+                                </article>
+                            </li>
 
-                                <h2>
-                                    Previsão de Demanda Alimentar
-                                </h2>
-
-                                <div id="projeto2" class="infoProjeto"> <!-- Informações do projeto -->
-
-                                    <p>
-                                        Sistema inteligente que prevê a demanda de refeições e reduz desperdicios.
-                                    </p>
-                                    <img class="imgQuadro" src="/img/tablet.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
-
-                            <!-- QUADRO 3 -->
-                            <div class="quadro quadro3">
-
-                                <h2>
-                                    Dashboard em Tempo Real
-                                </h2>
-
-                                <div id="projeto3" class="infoProjeto">
-
-                                    <p>
-                                        Dashboard interativos para acompanhamento e tomada de decisão em tempo real.
-                                    </p>
-                                    <img class="imgQuadro" src="/img/dashboardSistema.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
-
-                            <!-- QUADRO 4 -->
-                            <div class="quadro quadro4">
-
-                                <h2>
-                                    Gestão de Refeitórios
-                                </h2>
-
-                                <div id="projeto4" class="infoProjeto">
-
-                                    <p>
-                                        Plataforma integrada para otimizar a gestão de refeitórios institucionais.
-                                    </p>
-                                    <img class="imgQuadro" src="/img/cozinha.svg" alt="Imagem Grupo">
-                                </div>
-
-                            </div>
-
-                        </div>
+                        </ul>
 
                     </div>
 
@@ -277,7 +331,7 @@
 
                             <div class="membro-card">
                                 <div class="membro-foto">
-                                    <img class="fotos" src="/img/Davi.svg" alt="Foto de Davi Gonçalves">
+                                    <img class="fotos" loading="lazy" decoding="async" src="/img/Davi.svg" alt="Foto de Davi Gonçalves">
                                     <!-- Foto do integrante -->
                                 </div>
                                 <h3 class="membro-nome">Davi Gonçalves - Project Owner (PO)</h3>
@@ -297,7 +351,7 @@
 
                             <div class="membro-card">
                                 <div class="membro-foto">
-                                    <img class="fotos" src="/img/Rian.svg" alt="Foto de Rian Rafael">
+                                    <img class="fotos" loading="lazy" decoding="async" src="/img/Rian.svg" alt="Foto de Rian Rafael">
                                     <!-- Foto do integrante -->
                                 </div>
                                 <h3 class="membro-nome">Rian Rafael - Scrum Master</h3>
@@ -314,7 +368,7 @@
 
                             <div class="membro-card">
                                 <div class="membro-foto">
-                                    <img class="fotos" src="/img/Rhyan.svg" alt="Foto de Rhyan Gabriel">
+                                    <img class="fotos" loading="lazy" decoding="async" src="/img/Rhyan.svg" alt="Foto de Rhyan Gabriel">
                                     <!-- Foto do integrante -->
                                 </div>
                                 <h3 class="membro-nome">Rhyan Gabriel</h3>
@@ -327,7 +381,7 @@
 
                             <div class="membro-card">
                                 <div class="membro-foto">
-                                    <img class="fotos" src="/img/Beatriz.svg" alt="Foto de Beatriz Moreira">
+                                    <img class="fotos" loading="lazy" decoding="async" src="/img/Beatriz.svg" alt="Foto de Beatriz Moreira">
                                     <!-- Foto do integrante -->
                                 </div>
                                 <h3 class="membro-nome">Beatriz Moreira</h3>
@@ -340,7 +394,7 @@
 
                             <div class="membro-card">
                                 <div class="membro-foto">
-                                    <img class="fotos" src="/img/Julia.svg" alt="Foto de Julia Ferreira">
+                                    <img class="fotos" loading="lazy" decoding="async" src="/img/Julia.svg" alt="Foto de Julia Ferreira">
                                     <!-- Foto do integrante -->
                                 </div>
                                 <h3 class="membro-nome">Julia Ferreira</h3>
@@ -408,7 +462,7 @@
 
                         <div class="formGroup">
                             <label for="mensagemContato">Mensagem</label>
-                            <textarea id="mensagemContato" name="mensagem" rows="4"
+                            <textarea id="mensagemContato" name="mensagem" rows="4" data-lenis-prevent
                                 placeholder="Conte um pouco sobre a sua instituição"></textarea>
                         </div>
 
@@ -423,7 +477,6 @@
     <div id="page-transition-overlay">
         <span class="page-transition-text">CARREGANDO... </span>
     </div>
-    <script src="/js/script.js"></script>
 </body>
 
 </html>
