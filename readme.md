@@ -65,7 +65,7 @@ SystemFluxe/
 
 Configuração local: copie `config/.env.example` para `config/.env` e importe `config/database.sql`.
 
-Dados de exemplo (opcional, para testar e demonstrar): depois de importar o `database.sql`, importe também `config/dados_exemplo.sql`. Ele cria uma empresa fictícia com funcionários, catracas, ~30 dias de acessos e de produção de refeições. Login de demonstração: `demo@fluxe.com` / `Fluxe@123` (só para teste, não use em produção). Pode ser importado de novo quando quiser: ele recria só a empresa de demonstração.
+Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql`, troque o número da linha `SET @empresa_id` pelo id da sua empresa (`SELECT id, nome_fantasia FROM empresas;`) e execute o script inteiro. Ele cria funcionários, catracas, ~30 dias de acessos e de produção de refeições só para essa empresa, sem alterar dados reais. Pode ser rodado de novo quando quiser: recria apenas o que ele mesmo criou (matrícula `DEMO-` e aparelhos `[Demo]`).
 
 ## Aplicativo (Windows e Android)
 
