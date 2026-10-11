@@ -9,6 +9,7 @@
 -- Descubra os ids com:  SELECT id, nome_fantasia FROM empresas;
 --
 -- ATENÇÃO (use em banco de teste):
+--   • preenche as metas de refeições que estiverem com média 0 (sem isso a previsão fica 0);
 --   • marca a empresa escolhida como "possui refeitório" e, se ela tiver menos de
 --     40 colaboradores, ajusta para 45 (a previsão de demanda precisa disso);
 --   • recria a produção de refeições dos últimos 90 dias dessa empresa, inclusive
@@ -29,6 +30,13 @@ SET @emp = (SELECT id FROM empresas ORDER BY id LIMIT 1);
 -- Confere: tem que aparecer 1 linha com o nome da empresa (vazio = id inexistente)
 SELECT id, nome_fantasia AS empresa_escolhida FROM empresas WHERE id = @emp;
 
+-- "Presentes agora" (tela Pessoas): ela mostra quem está no local NESTE MOMENTO, e o
+-- script só cria acessos reais de dias úteis até a hora atual. Em fim de semana, feriado
+-- ou fora do expediente ela fica em 0 mesmo. Para demonstrar a tela a qualquer hora,
+-- troque 0 por 1: o script coloca 15 pessoas (operadores, supervisores e prestadores)
+-- "dentro" agora, com a entrada nas últimas horas.
+SET @presentes_agora = 0;
+
 -- ─── 2) Limpa dados DEMO anteriores (só os dessa empresa) ────────────────────
 DELETE FROM dispositivos_iot WHERE empresa_id = @emp AND token LIKE 'demo-%';       -- apaga também os logs (CASCADE)
 DELETE FROM funcionarios     WHERE empresa_id = @emp AND matricula LIKE 'DEMO%';    -- apaga também as credenciais (CASCADE)
@@ -44,6 +52,14 @@ SELECT @emp, t.tipo, t.media, NOW()
   FROM (SELECT 'cafe' AS tipo, 25 AS media UNION ALL SELECT 'almoco', 40
         UNION ALL SELECT 'jantar', 12 UNION ALL SELECT 'ceia', 4) t
  WHERE NOT EXISTS (SELECT 1 FROM refeicoes r WHERE r.empresa_id = @emp AND r.tipo = t.tipo);
+
+-- Empresas cadastradas pelo assistente podem ter as metas gravadas com média 0 (campo em
+-- branco). Com meta 0 a previsão de refeições fica em 0, então só essas metas zeradas
+-- são preenchidas (metas que você já definiu não mudam).
+UPDATE refeicoes SET media_diaria = 25 WHERE empresa_id = @emp AND tipo = 'cafe'   AND media_diaria = 0;
+UPDATE refeicoes SET media_diaria = 40 WHERE empresa_id = @emp AND tipo = 'almoco' AND media_diaria = 0;
+UPDATE refeicoes SET media_diaria = 12 WHERE empresa_id = @emp AND tipo = 'jantar' AND media_diaria = 0;
+UPDATE refeicoes SET media_diaria =  4 WHERE empresa_id = @emp AND tipo = 'ceia'   AND media_diaria = 0;
 
 -- ─── 4) Dispositivos IoT (catracas) ──────────────────────────────────────────
 -- O token leva o id da empresa porque ele é único no banco inteiro: assim dá para
@@ -209,6 +225,24 @@ DELIMITER ;
 
 CALL sp_demo_sicapda();
 DROP PROCEDURE IF EXISTS sp_demo_sicapda;
+
+-- ─── Opcional: pessoas "presentes agora" (só se @presentes_agora = 1, lá no topo) ──
+-- 10 operadores, 3 supervisores e 2 prestadores: entrada nas últimas 20 a 180 minutos, sem saída.
+DELETE FROM logs_acesso
+ WHERE @presentes_agora = 1 AND empresa_id = @emp AND data_hora >= CURDATE()
+   AND funcionario_id IN (SELECT id FROM funcionarios
+                           WHERE empresa_id = @emp
+                             AND (matricula BETWEEN 'DEMO001' AND 'DEMO010' OR matricula BETWEEN 'DEMO031' AND 'DEMO033'
+                                  OR matricula IN ('DEMO037', 'DEMO038')));
+
+INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+SELECT @emp, f.id, @disp, (SELECT c.id FROM credenciais_acesso c WHERE c.funcionario_id = f.id LIMIT 1),
+       'entrada', 'autorizado',
+       GREATEST(TIMESTAMP(CURDATE()), NOW() - INTERVAL (20 + (CAST(RIGHT(f.matricula, 3) AS UNSIGNED) * 7) MOD 160) MINUTE)
+  FROM funcionarios f
+ WHERE @presentes_agora = 1 AND f.empresa_id = @emp
+   AND (f.matricula BETWEEN 'DEMO001' AND 'DEMO010' OR f.matricula BETWEEN 'DEMO031' AND 'DEMO033'
+        OR f.matricula IN ('DEMO037', 'DEMO038'));
 
 SET SQL_SAFE_UPDATES = 1;   -- devolve a proteção do Workbench
 
