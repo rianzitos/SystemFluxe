@@ -52,7 +52,7 @@ INSERT INTO dispositivos_iot (empresa_id, nome, tipo, localizacao, token, status
   (@emp, 'Catraca Principal',    'rfid',    'Portaria principal', CONCAT('demo-catraca-principal-',  @emp), 'online', NOW(), NOW()),
   (@emp, 'Leitor do Refeitório', 'hibrido', 'Refeitório',         CONCAT('demo-leitor-refeitorio-',  @emp), 'online', NOW(), NOW());
 
-SET @disp = (SELECT id FROM dispositivos_iot WHERE token = CONCAT('demo-catraca-principal-', @emp));
+SET @disp = LAST_INSERT_ID();   -- id da 'Catraca Principal' (1ª linha do INSERT acima); sem comparar texto, então não depende de collation
 
 -- ─── 5) Funcionários (30 operadores, 6 supervisores, 4 prestadores) ──────────
 INSERT INTO funcionarios (empresa_id, nome, matricula, cargo, categoria, ativo, criado_em) VALUES
