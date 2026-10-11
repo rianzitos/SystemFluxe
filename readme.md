@@ -65,6 +65,8 @@ SystemFluxe/
 
 Configuração local: copie `config/.env.example` para `config/.env` e importe `config/database.sql`.
 
+Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql` no Workbench e execute o script inteiro (Ctrl+Shift+Enter). Por padrão ele usa a primeira empresa; para escolher outra, veja o passo 1 do arquivo (`SET @emp = 8;`). Gera 40 funcionários trabalhando em turnos o dia todo e nos 7 dias da semana, com ~90 dias de acessos e de produção de refeições, então o painel, as pessoas presentes, a análise mensal e os relatórios aparecem preenchidos em qualquer dia e horário. **A cada execução ele apaga e recria** funcionários, credenciais, dispositivos, logs de acesso e produção da empresa escolhida (nunca de outra empresa, e nunca usuários, empresas ou metas de refeições). Use só em banco de teste. Na empresa escolhida ele marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta para 45 (os valores de antes aparecem na primeira consulta do script). No final mostra uma tabela de diagnóstico.
+
 ## Aplicativo (Windows e Android)
 
 O SICAPDA tem um aplicativo para **Windows** e **Android**, feito em Flutter ([fluxe_app](https://github.com/rianzitos/fluxe_app)), que usa o **mesmo login e os mesmos dados** da versão web.
