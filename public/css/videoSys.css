@@ -156,7 +156,7 @@
     background: #000;
 }
 
-/* Descrição do vídeo só para leitores de tela (o vídeo não tem áudio) */
+/* Descrição do vídeo só para leitores de tela (o vídeo não tem fala: os textos ficam na imagem) */
 .modalVideoDescricao {
     position: absolute;
     width: 1px;

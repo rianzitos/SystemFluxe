@@ -4,6 +4,9 @@
    • O vídeo só é baixado quando o modal abre (preload="none"); ao passar o mouse ou focar no botão
      ele já começa a baixar, para abrir mais rápido.
    • Capítulos: botões que pulam para cada parte do vídeo e acompanham o tempo atual.
+   • Som: o vídeo tem trilha e efeitos sonoros e toca COM som ao abrir (a pessoa acabou de clicar para vê-lo).
+     Se o navegador bloquear, toca mudo e os controles ligam o som. Quem silenciar pelos controles não é
+     "surpreendida" de novo ao reabrir. Ao sair da aba, o vídeo pausa.
    Fica num arquivo separado (como o temaSys.js) para funcionar mesmo se algum CDN (GSAP/Lenis) falhar.
 --------------------------------------------------- */
 (() => {
@@ -63,11 +66,43 @@
         marcarCapitulo();
 
         // Quem pediu "reduzir animações" vê o vídeo parado, com o pôster, e dá o play quando quiser
-        if (!reduzirMovimento.matches) {
-            const tocando = video.play();
-            if (tocando && tocando.catch) tocando.catch(() => { /* autoplay bloqueado: os controles continuam ali */ });
-        }
+        if (!reduzirMovimento.matches) tocar();
     }
+
+    /* ---------- Som ---------- */
+    let silenciadoPelaPessoa = false; // a pessoa silenciou pelos controles? (vale até recarregar a página)
+    let mudoDefinidoAqui = false;     // último valor de video.muted definido por ESTE código
+
+    function definirMudo(valor) {
+        mudoDefinidoAqui = valor;
+        video.muted = valor;
+    }
+
+    // "volumechange" também dispara quando o código muda o som; só conta como escolha da pessoa se o valor
+    // for diferente do que o código definiu por último.
+    video.addEventListener('volumechange', () => {
+        if (video.muted === mudoDefinidoAqui) return;
+        silenciadoPelaPessoa = mudoDefinidoAqui = video.muted;
+    });
+
+    /* Toca com som, a não ser que a pessoa já tenha silenciado. Se o navegador não deixar tocar com som
+       (autoplay bloqueado), tenta de novo mudo: o vídeo anda e os controles ligam o som. */
+    function tocar() {
+        definirMudo(silenciadoPelaPessoa);
+        const tentativa = video.play();
+        if (!tentativa || !tentativa.catch) return;
+        tentativa.catch(() => {
+            if (video.muted) return; // já estava mudo: o bloqueio é outro e os controles continuam ali
+            definirMudo(true);
+            const mudo = video.play();
+            if (mudo && mudo.catch) mudo.catch(() => { });
+        });
+    }
+
+    // Com a aba em segundo plano a trilha não deve continuar tocando
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && modal.open) video.pause();
+    });
 
     /* Idempotente: roda ao fechar pelo botão/clique fora e de novo no evento "close" (que o ESC também dispara). */
     function limpar() {

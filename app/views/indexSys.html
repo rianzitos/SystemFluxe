@@ -849,8 +849,9 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 
     <!-- =====================================================================
          VÍDEO "COMO FUNCIONA" — abre pelo botão "Ver como funciona" do início da página.
-         Os arquivos ficam em public/video/ (veja o readme para trocar o vídeo). O vídeo não tem áudio:
-         os textos estão na própria imagem. Os capítulos pulam para cada parte (data-tempo, em segundos).
+         Os arquivos ficam em public/video/ (veja o readme para trocar o vídeo). O vídeo tem trilha e efeitos
+         sonoros (sem narração) e toca com som; os textos também estão na própria imagem, então dá para
+         assistir sem som. Os capítulos pulam para cada parte (data-tempo, em segundos).
     ====================================================================== -->
     <dialog id="modalVideo" class="modalVideo" aria-labelledby="modalVideoTitulo" aria-describedby="modalVideoDescricao"
         data-lenis-prevent>
@@ -866,7 +867,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
             </div>
 
             <div class="modalVideoPalco">
-                <video id="videoComoFunciona" class="modalVideoPlayer" controls muted playsinline preload="none"
+                <video id="videoComoFunciona" class="modalVideoPlayer" controls playsinline preload="none"
                     poster="/video/sicapda-como-funciona.jpg?v=<?= (int) @filemtime(__DIR__ . '/../../public/video/sicapda-como-funciona.jpg') ?>">
                     <source src="/video/sicapda-como-funciona.mp4?v=<?= (int) @filemtime(__DIR__ . '/../../public/video/sicapda-como-funciona.mp4') ?>"
                         type="video/mp4">
@@ -878,7 +879,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                 </div>
             </div>
 
-            <p class="modalVideoDescricao" id="modalVideoDescricao">Vídeo sem áudio, com os textos na própria imagem. Mostra o login, o
+            <p class="modalVideoDescricao" id="modalVideoDescricao">Vídeo com trilha musical e efeitos sonoros, sem fala; os textos aparecem na própria imagem. Mostra o login, o
                 painel geral com acessos e previsão de refeições, a análise mensal, as pessoas presentes, o assistente que responde com
                 previsões, os relatórios com exportação em CSV, as configurações com tema claro e escuro e o aplicativo para Windows
                 e Android.</p>
