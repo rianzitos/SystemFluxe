@@ -30,6 +30,9 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 if (PHP_SAPI === 'cli-server') {
     $caminhoReal = __DIR__ . '/../../public/' . ltrim($uri, '/');
     if ($uri !== '/' && is_file($caminhoReal)) {
+        // O servidor embutido não aceita "Range" (Apache e Nginx aceitam): sem isso o vídeo da /sicapda
+        // não deixa pular na barra de progresso nem usar os capítulos. Midia só atende public/video/.
+        Midia::servirVideo($caminhoReal);
         return false;
     }
 }

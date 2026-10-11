@@ -36,6 +36,7 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
     <meta name="description" content="SICAPDA: controle de acesso e previsão de demanda alimentar. Agora também em aplicativo para Windows e Android, com os mesmos dados da versão web.">
     <link rel="stylesheet" href="/css/styleSys.css">
     <link rel="stylesheet" href="/css/appMobile.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/appMobile.css') ?>">
+    <link rel="stylesheet" href="/css/videoSys.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/videoSys.css') ?>">
     <link rel="stylesheet" href="/css/temaSys.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/temaSys.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -103,7 +104,9 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
                     <button class="botao" id="amarelo"><span><i class="bi bi-bar-chart-line-fill"></i></span> <a
                             href="/login">Acessar sistema</a>
                     </button>
-                    <button class="botao" id="branco"><span><i class="bi bi-play"></i></span> Ver como funciona</button>
+                    <!-- Abre o vídeo "Como funciona" (modal #modalVideo, no fim da página; veja js/videoSys.js) -->
+                    <button class="botao" id="branco" type="button" aria-haspopup="dialog" aria-controls="modalVideo"><span><i
+                                class="bi bi-play" aria-hidden="true"></i></span> Ver como funciona</button>
                 </div>
 
                 <div id="icones">
@@ -844,9 +847,70 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
 
     </footer>
 
+    <!-- =====================================================================
+         VÍDEO "COMO FUNCIONA" — abre pelo botão "Ver como funciona" do início da página.
+         Os arquivos ficam em public/video/ (veja o readme para trocar o vídeo). O vídeo não tem áudio:
+         os textos estão na própria imagem. Os capítulos pulam para cada parte (data-tempo, em segundos).
+    ====================================================================== -->
+    <dialog id="modalVideo" class="modalVideo" aria-labelledby="modalVideoTitulo" aria-describedby="modalVideoDescricao"
+        data-lenis-prevent>
+        <div class="modalVideoCaixa">
+            <div class="modalVideoTopo">
+                <div>
+                    <p class="modalVideoRotulo"><i class="bi bi-play-circle-fill" aria-hidden="true"></i> Vídeo · 30 segundos</p>
+                    <h2 id="modalVideoTitulo">Como o SICAPDA funciona</h2>
+                </div>
+                <button class="modalVideoFechar" type="button" data-fechar-video aria-label="Fechar vídeo">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="modalVideoPalco">
+                <video id="videoComoFunciona" class="modalVideoPlayer" controls muted playsinline preload="none"
+                    poster="/video/sicapda-como-funciona.jpg?v=<?= (int) @filemtime(__DIR__ . '/../../public/video/sicapda-como-funciona.jpg') ?>">
+                    <source src="/video/sicapda-como-funciona.mp4?v=<?= (int) @filemtime(__DIR__ . '/../../public/video/sicapda-como-funciona.mp4') ?>"
+                        type="video/mp4">
+                    Seu navegador não consegue reproduzir este vídeo. <a href="/login">Acesse o sistema</a> para ver como ele funciona.
+                </video>
+                <div class="modalVideoErro" id="modalVideoErro" role="alert" hidden>
+                    <i class="bi bi-wifi-off" aria-hidden="true"></i>
+                    <p>Não foi possível carregar o vídeo agora. Verifique a sua conexão e tente de novo.</p>
+                </div>
+            </div>
+
+            <p class="modalVideoDescricao" id="modalVideoDescricao">Vídeo sem áudio, com os textos na própria imagem. Mostra o login, o
+                painel geral com acessos e previsão de refeições, a análise mensal, as pessoas presentes, o assistente que responde com
+                previsões, os relatórios com exportação em CSV, as configurações com tema claro e escuro e o aplicativo para Windows
+                e Android.</p>
+
+            <!-- No computador fica ao lado do vídeo; no celular, embaixo (veja css/videoSys.css) -->
+            <div class="modalVideoLateral">
+                <div class="modalVideoLateralInterno">
+                    <p class="modalVideoLateralTitulo" aria-hidden="true">Capítulos</p>
+                    <nav class="videoCapitulos" aria-label="Capítulos do vídeo">
+                        <button class="videoCapitulo" type="button" data-tempo="2.5">Entrar <small>0:02</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="5.4">Painel <small>0:05</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="9.7">Análise mensal <small>0:09</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="12.1">Pessoas <small>0:12</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="14.5">Assistente IA <small>0:14</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="19.1">Relatórios <small>0:19</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="22.1">Configurações <small>0:22</small></button>
+                        <button class="videoCapitulo" type="button" data-tempo="25.7">Aplicativo <small>0:25</small></button>
+                    </nav>
+
+                    <div class="modalVideoRodape">
+                        <a class="appBtn appBtnAmarelo" href="/login"><i class="bi bi-bar-chart-line-fill" aria-hidden="true"></i> Acessar sistema</a>
+                        <a class="appBtn appBtnContorno" href="#contato" data-fechar-video><i class="bi bi-chat-dots" aria-hidden="true"></i> Falar com a equipe</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
     <script src="/js/temaSys.js?v=<?= (int) @filemtime(__DIR__ . '/../../public/js/temaSys.js') ?>"></script>
     <script src="/js/scriptSys.js"></script>
     <script src="/js/appMobile.js?v=<?= (int) @filemtime(__DIR__ . '/../../public/js/appMobile.js') ?>" defer></script>
+    <script src="/js/videoSys.js?v=<?= (int) @filemtime(__DIR__ . '/../../public/js/videoSys.js') ?>" defer></script>
 
 </body>
 

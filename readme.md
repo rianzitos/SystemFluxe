@@ -52,7 +52,7 @@ SystemFluxe/
 │   ├── middleware/         # Autenticação, controle de papéis e logs
 │   └── routes/web.php       # Roteamento das rotas públicas e protegidas
 ├── config/                  # Configurações de app e banco de dados
-├── public/                  # CSS, JS e imagens
+├── public/                  # CSS, JS, imagens e o vídeo "Ver como funciona" (public/video/)
 ├── storage/downloads/       # Instaladores do aplicativo (Windows e Android) e manifestos, fora de public/
 └── ia/                      # API e modelos em Python para previsão de demanda
 ```
@@ -77,6 +77,15 @@ O SICAPDA tem um aplicativo para **Windows** e **Android**, feito em Flutter ([f
 - **Publicar ou atualizar** — copie para `storage/downloads/` os arquivos `SICAPDA-Setup.exe` + `app-windows.json` (Windows) e `SICAPDA.apk` + `app.json` (Android: versão, tamanho e data). O GitHub Actions do `fluxe_app` gera tudo no artefato `SICAPDA-downloads`. Passo a passo em [`storage/downloads/LEIA-ME.md`](storage/downloads/LEIA-ME.md).
 
 Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` e `API_SECRET`.
+
+## Vídeo "Ver como funciona"
+
+O botão **Ver como funciona**, no início da página `/sicapda`, abre um modal com um vídeo de 30 segundos que percorre o sistema: login, painel, análise mensal, pessoas, assistente IA, relatórios, configurações (com o tema escuro) e o aplicativo. O vídeo não tem áudio (os textos estão na própria imagem) e, ao lado dele, há capítulos clicáveis para pular para cada parte.
+
+- **Arquivos** — `public/video/sicapda-como-funciona.mp4` (H.264, 1920×1080, ~3 MB, com o índice no início do arquivo para começar a tocar antes de baixar tudo) e `public/video/sicapda-como-funciona.jpg` (pôster: aparece até o vídeo carregar e para quem usa "reduzir animações", que não toca sozinho). O arquivo só é baixado quando a pessoa abre o modal (ou passa o mouse no botão).
+- **Código** — o modal (`<dialog id="modalVideo">`) fica no fim de `app/views/indexSys.html`; estilos em `public/css/videoSys.css`; comportamento em `public/js/videoSys.js` (abrir e fechar, ESC, clique no fundo, foco, capítulos, aviso se o vídeo não carregar). É um `<dialog>` nativo, então o navegador cuida de prender o foco e de bloquear a página de fundo.
+- **Trocar o vídeo** — substitua os dois arquivos mantendo os nomes (a página usa a data de modificação deles para renovar o cache). Se o novo vídeo tiver outra duração ou outras partes, ajuste os botões de capítulo (`data-tempo`, em segundos) e o texto "30 segundos" no `<dialog>`. Para exportar: `ffmpeg -i entrada.mov -c:v libx264 -crf 24 -pix_fmt yuv420p -an -movflags +faststart sicapda-como-funciona.mp4`.
+- **Servidor** — Apache e Nginx entregam o MP4 com suporte a `Range`, que é o que permite pular na barra de progresso (e é exigido pelo Safari). O servidor embutido do PHP (`php -S`) não tem esse suporte, então `app/helpers/Midia.php` cobre isso só no desenvolvimento (bloco `cli-server` de `app/routes/web.php`); em produção ele nunca é chamado.
 
 ## Tecnologias utilizadas
 
