@@ -49,8 +49,16 @@ html {
 
 html,
 body {
-    overflow-x: hidden;
     width: 100%;
+}
+
+html {
+    overflow-x: hidden;
+}
+
+/* "clip" corta o excesso lateral sem criar um contêiner de rolagem (com "hidden" o header sticky não gruda) */
+body {
+    overflow-x: clip;
 }
 
 /* ==================================================
@@ -110,26 +118,26 @@ body {
     justify-content: space-between;
     gap: 2rem;
     padding: 0 clamp(1.5rem, 4vw, 3rem);
-    z-index: 100;
+    z-index: 1000;
     color: white;
-    position: relative;
+    /* Header "sticky": fica preso no topo ao rolar. Continua no fluxo da página o
+       tempo todo, então o conteúdo não dá salto quando ele aparece ou some. */
+    position: sticky;
     top: 0;
     transition: transform 0.35s ease, box-shadow 0.35s ease;
+    will-change: transform;
 }
 
-.header-fixed {
-    /* position: fixed; */
-    top: 0;
-    left: 0;
-    width: 100%;
-    transform: translateY(-100%);
+/* sombra assim que a página começa a rolar */
+.containerHeader.header-scrolled {
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
-    z-index: 999;
 }
-/* 
-.header-fixed.header-visible {
-    transform: translateY(0);
-} */
+
+/* some ao descer e volta ao subir (mesmo comportamento da página inicial) */
+.containerHeader.header-hidden {
+    transform: translateY(-100%);
+    box-shadow: none;
+}
 
 .header-brand {
     display: flex;

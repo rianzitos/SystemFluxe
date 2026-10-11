@@ -14,38 +14,48 @@ gsap.ticker.add((time) => {
 gsap.ticker.lagSmoothing(0);
 
 /* ---------------------------------------------------
-   Header: mostra/esconde ao rolar a página
+   Header sticky: some ao descer, volta ao subir
+   (mesmo comportamento do header da página inicial)
 --------------------------------------------------- */
-// let lastScrollY = window.scrollY;
+const header = document.querySelector('.containerHeader');
+const headerActions = document.getElementById('headerActions');
+let ultimoScrollY = window.scrollY;
+let headerAgendado = false;
 
-// window.addEventListener('scroll', () => {
-//     const header = document.querySelector('.containerHeader');
-//     const currentScrollY = window.scrollY;
+function atualizarHeader() {
+    headerAgendado = false;
 
-//     if (currentScrollY > 100) {
-//         header.classList.add('header-fixed');
-//     }
+    // No iOS a rolagem "elástica" gera valores negativos ou acima do máximo
+    const maximo = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const atual = Math.min(Math.max(window.scrollY, 0), maximo);
+    const diferenca = atual - ultimoScrollY;
 
-//     if (currentScrollY < lastScrollY) {
-//         header.classList.add('header-visible');
-//     } else {
-//         header.classList.remove('header-visible');
-//     }
+    header.classList.toggle('header-scrolled', atual > 100);
 
-//     if (currentScrollY <= 100) {
-//         header.classList.remove('header-fixed');
-//         header.classList.remove('header-visible');
-//     }
+    // Perto do topo, ou com o menu aberto, o header fica sempre visível
+    if (atual <= 100 || headerActions.classList.contains('is-open')) {
+        header.classList.remove('header-hidden');
+        ultimoScrollY = atual;
+        return;
+    }
 
-//     lastScrollY = currentScrollY;
-// });
+    // Ignora tremidas pequenas para o header não ficar piscando
+    if (Math.abs(diferenca) < 6) return;
+
+    header.classList.toggle('header-hidden', diferenca > 0);
+    ultimoScrollY = atual;
+}
+
+window.addEventListener('scroll', () => {
+    if (headerAgendado) return;
+    headerAgendado = true;
+    requestAnimationFrame(atualizarHeader);
+}, { passive: true });
 
 /* ---------------------------------------------------
    Menu hamburguer (mobile/tablet)
 --------------------------------------------------- */
-const header = document.querySelector('.containerHeader');
 const menuToggle = document.getElementById('menuToggle');
-const headerActions = document.getElementById('headerActions');
 const menuIcon = menuToggle.querySelector('i');
 
 function openMenu() {
@@ -56,10 +66,12 @@ function openMenu() {
 
     // Garante que o header esteja visível enquanto o menu está aberto,
     // mesmo que ele estivesse escondido pelo scroll no momento do clique.
-    header.classList.add('header-visible');
+    header.classList.remove('header-hidden');
 
-    // Trava o scroll da página por trás do menu aberto.
-    document.body.style.overflow = 'hidden';
+    // Trava o scroll da página por trás do menu aberto. Usa o <html> (e pausa o Lenis):
+    // mexer no overflow do <body> faria o header sticky parar de grudar no topo.
+    document.documentElement.style.overflow = 'hidden';
+    lenis.stop();
 }
 
 function closeMenu() {
@@ -67,7 +79,8 @@ function closeMenu() {
     menuToggle.setAttribute('aria-expanded', 'false');
     menuIcon.classList.remove('bi-x-lg');
     menuIcon.classList.add('bi-list');
-    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    lenis.start();
 }
 
 menuToggle.addEventListener('click', () => {
@@ -99,7 +112,11 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         if (!target) return;
 
         event.preventDefault();
-        lenis.scrollTo(target, { offset: -110 });
+
+        // Subindo, o header reaparece e cobriria o topo da seção: compensa a altura dele.
+        // Descendo ele some, então não precisa de folga.
+        const descendo = target.getBoundingClientRect().top > 0;
+        lenis.scrollTo(target, { offset: descendo ? 0 : -header.offsetHeight });
     });
 });
 
