@@ -1,19 +1,23 @@
 -- =============================================================================
--- SICAPDA by FLUXE — DADOS FICTÍCIOS (DEMO) para os dashboards
+-- SICAPDA by FLUXE — DADOS FICTÍCIOS (DEMO) para o painel
 -- Rode no MySQL Workbench com TODO o script (ícone do raio ⚡, Ctrl+Shift+Enter).
 -- Pode rodar de novo à vontade: ele apaga os dados DEMO anteriores e recria.
--- Os dados DEMO são identificados por: matrícula 'DEMO...' e token 'demo-...'.
+--
+-- Preenche TUDO: pessoas presentes agora, acessos, relatórios, refeições previstas,
+-- kg produzidos e desperdiçados, gráficos, próximas horas e alertas. A empresa de
+-- demonstração funciona em turnos o dia todo, todos os dias, então o painel aparece
+-- completo em qualquer dia e horário (inclusive fim de semana e de madrugada).
 --
 -- EMPRESA: por padrão vai para a primeira empresa. Para escolher outra, veja o
--- passo 1 (troque o número em  SET @emp = 8;  e tire os dois traços do começo).
+-- passo 1 (comente a linha de cima e use  SET @emp = 8;).
 -- Descubra os ids com:  SELECT id, nome_fantasia FROM empresas;
 --
 -- ATENÇÃO (use em banco de teste):
---   • preenche as metas de refeições que estiverem com média 0 (sem isso a previsão fica 0);
---   • marca a empresa escolhida como "possui refeitório" e, se ela tiver menos de
---     40 colaboradores, ajusta para 45 (a previsão de demanda precisa disso);
---   • recria a produção de refeições dos últimos 90 dias dessa empresa, inclusive
---     dias que já tinham dado.
+--   • marca a empresa como "possui refeitório" e, se ela tiver menos de 40
+--     colaboradores, ajusta para 45 (a previsão de demanda precisa disso);
+--   • preenche as metas de refeições que estiverem com média 0;
+--   • recria a produção de refeições dos últimos 90 dias dessa empresa.
+-- Os dados DEMO são identificados por: matrícula 'DEMO...' e token 'demo-...'.
 -- =============================================================================
 
 USE controle_acesso;
@@ -29,13 +33,6 @@ SET @emp = (SELECT id FROM empresas ORDER BY id LIMIT 1);
 
 -- Confere: tem que aparecer 1 linha com o nome da empresa (vazio = id inexistente)
 SELECT id, nome_fantasia AS empresa_escolhida FROM empresas WHERE id = @emp;
-
--- "Presentes agora" (tela Pessoas): ela mostra quem está no local NESTE MOMENTO, e o
--- script só cria acessos reais de dias úteis até a hora atual. Em fim de semana, feriado
--- ou fora do expediente ela fica em 0 mesmo. Para demonstrar a tela a qualquer hora,
--- troque 0 por 1: o script coloca 15 pessoas (operadores, supervisores e prestadores)
--- "dentro" agora, com a entrada nas últimas horas.
-SET @presentes_agora = 0;
 
 -- ─── 2) Limpa dados DEMO anteriores (só os dessa empresa) ────────────────────
 DELETE FROM dispositivos_iot WHERE empresa_id = @emp AND token LIKE 'demo-%';       -- apaga também os logs (CASCADE)
@@ -118,7 +115,13 @@ INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, cria
 SELECT id, 'rfid', CONCAT('DEMO-RFID-', @emp, '-', LPAD(id, 6, '0')), 1, NOW()
   FROM funcionarios WHERE empresa_id = @emp AND matricula LIKE 'DEMO%';
 
--- ─── 6) Gera ~90 dias de acessos e de produção ───────────────────────────────
+-- ─── 6) Gera 90 dias de acessos e de produção ───────────────────────────────
+-- A empresa funciona em 7 turnos que começam em horários diferentes (cada funcionário
+-- tem o seu, pelo número da matrícula), todos os dias. Ninguém passa da meia-noite, para
+-- cada entrada ter a sua saída no mesmo dia (é assim que o sistema monta os relatórios).
+--   turno 0: 00h (pontual)   turno 1: 03h   turno 2: 06h   turno 3: 09h   turno 4: 12h   turno 5: 14h
+--   (cada um entra em até 2 horas depois) e turno 6: entra entre 18h e 22h e sai entre 23h50 e 23h58.
+-- Fim de semana e feriado vão menos gente; produção segue a quantidade de pessoas do dia.
 DROP PROCEDURE IF EXISTS sp_demo_sicapda;
 DELIMITER $$
 CREATE PROCEDURE sp_demo_sicapda()
@@ -139,81 +142,84 @@ BEGIN
         SET dia = DATE_SUB(CURDATE(), INTERVAL i DAY);
         SET dow = DAYOFWEEK(dia);   -- 1 = domingo, 7 = sábado
 
-        -- Só dias úteis e fora dos principais feriados nacionais fixos
-        IF dow BETWEEN 2 AND 6
-           AND DATE_FORMAT(dia, '%m-%d') NOT IN ('01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25') THEN
+        -- Taxa de presença: dias úteis fortes (sexta mais vazia), fim de semana reduzido
+        SET taxa = CASE dow WHEN 1 THEN 0.50 WHEN 7 THEN 0.62 WHEN 2 THEN 0.92 WHEN 3 THEN 0.95
+                            WHEN 4 THEN 0.95 WHEN 5 THEN 0.93 ELSE 0.84 END
+                   + (RAND() * 0.06 - 0.03);
+        -- Principais feriados nacionais fixos: operação mínima
+        IF DATE_FORMAT(dia, '%m-%d') IN ('01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25') THEN
+            SET taxa = taxa * 0.40;
+        END IF;
 
-            -- Taxa de presença: segunda forte, sexta mais vazia, com variação diária
-            SET taxa = CASE dow WHEN 2 THEN 0.92 WHEN 3 THEN 0.95 WHEN 4 THEN 0.95 WHEN 5 THEN 0.93 ELSE 0.84 END
-                       + (RAND() * 0.06 - 0.03);
+        TRUNCATE TABLE tmp_demo_dia;
 
-            TRUNCATE TABLE tmp_demo_dia;
+        INSERT INTO tmp_demo_dia (funcionario_id, credencial_id, entrada, saida)
+        SELECT x.id, x.cred, x.entrada,
+               IF(x.turno = 6, DATE_ADD(dia, INTERVAL 1430 + FLOOR(RAND() * 9) MINUTE),   -- turno 6 sai entre 23h50 e 23h58
+                               DATE_ADD(x.entrada, INTERVAL x.perm MINUTE))
+          FROM (
+                SELECT y.id, y.turno,
+                       (SELECT c.id FROM credenciais_acesso c WHERE c.funcionario_id = y.id LIMIT 1) AS cred,
+                       DATE_ADD(dia, INTERVAL
+                           CASE y.turno WHEN 0 THEN 0 WHEN 1 THEN 180 WHEN 2 THEN 360 WHEN 3 THEN 540
+                                        WHEN 4 THEN 720 WHEN 5 THEN 840 ELSE 1080 END
+                           + FLOOR(RAND() * CASE y.turno WHEN 0 THEN 20 WHEN 6 THEN 240 ELSE 120 END) MINUTE) AS entrada,
+                       CASE y.turno WHEN 5 THEN 450 + FLOOR(RAND() * 20)    -- turno das 14h: ~7h30
+                                    WHEN 0 THEN 420 + FLOOR(RAND() * 30)
+                                    WHEN 1 THEN 420 + FLOOR(RAND() * 30)
+                                    ELSE        470 + FLOOR(RAND() * 30) END AS perm
+                  FROM (
+                        -- turno de cada funcionário (pela matrícula): 12 no turno das 6h, 8 no da noite e 4 em cada um dos outros
+                        SELECT f.id,
+                               CASE CAST(RIGHT(f.matricula, 3) AS UNSIGNED) MOD 10
+                                   WHEN 7 THEN 0 WHEN 8 THEN 1 WHEN 0 THEN 2 WHEN 1 THEN 2 WHEN 5 THEN 2
+                                   WHEN 2 THEN 3 WHEN 6 THEN 6 WHEN 3 THEN 4 WHEN 4 THEN 5 ELSE 6
+                               END AS turno,
+                               f.categoria
+                          FROM funcionarios f
+                         WHERE f.empresa_id = @emp AND f.matricula LIKE 'DEMO%' AND f.ativo = 1
+                           AND RAND() < IF(f.categoria = 'prestador', taxa * 0.85, taxa)
+                       ) y
+               ) x;
 
-            -- Horário de entrada por turno (id MOD 3) e permanência por categoria
-            INSERT INTO tmp_demo_dia (funcionario_id, credencial_id, entrada, saida)
-            SELECT x.id, x.cred, x.entrada,
-                   DATE_ADD(x.entrada, INTERVAL x.perm MINUTE)
-              FROM (
-                    SELECT f.id,
-                           (SELECT c.id FROM credenciais_acesso c WHERE c.funcionario_id = f.id LIMIT 1) AS cred,
-                           DATE_ADD(dia, INTERVAL
-                               CASE f.categoria
-                                   WHEN 'prestador' THEN 480 + FLOOR(RAND() * 120)
-                                   ELSE CASE f.id MOD 3
-                                            WHEN 0 THEN 360 + FLOOR(RAND() * 50)   -- 06:00–06:50
-                                            WHEN 1 THEN 450 + FLOOR(RAND() * 60)   -- 07:30–08:30
-                                            ELSE        780 + FLOOR(RAND() * 45)   -- 13:00–13:45
-                                        END
-                               END MINUTE) AS entrada,
-                           CASE f.categoria
-                               WHEN 'prestador'  THEN 300 + FLOOR(RAND() * 180)
-                               WHEN 'supervisor' THEN 520 + FLOOR(RAND() * 60)
-                               ELSE                   470 + FLOOR(RAND() * 40)
-                           END AS perm
-                      FROM funcionarios f
-                     WHERE f.empresa_id = @emp AND f.matricula LIKE 'DEMO%' AND f.ativo = 1
-                       AND RAND() < IF(f.categoria = 'supervisor', 0.97, IF(f.categoria = 'prestador', 0.80, taxa))
-                   ) x;
+        -- Entradas (hoje: só até a hora atual)
+        INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+        SELECT @emp, funcionario_id, @disp, credencial_id, 'entrada', 'autorizado', entrada
+          FROM tmp_demo_dia WHERE entrada <= NOW();
 
-            -- Entradas (hoje: só até a hora atual)
+        -- Saídas (hoje: só de quem já teria saído)
+        INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+        SELECT @emp, funcionario_id, @disp, credencial_id, 'saida', 'autorizado', saida
+          FROM tmp_demo_dia WHERE saida <= NOW();
+
+        -- Uma ou outra tentativa negada (cartão desconhecido)
+        IF RAND() < 0.25 AND DATE_ADD(dia, INTERVAL 500 MINUTE) <= NOW() THEN
             INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-            SELECT @emp, funcionario_id, @disp, credencial_id, 'entrada', 'autorizado', entrada
-              FROM tmp_demo_dia WHERE entrada <= NOW();
+            VALUES (@emp, NULL, @disp, NULL, 'entrada', 'negado', DATE_ADD(dia, INTERVAL 500 + FLOOR(RAND() * 60) MINUTE));
+        END IF;
 
-            -- Saídas (hoje: só de quem já teria saído)
-            INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-            SELECT @emp, funcionario_id, @disp, credencial_id, 'saida', 'autorizado', saida
-              FROM tmp_demo_dia WHERE saida <= NOW();
+        -- Produção do dia (não gera para hoje: a balança só fecha o dia à noite)
+        IF i > 0 THEN
+            SELECT COUNT(*) INTO pessoas FROM tmp_demo_dia;
+            -- Desperdício melhora com o tempo: ~11% (90 dias atrás) → ~7% (ontem)
+            SET desperdicio = 0.07 + (i / 90) * 0.04 + (RAND() * 0.025 - 0.0125);
 
-            -- Uma ou outra tentativa negada (cartão desconhecido)
-            IF RAND() < 0.25 THEN
-                INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-                VALUES (@emp, NULL, @disp, NULL, 'entrada', 'negado', DATE_ADD(dia, INTERVAL 500 + FLOOR(RAND() * 60) MINUTE));
-            END IF;
+            -- kg necessários por pessoa: café 0,13 · almoço 0,48 · jantar 0,20 · ceia 0,06
+            INSERT INTO producao_refeicoes
+                (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
+            SELECT @emp, dia, t.tipo,
+                   ROUND(pessoas * t.kg * (0.97 + RAND() * 0.12), 2),              -- previsto
+                   ROUND(pessoas * t.kg * (1.05 + RAND() * 0.10), 2),              -- produzido
+                   0, NOW()
+              FROM (SELECT 'cafe' AS tipo, 0.13 AS kg UNION ALL SELECT 'almoco', 0.48
+                    UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t
+            ON DUPLICATE KEY UPDATE
+                quantidade_prevista_kg  = VALUES(quantidade_prevista_kg),
+                quantidade_produzida_kg = VALUES(quantidade_produzida_kg);
 
-            -- Produção do dia (não gera para hoje: a balança só fecha o dia à noite)
-            IF i > 0 THEN
-                SELECT COUNT(*) INTO pessoas FROM tmp_demo_dia;
-                -- Desperdício melhora com o tempo: ~11% (90 dias atrás) → ~7% (ontem)
-                SET desperdicio = 0.07 + (i / 90) * 0.04 + (RAND() * 0.025 - 0.0125);
-
-                -- kg necessários por pessoa: café 0,13 · almoço 0,48 · jantar 0,20 · ceia 0,06
-                INSERT INTO producao_refeicoes
-                    (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
-                SELECT @emp, dia, t.tipo,
-                       ROUND(pessoas * t.kg * (0.97 + RAND() * 0.12), 2),              -- previsto
-                       ROUND(pessoas * t.kg * (1.05 + RAND() * 0.10), 2),              -- produzido
-                       0, NOW()
-                  FROM (SELECT 'cafe' AS tipo, 0.13 AS kg UNION ALL SELECT 'almoco', 0.48
-                        UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t
-                ON DUPLICATE KEY UPDATE
-                    quantidade_prevista_kg  = VALUES(quantidade_prevista_kg),
-                    quantidade_produzida_kg = VALUES(quantidade_produzida_kg);
-
-                UPDATE producao_refeicoes
-                   SET quantidade_desperdicada_kg = ROUND(quantidade_produzida_kg * (desperdicio + (RAND() * 0.02 - 0.01)), 2)
-                 WHERE empresa_id = @emp AND data = dia;
-            END IF;
+            UPDATE producao_refeicoes
+               SET quantidade_desperdicada_kg = ROUND(quantidade_produzida_kg * (desperdicio + (RAND() * 0.02 - 0.01)), 2)
+             WHERE empresa_id = @emp AND data = dia;
         END IF;
 
         SET i = i - 1;
@@ -225,24 +231,6 @@ DELIMITER ;
 
 CALL sp_demo_sicapda();
 DROP PROCEDURE IF EXISTS sp_demo_sicapda;
-
--- ─── Opcional: pessoas "presentes agora" (só se @presentes_agora = 1, lá no topo) ──
--- 10 operadores, 3 supervisores e 2 prestadores: entrada nas últimas 20 a 180 minutos, sem saída.
-DELETE FROM logs_acesso
- WHERE @presentes_agora = 1 AND empresa_id = @emp AND data_hora >= CURDATE()
-   AND funcionario_id IN (SELECT id FROM funcionarios
-                           WHERE empresa_id = @emp
-                             AND (matricula BETWEEN 'DEMO001' AND 'DEMO010' OR matricula BETWEEN 'DEMO031' AND 'DEMO033'
-                                  OR matricula IN ('DEMO037', 'DEMO038')));
-
-INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-SELECT @emp, f.id, @disp, (SELECT c.id FROM credenciais_acesso c WHERE c.funcionario_id = f.id LIMIT 1),
-       'entrada', 'autorizado',
-       GREATEST(TIMESTAMP(CURDATE()), NOW() - INTERVAL (20 + (CAST(RIGHT(f.matricula, 3) AS UNSIGNED) * 7) MOD 160) MINUTE)
-  FROM funcionarios f
- WHERE @presentes_agora = 1 AND f.empresa_id = @emp
-   AND (f.matricula BETWEEN 'DEMO001' AND 'DEMO010' OR f.matricula BETWEEN 'DEMO031' AND 'DEMO033'
-        OR f.matricula IN ('DEMO037', 'DEMO038'));
 
 SET SQL_SAFE_UPDATES = 1;   -- devolve a proteção do Workbench
 
