@@ -65,7 +65,7 @@ SystemFluxe/
 
 Configuração local: copie `config/.env.example` para `config/.env` e importe `config/database.sql`.
 
-Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql`, troque o número da linha `SET @empresa_id` pelo id da sua empresa (`SELECT id, nome_fantasia FROM empresas;`) e execute o script inteiro. Ele cria funcionários, catracas, ~30 dias de acessos e de produção de refeições só para essa empresa, sem alterar dados reais. Pode ser rodado de novo quando quiser: recria apenas o que ele mesmo criou (matrícula `DEMO-` e aparelhos `[Demo]`).
+Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql` no Workbench e execute o script inteiro (Ctrl+Shift+Enter). Por padrão ele usa a primeira empresa; para escolher outra, veja o passo 1 do arquivo (`SET @emp = 8;`). Gera 40 funcionários, catracas, ~90 dias de acessos e de produção de refeições. Use em banco de teste: ele marca a empresa como "possui refeitório" e recria a produção dos últimos 90 dias. Pode ser rodado de novo quando quiser: recria só o que ele mesmo criou (matrícula `DEMO` e aparelhos `demo-`).
 
 ## Aplicativo (Windows e Android)
 

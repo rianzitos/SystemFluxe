@@ -1,157 +1,218 @@
 -- =============================================================================
--- SICAPDA by FLUXE — DADOS DE EXEMPLO PARA UMA EMPRESA QUE JÁ EXISTE
--- =============================================================================
--- COMO USAR
---   1) Descubra o id da sua empresa:   SELECT id, nome_fantasia FROM empresas;
---   2) Troque o número na linha "SET @empresa_id" aqui embaixo.
---   3) Execute o script INTEIRO (no Workbench: Ctrl+Shift+Enter, o raio SEM cursor).
+-- SICAPDA by FLUXE — DADOS FICTÍCIOS (DEMO) para os dashboards
+-- Rode no MySQL Workbench com TODO o script (ícone do raio ⚡, Ctrl+Shift+Enter).
+-- Pode rodar de novo à vontade: ele apaga os dados DEMO anteriores e recria.
+-- Os dados DEMO são identificados por: matrícula 'DEMO...' e token 'demo-...'.
 --
--- O QUE INSERE (tudo na empresa escolhida, só dados fictícios):
---   20 funcionários (matrículas DEMO-001...), cartões RFID, 3 catracas, metas de
---   refeições (só se a empresa ainda não tiver) e ~30 dias de acessos e de produção.
---   Datas relativas a HOJE, só em dias úteis, sem horários que ainda não aconteceram.
+-- EMPRESA: por padrão vai para a primeira empresa. Para escolher outra, veja o
+-- passo 1 (troque o número em  SET @emp = 8;  e tire os dois traços do começo).
+-- Descubra os ids com:  SELECT id, nome_fantasia FROM empresas;
 --
--- É SEGURO: não altera nem apaga dados reais. Ao rodar de novo, ele só recria o que
--- ele mesmo criou (matrícula "DEMO-" e aparelhos "[Demo]"). A produção usa INSERT
--- IGNORE: dias que já têm dado real ficam como estão.
--- Para remover tudo depois, rode só os dois DELETE do "PASSO 1".
+-- ATENÇÃO (use em banco de teste):
+--   • marca a empresa escolhida como "possui refeitório" e, se ela tiver menos de
+--     40 colaboradores, ajusta para 45 (a previsão de demanda precisa disso);
+--   • recria a produção de refeições dos últimos 90 dias dessa empresa, inclusive
+--     dias que já tinham dado.
 -- =============================================================================
+
 USE controle_acesso;
-SET NAMES utf8mb4;
+SET NAMES utf8mb4;          -- garante os acentos (Produção, Natália...) em qualquer forma de importar
 
-SET @empresa_id = 8;      -- <<< TROQUE AQUI pelo id da SUA empresa
+SET SQL_SAFE_UPDATES = 0;   -- o Workbench bloqueia DELETE/UPDATE sem chave (erro 1175)
 
--- Confere a empresa: tem que aparecer 1 linha com o nome dela (vazio = id errado)
-SELECT id, nome_fantasia AS empresa_escolhida FROM empresas WHERE id = @empresa_id;
+-- ─── 1) Empresa que receberá os dados ────────────────────────────────────────
+-- Padrão: a primeira empresa. Para escolher outra, comente a linha de baixo
+-- (coloque -- no começo) e tire o -- da seguinte, trocando o número pelo id.
+SET @emp = (SELECT id FROM empresas ORDER BY id LIMIT 1);
+-- SET @emp = 8;
 
--- ─── PASSO 1: limpa os dados de exemplo anteriores (só os "DEMO") ────────────
-DELETE FROM dispositivos_iot WHERE empresa_id = @empresa_id AND nome LIKE '[Demo]%';    -- apaga também os logs deles
-DELETE FROM funcionarios     WHERE empresa_id = @empresa_id AND matricula LIKE 'DEMO-%'; -- e as credenciais
+-- Confere: tem que aparecer 1 linha com o nome da empresa (vazio = id inexistente)
+SELECT id, nome_fantasia AS empresa_escolhida FROM empresas WHERE id = @emp;
 
--- ─── PASSO 2: catracas / leitores ────────────────────────────────────────────
--- (se o id da empresa não existir, é aqui que aparece o erro 1452 de chave estrangeira)
-INSERT INTO dispositivos_iot (empresa_id, nome, tipo, localizacao, token, status, ultimo_ping, criado_em)
-SELECT @empresa_id, d.nome, d.tipo, d.loc, SHA2(CONCAT('demo-', @empresa_id, '-', d.n), 256), 'online', NOW(), NOW()
-FROM (SELECT 1 n, '[Demo] Catraca Portaria Principal' nome, 'hibrido' tipo, 'Entrada principal' loc
-      UNION ALL SELECT 2, '[Demo] Leitor Administrativo',   'rfid', 'Bloco administrativo'
-      UNION ALL SELECT 3, '[Demo] Catraca de Serviços',     'rfid', 'Entrada de prestadores') d;
+-- ─── 2) Limpa dados DEMO anteriores (só os dessa empresa) ────────────────────
+DELETE FROM dispositivos_iot WHERE empresa_id = @emp AND token LIKE 'demo-%';       -- apaga também os logs (CASCADE)
+DELETE FROM funcionarios     WHERE empresa_id = @emp AND matricula LIKE 'DEMO%';    -- apaga também as credenciais (CASCADE)
 
-SET @d1 = (SELECT id FROM dispositivos_iot WHERE empresa_id = @empresa_id AND token = SHA2(CONCAT('demo-', @empresa_id, '-1'), 256));
-SET @d2 = (SELECT id FROM dispositivos_iot WHERE empresa_id = @empresa_id AND token = SHA2(CONCAT('demo-', @empresa_id, '-2'), 256));
-SET @d3 = (SELECT id FROM dispositivos_iot WHERE empresa_id = @empresa_id AND token = SHA2(CONCAT('demo-', @empresa_id, '-3'), 256));
+-- ─── 3) Empresa com refeitório + metas diárias de refeições ─────────────────
+UPDATE empresas
+   SET possui_refeitorio = 1,
+       qtd_colaboradores = IF(qtd_colaboradores < 40, 45, qtd_colaboradores)
+ WHERE id = @emp;
 
--- ─── PASSO 3: funcionários (10 operadores, 4 supervisores, 5 prestadores, 1 inativo) ─
-INSERT INTO funcionarios (empresa_id, nome, cpf, matricula, cargo, categoria, foto, ativo, criado_em)
-SELECT @empresa_id, t.nome, CONCAT(LPAD(@empresa_id, 3, '0'), LPAD(t.n, 8, '0')),
-       CONCAT('DEMO-', LPAD(t.n, 3, '0')), t.cargo, t.cat, NULL, t.ativo, NOW()
-FROM (SELECT  1 n, 'Carlos Eduardo Lima' nome, 'Operador de Produção' cargo, 'operador' cat, 1 ativo
-      UNION ALL SELECT  2, 'Fernanda Souza Alves',      'Operadora de Produção',        'operador',   1
-      UNION ALL SELECT  3, 'João Pedro Ramos',          'Operador de Empacotamento',    'operador',   1
-      UNION ALL SELECT  4, 'Aline Cristina Martins',    'Operadora de Qualidade',       'operador',   1
-      UNION ALL SELECT  5, 'Rafael Henrique Gomes',     'Operador de Máquinas',         'operador',   1
-      UNION ALL SELECT  6, 'Patrícia Oliveira Nunes',   'Auxiliar de Produção',         'operador',   1
-      UNION ALL SELECT  7, 'Lucas Mendes Barbosa',      'Auxiliar de Estoque',          'operador',   1
-      UNION ALL SELECT  8, 'Juliana Ferreira Costa',    'Operadora de Produção',        'operador',   1
-      UNION ALL SELECT  9, 'Marcos Vinícius Teixeira',  'Operador de Expedição',        'operador',   1
-      UNION ALL SELECT 10, 'Camila Rodrigues Pires',    'Auxiliar de Limpeza Industrial','operador',  1
-      UNION ALL SELECT 11, 'Roberto Carlos Andrade',    'Supervisor de Produção',       'supervisor', 1
-      UNION ALL SELECT 12, 'Sandra Regina Moreira',     'Supervisora de Qualidade',     'supervisor', 1
-      UNION ALL SELECT 13, 'Eduardo Santos Cardoso',    'Supervisor de Logística',      'supervisor', 1
-      UNION ALL SELECT 14, 'Tatiana Lopes Vieira',      'Coordenadora de Turno',        'supervisor', 1
-      UNION ALL SELECT 15, 'Gustavo Almeida Rocha',     'Técnico de Manutenção (terceirizado)', 'prestador', 1
-      UNION ALL SELECT 16, 'Renata Batista Freitas',    'Nutricionista (terceirizada)', 'prestador',  1
-      UNION ALL SELECT 17, 'Diego Fernandes Araújo',    'Eletricista (terceirizado)',   'prestador',  1
-      UNION ALL SELECT 18, 'Priscila Monteiro Dias',    'Segurança Patrimonial (terceirizada)', 'prestador', 1
-      UNION ALL SELECT 19, 'Anderson Luiz Castro',      'Vigilante (terceirizado)',     'prestador',  1
-      UNION ALL SELECT 20, 'Bruno Cesar Pacheco',       'Operador de Produção (desligado)', 'operador', 0) t;
-
--- ─── PASSO 4: credenciais (cartão RFID para todos; biometria para os supervisores) ─
-INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
-SELECT f.id, 'rfid', CONCAT('DEMO-E', @empresa_id, '-RFID-', RIGHT(f.matricula, 3)), f.ativo, NOW()
-FROM funcionarios f WHERE f.empresa_id = @empresa_id AND f.matricula LIKE 'DEMO-%';
-
-INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
-SELECT f.id, 'biometria', CONCAT('DEMO-E', @empresa_id, '-BIO-', RIGHT(f.matricula, 3)), 1, NOW()
-FROM funcionarios f WHERE f.empresa_id = @empresa_id AND f.matricula LIKE 'DEMO-%' AND f.categoria = 'supervisor';
-
--- ─── PASSO 5: metas de refeições por dia (só se a empresa ainda não tiver) ───
 INSERT INTO refeicoes (empresa_id, tipo, media_diaria, criado_em)
-SELECT @empresa_id, m.tipo, m.media, NOW()
-FROM (SELECT 'cafe' tipo, 18 media UNION ALL SELECT 'almoco', 20 UNION ALL SELECT 'jantar', 8) m
-WHERE NOT EXISTS (SELECT 1 FROM refeicoes r WHERE r.empresa_id = @empresa_id);
+SELECT @emp, t.tipo, t.media, NOW()
+  FROM (SELECT 'cafe' AS tipo, 25 AS media UNION ALL SELECT 'almoco', 40
+        UNION ALL SELECT 'jantar', 12 UNION ALL SELECT 'ceia', 4) t
+ WHERE NOT EXISTS (SELECT 1 FROM refeicoes r WHERE r.empresa_id = @emp AND r.tipo = t.tipo);
 
--- ─── PASSO 6: acessos dos últimos 30 dias ────────────────────────────────────
--- tmp_dias = números de 0 a 29 (quantos dias atrás). O "sorteio" usa CRC32, então a
--- falta de um funcionário num dia é a mesma na entrada e na saída.
-DROP TEMPORARY TABLE IF EXISTS tmp_dias;
-CREATE TEMPORARY TABLE tmp_dias AS
-SELECT a.n + b.n * 10 AS d
-FROM (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
-      UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) a,
-     (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2) b;
+-- ─── 4) Dispositivos IoT (catracas) ──────────────────────────────────────────
+-- O token leva o id da empresa porque ele é único no banco inteiro: assim dá para
+-- rodar o script para empresas diferentes sem um atrapalhar o outro.
+INSERT INTO dispositivos_iot (empresa_id, nome, tipo, localizacao, token, status, ultimo_ping, criado_em) VALUES
+  (@emp, 'Catraca Principal',    'rfid',    'Portaria principal', CONCAT('demo-catraca-principal-',  @emp), 'online', NOW(), NOW()),
+  (@emp, 'Leitor do Refeitório', 'hibrido', 'Refeitório',         CONCAT('demo-leitor-refeitorio-',  @emp), 'online', NOW(), NOW());
 
--- entradas (93% de presença nos dias úteis)
-INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-SELECT @empresa_id, x.fid, x.dev, x.cid, 'entrada', 'autorizado', x.quando
-FROM (SELECT f.id AS fid, c.id AS cid,
-             CASE f.categoria WHEN 'prestador' THEN @d3 WHEN 'supervisor' THEN @d2 ELSE @d1 END AS dev,
-             TIMESTAMP(CURDATE() - INTERVAL t.d DAY, SEC_TO_TIME(
-                 (CASE f.categoria WHEN 'supervisor' THEN 440 WHEN 'prestador' THEN 450 ELSE 400 END
-                  + CRC32(CONCAT('e', f.id, '-', t.d)) % 45) * 60 + CRC32(CONCAT('s', f.id, '-', t.d)) % 60)) AS quando
-      FROM tmp_dias t
-      JOIN funcionarios f ON f.empresa_id = @empresa_id AND f.matricula LIKE 'DEMO-%' AND f.ativo = 1
-      JOIN credenciais_acesso c ON c.funcionario_id = f.id AND c.tipo = 'rfid'
-      WHERE DAYOFWEEK(CURDATE() - INTERVAL t.d DAY) NOT IN (1, 7)
-        AND CRC32(CONCAT(f.id, '-', t.d)) % 100 < 93) x
-WHERE x.quando <= NOW();
+SET @disp = (SELECT id FROM dispositivos_iot WHERE token = CONCAT('demo-catraca-principal-', @emp));
 
--- saídas (hoje só ~30% já saiu: o resto aparece como "presente agora")
-INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-SELECT @empresa_id, x.fid, x.dev, x.cid, 'saida', 'autorizado', x.quando
-FROM (SELECT f.id AS fid, c.id AS cid,
-             CASE f.categoria WHEN 'prestador' THEN @d3 WHEN 'supervisor' THEN @d2 ELSE @d1 END AS dev,
-             TIMESTAMP(CURDATE() - INTERVAL t.d DAY, SEC_TO_TIME(
-                 (CASE f.categoria WHEN 'supervisor' THEN 1030 WHEN 'prestador' THEN 1000 ELSE 990 END
-                  + CRC32(CONCAT('x', f.id, '-', t.d)) % 50) * 60 + CRC32(CONCAT('y', f.id, '-', t.d)) % 60)) AS quando
-      FROM tmp_dias t
-      JOIN funcionarios f ON f.empresa_id = @empresa_id AND f.matricula LIKE 'DEMO-%' AND f.ativo = 1
-      JOIN credenciais_acesso c ON c.funcionario_id = f.id AND c.tipo = 'rfid'
-      WHERE DAYOFWEEK(CURDATE() - INTERVAL t.d DAY) NOT IN (1, 7)
-        AND CRC32(CONCAT(f.id, '-', t.d)) % 100 < 93
-        AND (t.d > 0 OR CRC32(CONCAT('h', f.id)) % 100 < 30)) x
-WHERE x.quando <= NOW();
+-- ─── 5) Funcionários (30 operadores, 6 supervisores, 4 prestadores) ──────────
+INSERT INTO funcionarios (empresa_id, nome, matricula, cargo, categoria, ativo, criado_em) VALUES
+  (@emp, 'João Silva',          'DEMO001', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Maria Santos',        'DEMO002', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Marcos Pereira',      'DEMO003', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Juliana Rocha',       'DEMO004', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Carla Mendes',        'DEMO005', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Rafael Souza',        'DEMO006', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Bruno Alves',         'DEMO007', 'Operador de Máquinas',     'operador',   1, '2026-01-05'),
+  (@emp, 'Camila Torres',       'DEMO008', 'Operadora de Máquinas',    'operador',   1, '2026-01-05'),
+  (@emp, 'Diego Ramos',         'DEMO009', 'Operador de Empilhadeira', 'operador',   1, '2026-01-05'),
+  (@emp, 'Elisa Prado',         'DEMO010', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Felipe Gomes',        'DEMO011', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Gabriela Reis',       'DEMO012', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Hugo Matos',          'DEMO013', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Isabela Cruz',        'DEMO014', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Lucas Barbosa',       'DEMO015', 'Operador de Embalagem',    'operador',   1, '2026-01-05'),
+  (@emp, 'Larissa Cardoso',     'DEMO016', 'Operadora de Embalagem',   'operador',   1, '2026-01-05'),
+  (@emp, 'Mateus Teixeira',     'DEMO017', 'Operador de Embalagem',    'operador',   1, '2026-01-05'),
+  (@emp, 'Natália Freitas',     'DEMO018', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Otávio Moreira',      'DEMO019', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Patrícia Duarte',     'DEMO020', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Renato Campos',       'DEMO021', 'Operador de Máquinas',     'operador',   1, '2026-01-05'),
+  (@emp, 'Sabrina Lopes',       'DEMO022', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Thiago Martins',      'DEMO023', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Vanessa Ribeiro',     'DEMO024', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'William Araújo',      'DEMO025', 'Operador de Empilhadeira', 'operador',   1, '2026-01-05'),
+  (@emp, 'Yasmin Correia',      'DEMO026', 'Operadora de Embalagem',   'operador',   1, '2026-01-05'),
+  (@emp, 'Alan Nogueira',       'DEMO027', 'Operador de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Bianca Farias',       'DEMO028', 'Operadora de Produção',    'operador',   1, '2026-01-05'),
+  (@emp, 'Caio Monteiro',       'DEMO029', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Daniela Pinto',       'DEMO030', 'Auxiliar de Produção',     'operador',   1, '2026-01-05'),
+  (@emp, 'Carlos Oliveira',     'DEMO031', 'Supervisor de Linha',      'supervisor', 1, '2026-01-05'),
+  (@emp, 'Ana Costa',           'DEMO032', 'Supervisora de Qualidade', 'supervisor', 1, '2026-01-05'),
+  (@emp, 'Fernando Dias',       'DEMO033', 'Supervisor de Turno',      'supervisor', 1, '2026-01-05'),
+  (@emp, 'Renata Lima',         'DEMO034', 'Supervisora de Turno',     'supervisor', 1, '2026-01-05'),
+  (@emp, 'Paulo Henrique Melo', 'DEMO035', 'Supervisor de Logística',  'supervisor', 1, '2026-01-05'),
+  (@emp, 'Tatiane Borges',      'DEMO036', 'Supervisora de Produção',  'supervisor', 1, '2026-01-05'),
+  (@emp, 'Pedro Lima',          'DEMO037', 'Manutenção Terceirizada',  'prestador',  1, '2026-01-05'),
+  (@emp, 'Lucia Ferreira',      'DEMO038', 'Limpeza',                  'prestador',  1, '2026-01-05'),
+  (@emp, 'Sérgio Andrade',      'DEMO039', 'Segurança Patrimonial',    'prestador',  1, '2026-01-05'),
+  (@emp, 'Eliane Vasconcelos',  'DEMO040', 'Jardinagem',               'prestador',  1, '2026-01-05');
 
--- algumas tentativas negadas (cartão desconhecido)
-INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
-SELECT @empresa_id, NULL, @d1, NULL, 'entrada', 'negado', x.quando
-FROM (SELECT TIMESTAMP(CURDATE() - INTERVAL t.d DAY, SEC_TO_TIME(21600 + CRC32(CONCAT('n', t.d)) % 43200)) AS quando
-      FROM tmp_dias t
-      WHERE DAYOFWEEK(CURDATE() - INTERVAL t.d DAY) NOT IN (1, 7) AND CRC32(CONCAT('neg', t.d)) % 100 < 35) x
-WHERE x.quando <= NOW();
+-- Um cartão RFID para cada funcionário DEMO
+INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
+SELECT id, 'rfid', CONCAT('DEMO-RFID-', @emp, '-', LPAD(id, 6, '0')), 1, NOW()
+  FROM funcionarios WHERE empresa_id = @emp AND matricula LIKE 'DEMO%';
 
-DROP TEMPORARY TABLE IF EXISTS tmp_dias;
+-- ─── 6) Gera ~90 dias de acessos e de produção ───────────────────────────────
+DROP PROCEDURE IF EXISTS sp_demo_sicapda;
+DELIMITER $$
+CREATE PROCEDURE sp_demo_sicapda()
+BEGIN
+    DECLARE i INT DEFAULT 90;
+    DECLARE dia DATE;
+    DECLARE dow INT;
+    DECLARE taxa DECIMAL(5,3);
+    DECLARE pessoas INT;
+    DECLARE desperdicio DECIMAL(5,3);
 
--- ─── PASSO 7: produção diária de refeições em kg (ontem e os 28 dias anteriores) ─
-CREATE TEMPORARY TABLE tmp_dias AS
-SELECT a.n + b.n * 10 AS d
-FROM (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
-      UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) a,
-     (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2) b;
+    DROP TEMPORARY TABLE IF EXISTS tmp_demo_dia;
+    CREATE TEMPORARY TABLE tmp_demo_dia (
+        funcionario_id INT, credencial_id INT, entrada DATETIME, saida DATETIME
+    );
 
-INSERT IGNORE INTO producao_refeicoes
-    (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
-SELECT @empresa_id, z.dia, z.tipo, z.prev, z.prod, ROUND(z.prod * (0.04 + (CRC32(CONCAT('w', z.dia, z.tipo)) % 8) / 100), 2), NOW()
-FROM (SELECT y.dia, y.tipo, y.prev, ROUND(y.prev * (0.95 + (CRC32(CONCAT('q', y.dia, y.tipo)) % 14) / 100), 2) AS prod
-      FROM (SELECT CURDATE() - INTERVAL t.d DAY AS dia, m.tipo,
-                   ROUND(m.kg * (0.92 + (CRC32(CONCAT('p', t.d, m.tipo)) % 17) / 100), 2) AS prev
-            FROM tmp_dias t
-            JOIN (SELECT 'cafe' tipo, 5.2 kg UNION ALL SELECT 'almoco', 12.5 UNION ALL SELECT 'jantar', 5.0) m
-            WHERE t.d BETWEEN 1 AND 29 AND DAYOFWEEK(CURDATE() - INTERVAL t.d DAY) NOT IN (1, 7)) y) z;
+    WHILE i >= 0 DO
+        SET dia = DATE_SUB(CURDATE(), INTERVAL i DAY);
+        SET dow = DAYOFWEEK(dia);   -- 1 = domingo, 7 = sábado
 
-DROP TEMPORARY TABLE IF EXISTS tmp_dias;
+        -- Só dias úteis e fora dos principais feriados nacionais fixos
+        IF dow BETWEEN 2 AND 6
+           AND DATE_FORMAT(dia, '%m-%d') NOT IN ('01-01','04-21','05-01','09-07','10-12','11-02','11-15','12-25') THEN
 
--- ─── Conferência: o que existe de exemplo nessa empresa agora ────────────────
-SELECT 'funcionários DEMO'  AS item, COUNT(*) AS total FROM funcionarios WHERE empresa_id = @empresa_id AND matricula LIKE 'DEMO-%'
-UNION ALL SELECT 'catracas [Demo]', COUNT(*) FROM dispositivos_iot WHERE empresa_id = @empresa_id AND nome LIKE '[Demo]%'
-UNION ALL SELECT 'logs de acesso', COUNT(*) FROM logs_acesso WHERE empresa_id = @empresa_id AND dispositivo_id IN (@d1, @d2, @d3)
-UNION ALL SELECT 'dias de produção', COUNT(DISTINCT data) FROM producao_refeicoes WHERE empresa_id = @empresa_id;
+            -- Taxa de presença: segunda forte, sexta mais vazia, com variação diária
+            SET taxa = CASE dow WHEN 2 THEN 0.92 WHEN 3 THEN 0.95 WHEN 4 THEN 0.95 WHEN 5 THEN 0.93 ELSE 0.84 END
+                       + (RAND() * 0.06 - 0.03);
+
+            TRUNCATE TABLE tmp_demo_dia;
+
+            -- Horário de entrada por turno (id MOD 3) e permanência por categoria
+            INSERT INTO tmp_demo_dia (funcionario_id, credencial_id, entrada, saida)
+            SELECT x.id, x.cred, x.entrada,
+                   DATE_ADD(x.entrada, INTERVAL x.perm MINUTE)
+              FROM (
+                    SELECT f.id,
+                           (SELECT c.id FROM credenciais_acesso c WHERE c.funcionario_id = f.id LIMIT 1) AS cred,
+                           DATE_ADD(dia, INTERVAL
+                               CASE f.categoria
+                                   WHEN 'prestador' THEN 480 + FLOOR(RAND() * 120)
+                                   ELSE CASE f.id MOD 3
+                                            WHEN 0 THEN 360 + FLOOR(RAND() * 50)   -- 06:00–06:50
+                                            WHEN 1 THEN 450 + FLOOR(RAND() * 60)   -- 07:30–08:30
+                                            ELSE        780 + FLOOR(RAND() * 45)   -- 13:00–13:45
+                                        END
+                               END MINUTE) AS entrada,
+                           CASE f.categoria
+                               WHEN 'prestador'  THEN 300 + FLOOR(RAND() * 180)
+                               WHEN 'supervisor' THEN 520 + FLOOR(RAND() * 60)
+                               ELSE                   470 + FLOOR(RAND() * 40)
+                           END AS perm
+                      FROM funcionarios f
+                     WHERE f.empresa_id = @emp AND f.matricula LIKE 'DEMO%' AND f.ativo = 1
+                       AND RAND() < IF(f.categoria = 'supervisor', 0.97, IF(f.categoria = 'prestador', 0.80, taxa))
+                   ) x;
+
+            -- Entradas (hoje: só até a hora atual)
+            INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+            SELECT @emp, funcionario_id, @disp, credencial_id, 'entrada', 'autorizado', entrada
+              FROM tmp_demo_dia WHERE entrada <= NOW();
+
+            -- Saídas (hoje: só de quem já teria saído)
+            INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+            SELECT @emp, funcionario_id, @disp, credencial_id, 'saida', 'autorizado', saida
+              FROM tmp_demo_dia WHERE saida <= NOW();
+
+            -- Uma ou outra tentativa negada (cartão desconhecido)
+            IF RAND() < 0.25 THEN
+                INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+                VALUES (@emp, NULL, @disp, NULL, 'entrada', 'negado', DATE_ADD(dia, INTERVAL 500 + FLOOR(RAND() * 60) MINUTE));
+            END IF;
+
+            -- Produção do dia (não gera para hoje: a balança só fecha o dia à noite)
+            IF i > 0 THEN
+                SELECT COUNT(*) INTO pessoas FROM tmp_demo_dia;
+                -- Desperdício melhora com o tempo: ~11% (90 dias atrás) → ~7% (ontem)
+                SET desperdicio = 0.07 + (i / 90) * 0.04 + (RAND() * 0.025 - 0.0125);
+
+                -- kg necessários por pessoa: café 0,13 · almoço 0,48 · jantar 0,20 · ceia 0,06
+                INSERT INTO producao_refeicoes
+                    (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
+                SELECT @emp, dia, t.tipo,
+                       ROUND(pessoas * t.kg * (0.97 + RAND() * 0.12), 2),              -- previsto
+                       ROUND(pessoas * t.kg * (1.05 + RAND() * 0.10), 2),              -- produzido
+                       0, NOW()
+                  FROM (SELECT 'cafe' AS tipo, 0.13 AS kg UNION ALL SELECT 'almoco', 0.48
+                        UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t
+                ON DUPLICATE KEY UPDATE
+                    quantidade_prevista_kg  = VALUES(quantidade_prevista_kg),
+                    quantidade_produzida_kg = VALUES(quantidade_produzida_kg);
+
+                UPDATE producao_refeicoes
+                   SET quantidade_desperdicada_kg = ROUND(quantidade_produzida_kg * (desperdicio + (RAND() * 0.02 - 0.01)), 2)
+                 WHERE empresa_id = @emp AND data = dia;
+            END IF;
+        END IF;
+
+        SET i = i - 1;
+    END WHILE;
+
+    DROP TEMPORARY TABLE IF EXISTS tmp_demo_dia;
+END$$
+DELIMITER ;
+
+CALL sp_demo_sicapda();
+DROP PROCEDURE IF EXISTS sp_demo_sicapda;
+
+SET SQL_SAFE_UPDATES = 1;   -- devolve a proteção do Workbench
+
+-- ─── 7) Conferência (deve mostrar números > 0) ───────────────────────────────
+SELECT 'Funcionários DEMO'   AS item, COUNT(*) AS total FROM funcionarios WHERE empresa_id = @emp AND matricula LIKE 'DEMO%'
+UNION ALL SELECT 'Logs de acesso',         COUNT(*) FROM logs_acesso        WHERE empresa_id = @emp
+UNION ALL SELECT 'Dias de produção',       COUNT(DISTINCT data) FROM producao_refeicoes WHERE empresa_id = @emp;
