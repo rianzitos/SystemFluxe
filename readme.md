@@ -80,7 +80,7 @@ Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PAS
 
 ## Vídeo "Ver como funciona"
 
-O botão **Ver como funciona**, no início da página `/sicapda`, abre um modal com um vídeo de 30 segundos que percorre o sistema: login, painel, análise mensal, pessoas, assistente IA, relatórios, configurações (com o tema escuro) e o aplicativo. O vídeo não tem áudio (os textos estão na própria imagem) e, ao lado dele, há capítulos clicáveis para pular para cada parte.
+O botão **Ver como funciona**, no início da página `/sicapda`, abre um modal com um vídeo de 30 segundos que percorre o sistema: login, painel, análise mensal, pessoas, assistente virtual, relatórios, configurações (com o tema escuro) e o aplicativo. O vídeo não tem áudio (os textos estão na própria imagem) e, ao lado dele, há capítulos clicáveis para pular para cada parte.
 
 - **Arquivos** — `public/video/sicapda-como-funciona.mp4` (H.264, 1920×1080, ~3 MB, com o índice no início do arquivo para começar a tocar antes de baixar tudo) e `public/video/sicapda-como-funciona.jpg` (pôster: aparece até o vídeo carregar e para quem usa "reduzir animações", que não toca sozinho). O arquivo só é baixado quando a pessoa abre o modal (ou passa o mouse no botão).
 - **Código** — o modal (`<dialog id="modalVideo">`) fica no fim de `app/views/indexSys.html`; estilos em `public/css/videoSys.css`; comportamento em `public/js/videoSys.js` (abrir e fechar, ESC, clique no fundo, foco, capítulos, aviso se o vídeo não carregar). É um `<dialog>` nativo, então o navegador cuida de prender o foco e de bloquear a página de fundo.
