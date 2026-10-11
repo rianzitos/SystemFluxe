@@ -12,18 +12,24 @@
 -- passo 1 (comente a linha de cima e use  SET @emp = 8;).
 -- Descubra os ids com:  SELECT id, nome_fantasia FROM empresas;
 --
--- ATENÇÃO (use em banco de teste):
---   • marca a empresa como "possui refeitório" e, se ela tiver menos de 40
---     colaboradores, ajusta para 45 (a previsão de demanda precisa disso);
---   • preenche as metas de refeições que estiverem com média 0;
---   • recria a produção de refeições dos últimos 90 dias dessa empresa.
--- Os dados DEMO são identificados por: matrícula 'DEMO...' e token 'demo-...'.
+-- O QUE ELE NÃO MEXE (seus dados reais ficam como estão):
+--   funcionários, catracas, credenciais, acessos e metas de refeições que você já
+--   cadastrou, e a produção de refeições de qualquer dia que já tenha registro.
+-- O QUE ELE APAGA: só os dados DEMO de uma execução anterior (matrícula 'DEMO...' e
+--   token 'demo-...') da empresa escolhida, nunca de outra empresa.
+-- O QUE ELE ALTERA na empresa escolhida (os valores de ANTES aparecem na consulta do
+--   passo 1, anote se quiser desfazer):
+--   • marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta
+--     para 45 (a previsão de demanda precisa disso);
+--   • preenche as metas de refeições que estiverem com média 0.
+-- Mesmo assim, para uma demonstração o ideal é usar um banco de teste.
 -- =============================================================================
 
 USE controle_acesso;
 SET NAMES utf8mb4;          -- garante os acentos (Produção, Natália...) em qualquer forma de importar
 
 SET SQL_SAFE_UPDATES = 0;   -- o Workbench bloqueia DELETE/UPDATE sem chave (erro 1175)
+SET @inicio_execucao = NOW();   -- usado para reconhecer o que ESTA execução criou
 
 -- ─── 1) Empresa que receberá os dados ────────────────────────────────────────
 -- Padrão: a primeira empresa. Para escolher outra, comente a linha de baixo
@@ -31,8 +37,11 @@ SET SQL_SAFE_UPDATES = 0;   -- o Workbench bloqueia DELETE/UPDATE sem chave (err
 SET @emp = (SELECT id FROM empresas ORDER BY id LIMIT 1);
 -- SET @emp = 8;
 
--- Confere: tem que aparecer 1 linha com o nome da empresa (vazio = id inexistente)
-SELECT id, nome_fantasia AS empresa_escolhida FROM empresas WHERE id = @emp;
+-- Confere: tem que aparecer 1 linha com o nome da empresa (vazio = id inexistente).
+-- As duas últimas colunas são os valores de ANTES; o script pode alterá-los (passo 3).
+SELECT id, nome_fantasia AS empresa_escolhida,
+       qtd_colaboradores AS colaboradores_antes, possui_refeitorio AS refeitorio_antes
+  FROM empresas WHERE id = @emp;
 
 -- ─── 2) Limpa dados DEMO anteriores (só os dessa empresa) ────────────────────
 DELETE FROM dispositivos_iot WHERE empresa_id = @emp AND token LIKE 'demo-%';       -- apaga também os logs (CASCADE)
@@ -205,21 +214,20 @@ BEGIN
             SET desperdicio = 0.07 + (i / 90) * 0.04 + (RAND() * 0.025 - 0.0125);
 
             -- kg necessários por pessoa: café 0,13 · almoço 0,48 · jantar 0,20 · ceia 0,06
-            INSERT INTO producao_refeicoes
+            -- INSERT IGNORE: dia/tipo que já tem registro (seu ou de uma execução anterior) NÃO é sobrescrito
+            INSERT IGNORE INTO producao_refeicoes
                 (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
             SELECT @emp, dia, t.tipo,
                    ROUND(pessoas * t.kg * (0.97 + RAND() * 0.12), 2),              -- previsto
                    ROUND(pessoas * t.kg * (1.05 + RAND() * 0.10), 2),              -- produzido
                    0, NOW()
               FROM (SELECT 'cafe' AS tipo, 0.13 AS kg UNION ALL SELECT 'almoco', 0.48
-                    UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t
-            ON DUPLICATE KEY UPDATE
-                quantidade_prevista_kg  = VALUES(quantidade_prevista_kg),
-                quantidade_produzida_kg = VALUES(quantidade_produzida_kg);
+                    UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t;
 
+            -- só nas linhas criadas agora (criado_em >= início da execução): nunca nas suas
             UPDATE producao_refeicoes
                SET quantidade_desperdicada_kg = ROUND(quantidade_produzida_kg * (desperdicio + (RAND() * 0.02 - 0.01)), 2)
-             WHERE empresa_id = @emp AND data = dia;
+             WHERE empresa_id = @emp AND data = dia AND criado_em >= @inicio_execucao;
         END IF;
 
         SET i = i - 1;

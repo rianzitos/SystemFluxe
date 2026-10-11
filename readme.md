@@ -65,7 +65,7 @@ SystemFluxe/
 
 Configuração local: copie `config/.env.example` para `config/.env` e importe `config/database.sql`.
 
-Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql` no Workbench e execute o script inteiro (Ctrl+Shift+Enter). Por padrão ele usa a primeira empresa; para escolher outra, veja o passo 1 do arquivo (`SET @emp = 8;`). Gera 40 funcionários trabalhando em turnos o dia todo e nos 7 dias da semana, com ~90 dias de acessos e de produção de refeições, então o painel, as pessoas presentes, a análise mensal e os relatórios aparecem preenchidos em qualquer dia e horário. Use em banco de teste: ele marca a empresa como "possui refeitório" e recria a produção dos últimos 90 dias. Pode ser rodado de novo quando quiser: recria só o que ele mesmo criou (matrícula `DEMO` e aparelhos `demo-`).
+Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql` no Workbench e execute o script inteiro (Ctrl+Shift+Enter). Por padrão ele usa a primeira empresa; para escolher outra, veja o passo 1 do arquivo (`SET @emp = 8;`). Gera 40 funcionários trabalhando em turnos o dia todo e nos 7 dias da semana, com ~90 dias de acessos e de produção de refeições, então o painel, as pessoas presentes, a análise mensal e os relatórios aparecem preenchidos em qualquer dia e horário. Não apaga nem sobrescreve dados reais: só remove os dados `DEMO` de uma execução anterior (matrícula `DEMO` e aparelhos `demo-`) e nunca sobrescreve produção que já existe. Na empresa escolhida ele marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta para 45 (os valores de antes aparecem na primeira consulta do script).
 
 ## Aplicativo (Windows e Android)
 
