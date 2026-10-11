@@ -65,6 +65,8 @@ SystemFluxe/
 
 Configuração local: copie `config/.env.example` para `config/.env` e importe `config/database.sql`.
 
+Dados de exemplo (opcional, para testar e demonstrar): depois de importar o `database.sql`, importe também `config/dados_exemplo.sql`. Ele cria uma empresa fictícia com funcionários, catracas, ~30 dias de acessos e de produção de refeições. Login de demonstração: `demo@fluxe.com` / `Fluxe@123` (só para teste, não use em produção). Pode ser importado de novo quando quiser: ele recria só a empresa de demonstração.
+
 ## Aplicativo (Windows e Android)
 
 O SICAPDA tem um aplicativo para **Windows** e **Android**, feito em Flutter ([fluxe_app](https://github.com/rianzitos/fluxe_app)), que usa o **mesmo login e os mesmos dados** da versão web.
