@@ -1,35 +1,35 @@
 -- =============================================================================
--- SICAPDA by FLUXE — DADOS FICTÍCIOS (DEMO) para o painel
+-- SICAPDA by FLUXE — DADOS FICTÍCIOS (DEMO) para o painel   [versão 7 dias / turnos / limpeza total]
 -- Rode no MySQL Workbench com TODO o script (ícone do raio ⚡, Ctrl+Shift+Enter).
--- Pode rodar de novo à vontade: ele apaga os dados DEMO anteriores e recria.
+-- Pode rodar de novo à vontade: a cada execução ele LIMPA e recria tudo da empresa.
 --
 -- Preenche TUDO: pessoas presentes agora, acessos, relatórios, refeições previstas,
--- kg produzidos e desperdiçados, gráficos, próximas horas e alertas. A empresa de
--- demonstração funciona em turnos o dia todo, todos os dias, então o painel aparece
--- completo em qualquer dia e horário (inclusive fim de semana e de madrugada).
+-- kg produzidos e desperdiçados, gráficos, próximas horas e alertas. A empresa funciona
+-- em turnos o dia todo, todos os dias, então o painel aparece completo em qualquer dia
+-- e horário (inclusive fim de semana e de madrugada).
 --
 -- EMPRESA: por padrão vai para a primeira empresa. Para escolher outra, veja o
 -- passo 1 (comente a linha de cima e use  SET @emp = 8;).
 -- Descubra os ids com:  SELECT id, nome_fantasia FROM empresas;
 --
--- O QUE ELE NÃO MEXE (seus dados reais ficam como estão):
---   funcionários, catracas, credenciais, acessos e metas de refeições que você já
---   cadastrou, e a produção de refeições de qualquer dia que já tenha registro.
--- O QUE ELE APAGA: só os dados DEMO de uma execução anterior (matrícula 'DEMO...' e
---   token 'demo-...') da empresa escolhida, nunca de outra empresa.
--- O QUE ELE ALTERA na empresa escolhida (os valores de ANTES aparecem na consulta do
---   passo 1, anote se quiser desfazer):
---   • marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta
---     para 45 (a previsão de demanda precisa disso);
---   • preenche as metas de refeições que estiverem com média 0.
--- Mesmo assim, para uma demonstração o ideal é usar um banco de teste.
+-- ⚠ ATENÇÃO — A CADA EXECUÇÃO ELE APAGA, DA EMPRESA ESCOLHIDA (e de nenhuma outra):
+--     funcionários, credenciais de acesso, dispositivos (catracas), logs de acesso e
+--     produção de refeições. Use só em banco de teste/demonstração.
+-- NÃO APAGA: usuários, empresas e metas de refeições (tabela refeicoes).
+-- ALTERA na empresa escolhida (os valores de ANTES aparecem na consulta do passo 1):
+--     marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta para 45
+--     (a previsão de demanda precisa disso); e preenche metas de refeição com média 0.
+--
+-- No final aparece uma tabela de DIAGNÓSTICO. Se "Pessoas presentes agora" ou "Metas de
+-- refeição" aparecerem como 0, ou "Dias de acesso em fim de semana" for 0, você está rodando
+-- um arquivo antigo: baixe o dados_exemplo.sql mais recente.
 -- =============================================================================
 
 USE controle_acesso;
 SET NAMES utf8mb4;          -- garante os acentos (Produção, Natália...) em qualquer forma de importar
+SET time_zone = '-03:00';   -- horário de Brasília (o do sistema), mesmo que o servidor do banco use outro fuso
 
 SET SQL_SAFE_UPDATES = 0;   -- o Workbench bloqueia DELETE/UPDATE sem chave (erro 1175)
-SET @inicio_execucao = NOW();   -- usado para reconhecer o que ESTA execução criou
 
 -- ─── 1) Empresa que receberá os dados ────────────────────────────────────────
 -- Padrão: a primeira empresa. Para escolher outra, comente a linha de baixo
@@ -43,9 +43,12 @@ SELECT id, nome_fantasia AS empresa_escolhida,
        qtd_colaboradores AS colaboradores_antes, possui_refeitorio AS refeitorio_antes
   FROM empresas WHERE id = @emp;
 
--- ─── 2) Limpa dados DEMO anteriores (só os dessa empresa) ────────────────────
-DELETE FROM dispositivos_iot WHERE empresa_id = @emp AND token LIKE 'demo-%';       -- apaga também os logs (CASCADE)
-DELETE FROM funcionarios     WHERE empresa_id = @emp AND matricula LIKE 'DEMO%';    -- apaga também as credenciais (CASCADE)
+-- ─── 2) LIMPA os dados da empresa escolhida (nenhuma outra empresa é tocada) ────
+-- Mantém: usuários, empresas e metas de refeições.
+DELETE FROM logs_acesso        WHERE empresa_id = @emp;
+DELETE FROM producao_refeicoes WHERE empresa_id = @emp;
+DELETE FROM dispositivos_iot   WHERE empresa_id = @emp;
+DELETE FROM funcionarios       WHERE empresa_id = @emp;     -- apaga também as credenciais (CASCADE)
 
 -- ─── 3) Empresa com refeitório + metas diárias de refeições ─────────────────
 UPDATE empresas
@@ -214,8 +217,7 @@ BEGIN
             SET desperdicio = 0.07 + (i / 90) * 0.04 + (RAND() * 0.025 - 0.0125);
 
             -- kg necessários por pessoa: café 0,13 · almoço 0,48 · jantar 0,20 · ceia 0,06
-            -- INSERT IGNORE: dia/tipo que já tem registro (seu ou de uma execução anterior) NÃO é sobrescrito
-            INSERT IGNORE INTO producao_refeicoes
+            INSERT INTO producao_refeicoes
                 (empresa_id, data, tipo, quantidade_prevista_kg, quantidade_produzida_kg, quantidade_desperdicada_kg, criado_em)
             SELECT @emp, dia, t.tipo,
                    ROUND(pessoas * t.kg * (0.97 + RAND() * 0.12), 2),              -- previsto
@@ -224,10 +226,9 @@ BEGIN
               FROM (SELECT 'cafe' AS tipo, 0.13 AS kg UNION ALL SELECT 'almoco', 0.48
                     UNION ALL SELECT 'jantar', 0.20 UNION ALL SELECT 'ceia', 0.06) t;
 
-            -- só nas linhas criadas agora (criado_em >= início da execução): nunca nas suas
             UPDATE producao_refeicoes
                SET quantidade_desperdicada_kg = ROUND(quantidade_produzida_kg * (desperdicio + (RAND() * 0.02 - 0.01)), 2)
-             WHERE empresa_id = @emp AND data = dia AND criado_em >= @inicio_execucao;
+             WHERE empresa_id = @emp AND data = dia;
         END IF;
 
         SET i = i - 1;
@@ -242,7 +243,16 @@ DROP PROCEDURE IF EXISTS sp_demo_sicapda;
 
 SET SQL_SAFE_UPDATES = 1;   -- devolve a proteção do Workbench
 
--- ─── 7) Conferência (deve mostrar números > 0) ───────────────────────────────
-SELECT 'Funcionários DEMO'   AS item, COUNT(*) AS total FROM funcionarios WHERE empresa_id = @emp AND matricula LIKE 'DEMO%'
-UNION ALL SELECT 'Logs de acesso',         COUNT(*) FROM logs_acesso        WHERE empresa_id = @emp
-UNION ALL SELECT 'Dias de produção',       COUNT(DISTINCT data) FROM producao_refeicoes WHERE empresa_id = @emp;
+-- ─── 7) DIAGNÓSTICO (confira os números) ─────────────────────────────────────
+SELECT 'Funcionários (esperado 40)' AS item, CAST(COUNT(*) AS CHAR) AS valor FROM funcionarios WHERE empresa_id = @emp
+UNION ALL SELECT 'Logs de acesso (total)', CAST(COUNT(*) AS CHAR) FROM logs_acesso WHERE empresa_id = @emp
+UNION ALL SELECT 'Logs de acesso de HOJE (deve ser > 0)', CAST(COUNT(*) AS CHAR) FROM logs_acesso WHERE empresa_id = @emp AND data_hora >= CURDATE()
+UNION ALL SELECT 'Dias de acesso em fim de semana (deve ser > 0)', CAST(COUNT(DISTINCT DATE(data_hora)) AS CHAR) FROM logs_acesso WHERE empresa_id = @emp AND DAYOFWEEK(data_hora) IN (1, 7)
+UNION ALL SELECT 'Pessoas presentes agora (deve ser > 0)', CAST(COUNT(DISTINCT l.funcionario_id) AS CHAR)
+            FROM logs_acesso l JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
+           WHERE l.empresa_id = @emp AND l.resultado = 'autorizado' AND l.direcao = 'entrada' AND l.data_hora >= CURDATE() AND f.ativo = 1
+             AND NOT EXISTS (SELECT 1 FROM logs_acesso l2 WHERE l2.funcionario_id = l.funcionario_id AND l2.resultado = 'autorizado' AND l2.data_hora > l.data_hora)
+UNION ALL SELECT 'Dias de produção (esperado 90)', CAST(COUNT(DISTINCT data) AS CHAR) FROM producao_refeicoes WHERE empresa_id = @emp
+UNION ALL SELECT 'Metas de refeição somadas (deve ser > 0)', CAST(COALESCE(SUM(media_diaria), 0) AS CHAR) FROM refeicoes WHERE empresa_id = @emp
+UNION ALL SELECT 'Colaboradores cadastrados na empresa', CAST(qtd_colaboradores AS CHAR) FROM empresas WHERE id = @emp
+UNION ALL SELECT 'Hora do servidor (horário de Brasília)', CAST(NOW() AS CHAR);
