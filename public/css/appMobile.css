@@ -90,11 +90,28 @@
     text-decoration: none;
     white-space: nowrap;
     cursor: pointer;
-    transition: 0.3s ease;
+    /* Cada propriedade com sua curva: a cor muda suave e o "pulo" do hover tem um leve amortecimento */
+    transition:
+        background-color 0.4s ease,
+        color 0.4s ease,
+        border-color 0.4s ease,
+        box-shadow 0.5s ease,
+        transform 0.5s cubic-bezier(.22, .8, .24, 1);
 }
 
 .appBtn i {
     font-size: 1.2rem;
+    transition: transform 0.5s cubic-bezier(.22, .8, .24, 1);
+}
+
+.appBtn:hover i {
+    transform: translateY(-1px) scale(1.08);
+}
+
+/* ao clicar, o botão "afunda" um pouco e volta suavemente */
+.appBtn:active {
+    transform: scale(0.97);
+    transition-duration: 0.15s;
 }
 
 .appBtnAmarelo {
@@ -104,7 +121,8 @@
 
 .appBtnAmarelo:hover {
     background-color: var(--amarelo-hover);
-    transform: scale(1.04);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 12px 26px -10px rgba(255, 196, 0, 0.7);
 }
 
 .appBtnContorno {
@@ -117,6 +135,8 @@
     background-color: var(--branco);
     border-color: var(--branco);
     color: var(--preto);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px -12px rgba(255, 255, 255, 0.45);
 }
 
 /* botão secundário sobre fundo claro (cartão de download) */
@@ -128,7 +148,8 @@
 
 .appBtnClaro:hover {
     border-color: var(--preto);
-    transform: scale(1.02);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 22px -12px rgba(0, 0, 0, 0.45);
 }
 
 .appBtn small {
@@ -1132,16 +1153,11 @@
 --------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
 
+    /* Só as animações contínuas decorativas param. As transições de botões, cards e abas
+       continuam: sem elas, quem usa "reduzir animações" no sistema via tudo "seco". */
     .appFlutua,
     .fluxoSeta::before {
         animation: none;
-    }
-
-    .appTelaImg,
-    .appCard,
-    .appBtn,
-    .appAba {
-        transition: none;
     }
 }
 

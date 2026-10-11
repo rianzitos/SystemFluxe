@@ -1,0 +1,349 @@
+/* =====================================================================
+   TEMA CLARO / ESCURO — página /sicapda
+   Mesma ideia e mesmas cores da página inicial da Fluxe: o amarelo e o grafite
+   continuam, só as superfícies claras viram escuras. O claro (padrão) não muda.
+   Carregado depois de styleSys.css e appMobile.css.
+===================================================================== */
+
+:root {
+    color-scheme: light;
+}
+
+/* ---------------------------------------------------------------------
+   Botão de tema no header
+--------------------------------------------------------------------- */
+.headerTools {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.themeToggle {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 196, 0, 0.55);
+    background: transparent;
+    color: #FFC400;
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.4s cubic-bezier(.22, .8, .24, 1);
+}
+
+.themeToggle:hover {
+    background-color: #FFC400;
+    border-color: #FFC400;
+    color: #171717;
+    transform: rotate(-12deg);
+}
+
+.themeToggle:focus-visible {
+    outline: 2px solid #FFC400;
+    outline-offset: 3px;
+}
+
+.themeToggle i {
+    grid-area: 1 / 1;
+    transition: opacity 0.3s ease, transform 0.4s ease;
+}
+
+/* Lua no tema claro (clique = escurecer), sol no escuro (clique = clarear) */
+.themeIconSun {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+:root[data-theme="dark"] .themeIconMoon {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+}
+
+:root[data-theme="dark"] .themeIconSun {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+}
+
+/* Transição suave de cores só durante a troca de tema (classe aplicada por ~0,5s via JS) */
+html.tema-animando body,
+html.tema-animando body *,
+html.tema-animando body *::before,
+html.tema-animando body *::after {
+    transition: background-color 0.45s ease, color 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease !important;
+}
+
+/* =====================================================================
+   TEMA ESCURO
+===================================================================== */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --t-fundo: #121212;
+    --t-fundo-2: #181818;
+    --t-superficie: #1e1e1e;
+    --t-superficie-2: #2a2a2a;
+    --t-borda: #2f2f2f;
+    --t-borda-2: #3a3a3a;
+    --t-texto: #f2f2f2;
+    --t-suave: #c4c4c4;
+    --t-mudo: #a8a8a8;
+}
+
+:root[data-theme="dark"] body {
+    background-color: var(--t-fundo);
+    color: var(--t-texto);
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+/* ---------------------------------------------------------------------
+   Seções que eram claras
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] main {
+    background: linear-gradient(to left, var(--t-fundo-2), var(--t-fundo));
+}
+
+:root[data-theme="dark"] #sobreSection {
+    background: linear-gradient(to right, var(--t-fundo-2), #1b1b1d);
+}
+
+:root[data-theme="dark"] #precos,
+:root[data-theme="dark"] .appRecursos {
+    background: linear-gradient(to bottom, var(--t-fundo), var(--t-fundo-2));
+}
+
+:root[data-theme="dark"] .appTelas {
+    background: linear-gradient(to right, var(--t-fundo-2), #1b1b1d);
+}
+
+/* títulos e textos */
+:root[data-theme="dark"] #containerSICAPDA h2,
+:root[data-theme="dark"] #icones p,
+:root[data-theme="dark"] .miniTitulo h5,
+:root[data-theme="dark"] .toggleLabel,
+:root[data-theme="dark"] .planoCard h3,
+:root[data-theme="dark"] .moeda,
+:root[data-theme="dark"] .valor,
+:root[data-theme="dark"] .planoFooterItem h5,
+:root[data-theme="dark"] .appCard h3,
+:root[data-theme="dark"] .appAba,
+:root[data-theme="dark"] .appLegenda,
+:root[data-theme="dark"] .miniTitulo .miniRotulo {
+    color: var(--t-texto);
+}
+
+:root[data-theme="dark"] #containerSICAPDA p,
+:root[data-theme="dark"] .boxes div p,
+:root[data-theme="dark"] .sobreSistema p,
+:root[data-theme="dark"] .precosSubtitulo,
+:root[data-theme="dark"] .planoLista li,
+:root[data-theme="dark"] .appTelasTexto > p,
+:root[data-theme="dark"] .appRecursosTopo > p,
+:root[data-theme="dark"] .abaTexto small,
+:root[data-theme="dark"] .appCard p {
+    color: var(--t-suave);
+}
+
+/* os rótulos em seções que continuam escuras seguem brancos */
+:root[data-theme="dark"] .appHero .miniRotulo,
+:root[data-theme="dark"] .appBaixar .miniRotulo,
+:root[data-theme="dark"] .contatoTexto .miniTitulo h5 {
+    color: var(--branco);
+}
+
+/* ---------------------------------------------------------------------
+   Hero, funcionalidades e sobre
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] #branco {
+    background-color: var(--t-superficie);
+    color: var(--t-texto);
+    border-color: var(--t-borda-2);
+}
+
+:root[data-theme="dark"] #branco:hover {
+    background-color: var(--t-texto);
+    color: var(--preto);
+    border-color: var(--t-texto);
+}
+
+:root[data-theme="dark"] .solucoes {
+    background-color: var(--t-superficie);
+    border: 1px solid var(--t-borda);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] .divisionBar {
+    background-color: var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .botaoSobre {
+    background-color: var(--t-superficie-2);
+    border: 1px solid var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .heroAppBadge {
+    background: var(--t-superficie-2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+/* ilustrações com fundo branco ganham cantos arredondados para não "estourar" no escuro */
+:root[data-theme="dark"] #painelGeral img,
+:root[data-theme="dark"] #imagemSobre img {
+    border-radius: 14px;
+}
+
+/* ---------------------------------------------------------------------
+   Aplicativo (abas, telas e recursos)
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] .appAba {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .appAba:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+:root[data-theme="dark"] .appAba.is-ativa {
+    background: var(--t-superficie-2);
+    border-color: rgba(255, 196, 0, 0.55);
+}
+
+:root[data-theme="dark"] .appAba:focus-visible {
+    outline-color: var(--amarelo);
+}
+
+:root[data-theme="dark"] .appTelaAnel {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-theme="dark"] .appFlutua {
+    background: rgba(34, 34, 36, 0.96);
+    color: var(--t-texto);
+    box-shadow: 0 0.9em 1.9em rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+:root[data-theme="dark"] .appFlutua span {
+    color: var(--t-mudo);
+}
+
+:root[data-theme="dark"] .appCard {
+    background: var(--t-superficie);
+    border-color: var(--t-borda);
+}
+
+:root[data-theme="dark"] .appIntegracao {
+    background: #0c0c0c;
+    border: 1px solid var(--t-borda);
+}
+
+/* ---------------------------------------------------------------------
+   Download: o cartão claro vira um cartão escuro
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] .appBaixarCartao {
+    background-color: var(--t-superficie-2);
+    color: var(--t-texto);
+    border: 1px solid var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .cartaoTopo span,
+:root[data-theme="dark"] .appDados dt {
+    color: var(--t-mudo);
+}
+
+:root[data-theme="dark"] .appDados dd,
+:root[data-theme="dark"] .cartaoNota a {
+    color: var(--t-texto);
+}
+
+:root[data-theme="dark"] .cartaoNota,
+:root[data-theme="dark"] .cartaoVazio {
+    color: var(--t-suave);
+}
+
+:root[data-theme="dark"] .cartaoSelo,
+:root[data-theme="dark"] .toggleBadge {
+    background-color: rgba(255, 196, 0, 0.16);
+    color: #ffd24d !important;
+}
+
+:root[data-theme="dark"] .appBtnClaro {
+    background-color: var(--t-superficie);
+    color: var(--t-texto);
+    border-color: var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .appBtnClaro:hover {
+    border-color: var(--amarelo);
+}
+
+:root[data-theme="dark"] .appBtn.is-desativado {
+    background-color: #3a3a3a;
+    color: #8c8c8c;
+}
+
+:root[data-theme="dark"] .appBaixarCartao .appBtn:focus-visible,
+:root[data-theme="dark"] .appBaixarCartao a:focus-visible {
+    outline-color: var(--amarelo);
+}
+
+/* ---------------------------------------------------------------------
+   Planos e preços
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] .slider {
+    background-color: #4a4a4a;
+}
+
+:root[data-theme="dark"] .planoCard {
+    background-color: var(--t-superficie);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] .planoCard:not(.planoDestaque) {
+    border-color: var(--t-borda);
+}
+
+:root[data-theme="dark"] .planoIcon {
+    background-color: var(--t-superficie-2);
+    color: var(--t-texto);
+}
+
+:root[data-theme="dark"] .planoBotao:not(.planoBotaoDestaque) {
+    background-color: var(--t-superficie-2);
+    color: var(--t-texto);
+    border-color: var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .planoBotao:not(.planoBotaoDestaque):hover {
+    background-color: var(--t-texto);
+    color: var(--preto);
+    border-color: var(--t-texto);
+}
+
+:root[data-theme="dark"] .planosFooter {
+    border-top-color: var(--t-borda);
+}
+
+/* ---------------------------------------------------------------------
+   Contato (o rodapé já era escuro; só o cartão do formulário muda)
+--------------------------------------------------------------------- */
+:root[data-theme="dark"] .formCard {
+    background-color: var(--t-superficie-2);
+    border: 1px solid var(--t-borda-2);
+}
+
+:root[data-theme="dark"] .formGroup label {
+    color: var(--t-texto);
+}
+
+:root[data-theme="dark"] .formGroup input,
+:root[data-theme="dark"] .formGroup textarea {
+    background-color: #151515;
+    border-color: var(--t-borda-2);
+    color: var(--t-texto);
+}
