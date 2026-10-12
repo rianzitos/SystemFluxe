@@ -156,6 +156,13 @@ if ($uri === '/') {
     (new DemandaController())->perguntar();
 // Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).
 
+// ─── API dos dispositivos IoT (catracas ESP32) ───────────────────────────────
+
+} elseif (str_starts_with($uri, '/api/iot/')) {
+    (new IotController())->despachar($uri, $metodo);
+// Autenticação pelo token do dispositivo (X-Device-Token), não por usuário. Precisa vir ANTES
+// da rota /api/ abaixo, que exige o Bearer token de uma pessoa.
+
 // ─── API JSON (aplicativo mobile fluxe_app) ──────────────────────────────────
 
 } elseif (str_starts_with($uri, '/api/')) {

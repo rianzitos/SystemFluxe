@@ -254,4 +254,61 @@ class Acesso
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
+
+    // ─── Leituras vindas das catracas (IoT) ──────────────────────────────────
+
+    /**
+     * Credencial pelo identificador (UID do cartão), só se o dono for funcionário da empresa.
+     * Um cartão de outra empresa volta como inexistente, igual a um cartão desconhecido.
+     * Retorna credencial_id, credencial_ativa, funcionario_id, nome e funcionario_ativo.
+     */
+    public function buscarCredencial(int $empresaId, string $identificador): array|false
+    {
+        $stmt = $this->db->prepare(
+            'SELECT c.id AS credencial_id, c.ativo AS credencial_ativa,
+                    f.id AS funcionario_id, f.nome, f.ativo AS funcionario_ativo
+             FROM credenciais_acesso c
+             JOIN funcionarios f ON f.id = c.funcionario_id
+             WHERE c.identificador = ? AND f.empresa_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$identificador, $empresaId]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Último registro autorizado do funcionário a partir de $desde ('Y-m-d H:i:s'), ou false.
+     * É o que decide se a próxima passagem é entrada ou saída (mesma regra de presentesAgora()).
+     */
+    public function ultimoRegistroAutorizado(int $funcionarioId, string $desde): array|false
+    {
+        $stmt = $this->db->prepare(
+            "SELECT direcao, data_hora, dispositivo_id FROM logs_acesso
+             WHERE funcionario_id = ? AND resultado = 'autorizado' AND data_hora >= ?
+             ORDER BY data_hora DESC, id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$funcionarioId, $desde]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Grava uma leitura da catraca (autorizada ou negada). funcionario_id e credencial_id são
+     * nulos quando o cartão é desconhecido. A data é passada pelo chamador (fuso do PHP).
+     */
+    public function registrarLeitura(
+        int $empresaId,
+        int $dispositivoId,
+        ?int $funcionarioId,
+        ?int $credencialId,
+        string $direcao,
+        string $resultado,
+        string $dataHora
+    ): void {
+        $stmt = $this->db->prepare(
+            'INSERT INTO logs_acesso (empresa_id, funcionario_id, dispositivo_id, credencial_id, direcao, resultado, data_hora)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([$empresaId, $funcionarioId, $dispositivoId, $credencialId, $direcao, $resultado, $dataHora]);
+    }
 }
