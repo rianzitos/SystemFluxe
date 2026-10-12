@@ -35,6 +35,21 @@ if (PHP_SAPI === 'cli-server') {
         Midia::servirVideo($caminhoReal);
         return false;
     }
+
+    // Pasta com index.html (a versão web do aplicativo, em /aplicativo/): o Apache entrega o índice da
+    // pasta sozinho; o servidor embutido não, então fazemos o mesmo aqui. Só dentro de public/.
+    $publico = realpath(__DIR__ . '/../../public');
+    $pasta = $uri !== '/' ? realpath($caminhoReal) : false;
+    if ($pasta !== false && $publico !== false && str_starts_with($pasta, $publico . DIRECTORY_SEPARATOR)
+        && is_dir($pasta) && is_file($pasta . '/index.html')) {
+        if (!str_ends_with($uri, '/')) {
+            header('Location: ' . $uri . '/', true, 301);   // como o Apache: /aplicativo → /aplicativo/
+            exit;
+        }
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($pasta . '/index.html');
+        exit;
+    }
 }
 
 // ─── Rotas publicas ───────────────────────────────────────────────────────────

@@ -1071,9 +1071,50 @@
     color: #3d3d3d;
 }
 
+/* "Como colocar o app do navegador na tela inicial" (dentro do cartão de download) */
+.appInstalarWeb {
+    margin-top: 1.1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid #dcdcdc;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #3d3d3d;
+}
+
+.appInstalarWeb summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    cursor: pointer;
+    list-style: none;
+    font-weight: bold;
+    color: var(--preto);
+}
+
+.appInstalarWeb summary::-webkit-details-marker {
+    display: none;
+}
+
+.appInstalarWeb summary i {
+    transition: transform 0.3s ease;
+}
+
+.appInstalarWeb[open] summary i {
+    transform: rotate(180deg);
+}
+
+.appInstalarWeb ul {
+    margin: 0.7rem 0 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
 .appBaixarCartao .appBtn:focus-visible,
 .appBaixarCartao a:focus-visible,
-.appBaixarCartao button:focus-visible {
+.appBaixarCartao button:focus-visible,
+.appBaixarCartao summary:focus-visible {
     outline: 3px solid var(--preto);
     outline-offset: 3px;
 }

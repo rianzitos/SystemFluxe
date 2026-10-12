@@ -287,8 +287,18 @@ html.tema-animando body *::after {
     color: #8c8c8c;
 }
 
+:root[data-theme="dark"] .appInstalarWeb {
+    border-top-color: var(--t-borda-2);
+    color: var(--t-suave);
+}
+
+:root[data-theme="dark"] .appInstalarWeb summary {
+    color: var(--t-texto);
+}
+
 :root[data-theme="dark"] .appBaixarCartao .appBtn:focus-visible,
-:root[data-theme="dark"] .appBaixarCartao a:focus-visible {
+:root[data-theme="dark"] .appBaixarCartao a:focus-visible,
+:root[data-theme="dark"] .appBaixarCartao summary:focus-visible {
     outline-color: var(--amarelo);
 }
 
