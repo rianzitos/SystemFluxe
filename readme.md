@@ -53,6 +53,7 @@ SystemFluxe/
 │   └── routes/web.php       # Roteamento das rotas públicas e protegidas
 ├── config/                  # Configurações de app e banco de dados
 ├── public/                  # CSS, JS, imagens e o vídeo "Ver como funciona" (public/video/)
+│   └── aplicativo/          # Versão web do aplicativo (Flutter), que abre no navegador e instala como app
 ├── storage/downloads/       # Instaladores do aplicativo (Windows e Android) e manifestos, fora de public/
 └── ia/                      # API e modelos em Python para previsão de demanda
 ```
@@ -67,14 +68,21 @@ Configuração local: copie `config/.env.example` para `config/.env` e importe `
 
 Dados de exemplo (opcional, para testar e demonstrar): abra `config/dados_exemplo.sql` no Workbench e execute o script inteiro (Ctrl+Shift+Enter). Por padrão ele usa a primeira empresa; para escolher outra, veja o passo 1 do arquivo (`SET @emp = 8;`). Gera 40 funcionários trabalhando em turnos o dia todo e nos 7 dias da semana, com ~90 dias de acessos e de produção de refeições, então o painel, as pessoas presentes, a análise mensal e os relatórios aparecem preenchidos em qualquer dia e horário. **A cada execução ele apaga e recria** funcionários, credenciais, dispositivos, logs de acesso e produção da empresa escolhida (nunca de outra empresa, e nunca usuários, empresas ou metas de refeições). Use só em banco de teste. Na empresa escolhida ele marca "possui refeitório" e, se ela tiver menos de 40 colaboradores, ajusta para 45 (os valores de antes aparecem na primeira consulta do script). No final mostra uma tabela de diagnóstico.
 
-## Aplicativo (Windows e Android)
+## Aplicativo (Android, Windows e navegador)
 
-O SICAPDA tem um aplicativo para **Windows** e **Android**, feito em Flutter ([fluxe_app](https://github.com/rianzitos/fluxe_app)), que usa o **mesmo login e os mesmos dados** da versão web.
+O SICAPDA tem um aplicativo feito em Flutter ([fluxe_app](https://github.com/rianzitos/fluxe_app)) que usa o **mesmo login e os mesmos dados** do painel web. Há três jeitos de usar, todos oferecidos na seção *Baixar* da página `/sicapda`:
 
-- **API do app** — `/api/*` (`app/controllers/ApiController.php`): login com token assinado e as mesmas consultas do painel, análise mensal, pessoas, relatórios e assistente, sempre filtradas pela empresa do usuário logado. Exige o `API_SECRET` (mínimo de 32 caracteres) no `config/.env`; para gerar um: `php -r "echo bin2hex(random_bytes(32));"`.
+| Jeito | Para quem | Onde fica |
+|---|---|---|
+| **Abrir no navegador** (versão web do app, instalável como PWA) | Qualquer aparelho, inclusive iPhone e Mac. Não instala nada | `public/aplicativo/` → `/aplicativo/` |
+| **Android** (`SICAPDA.apk`) | Celulares e tablets Android 7.0 ou superior (ARM e x86_64) | `storage/downloads/` → `/app/baixar/android` |
+| **Windows** (`SICAPDA-Setup.exe`) | Windows 10 ou superior | `storage/downloads/` → `/app/baixar/windows` |
+
+- **API do app** — `/api/*` (`app/controllers/ApiController.php`): login com token assinado e as mesmas consultas do painel, análise mensal, pessoas, relatórios e assistente, sempre filtradas pela empresa do usuário logado. Exige o `API_SECRET` (mínimo de 32 caracteres) no `config/.env`; para gerar um: `php -r "echo bin2hex(random_bytes(32));"`. Responde **CORS** (`Api::cors()`), então o app web também funciona aberto em outro endereço (por exemplo `flutter run -d chrome`); é seguro liberar qualquer origem porque a API usa token no cabeçalho `Authorization`, nunca cookie.
 - **Apresentação do app** — a página `/sicapda` tem as seções *Aplicativo*, *Telas*, *Por que usar o app* e *Baixar* (item **Aplicativo** do menu), com as telas do app, o passo a passo de instalação e perguntas frequentes.
-- **Download** — a seção *Baixar* tem um botão só: ele entrega o instalador certo para o aparelho de quem acessa (Windows → `SICAPDA-Setup.exe`, Android → `SICAPDA.apk`). `/app/baixar` faz essa escolha automaticamente; `/app/baixar/windows` e `/app/baixar/android` entregam cada arquivo (com suporte a retomar o download); `/app` é um atalho curto para a seção de download. Enquanto um instalador não for publicado, a página mostra "Em breve" (ou oferece só o que existe) e a rota dele responde 404.
-- **Publicar ou atualizar** — copie para `storage/downloads/` os arquivos `SICAPDA-Setup.exe` + `app-windows.json` (Windows) e `SICAPDA.apk` + `app.json` (Android: versão, tamanho e data). O GitHub Actions do `fluxe_app` gera tudo no artefato `SICAPDA-downloads`. Passo a passo em [`storage/downloads/LEIA-ME.md`](storage/downloads/LEIA-ME.md).
+- **Download** — o botão principal entrega o instalador certo para o aparelho de quem acessa (Windows → `SICAPDA-Setup.exe`, Android → `SICAPDA.apk`) e, ao lado, fica sempre o **Abrir no navegador**. Em iPhone, Mac e Linux, que não têm instalador, o navegador é o botão principal. `/app/baixar` faz essa escolha automaticamente; `/app/baixar/windows` e `/app/baixar/android` entregam cada arquivo (com suporte a retomar o download); `/app` é um atalho curto para a seção de download. Enquanto um instalador não for publicado, a página oferece só o que existe e a rota dele responde 404.
+- **Versão web (`public/aplicativo/`)** — é o resultado de `flutter build web` (veja "Versão web" no README do `fluxe_app`), servida como arquivos estáticos pelo Apache, na **mesma origem** da API (não precisa configurar CORS nem endereço de servidor: o app usa o próprio site). O `.htaccess` dessa pasta comprime o motor gráfico (7 MB → 2 MB), define `application/wasm` e usa `Cache-Control: no-cache` para uma versão nova aparecer sozinha. No servidor embutido do PHP (`php -S`), `app/routes/web.php` entrega o `index.html` da pasta, como o Apache faz.
+- **Publicar ou atualizar** — o GitHub Actions do `fluxe_app` compila tudo e publica a **Release** do GitHub (`SICAPDA.apk`, `SICAPDA-Setup.exe`, `SICAPDA-web.zip` e os `.json`). Copie o APK e o `app.json` (e o instalador do Windows + `app-windows.json`) para `storage/downloads/` e extraia o `SICAPDA-web.zip` em `public/aplicativo/` (mantendo o `.htaccess`). Passo a passo em [`storage/downloads/LEIA-ME.md`](storage/downloads/LEIA-ME.md).
 
 Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` e `API_SECRET`.
 

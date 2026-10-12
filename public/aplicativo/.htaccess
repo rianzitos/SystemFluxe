@@ -1,0 +1,21 @@
+# Versão web do aplicativo SICAPDA (Flutter): este arquivo só vale para esta pasta.
+# Os demais arquivos daqui são gerados por `flutter build web` (veja o README do fluxe_app).
+
+# Garante o tipo certo do .wasm (o navegador só inicia o motor gráfico em "streaming", mais rápido, com ele).
+<IfModule mod_mime.c>
+    AddType application/wasm .wasm
+</IfModule>
+
+# O app é grande (o motor gráfico passa de 7 MB): comprime o que o servidor ainda não comprime sozinho.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/wasm application/javascript text/javascript application/json text/html text/css image/svg+xml font/ttf font/otf application/x-font-ttf application/x-font-otf
+</IfModule>
+
+# O Flutter não troca o nome dos arquivos a cada versão. "no-cache" faz o navegador perguntar ao servidor
+# se o arquivo mudou (resposta 304, instantânea, se não mudou) antes de reutilizar a cópia guardada:
+# assim, depois de publicar uma versão nova, ela aparece sozinha para todo mundo.
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|js|json)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>

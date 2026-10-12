@@ -1,0 +1,7 @@
+# Instaladores e pacotes do aplicativo: nunca converter quebras de linha (core.autocrlf do Windows).
+*.apk binary
+*.exe binary
+*.zip binary
+*.wasm binary
+# Código gerado pelo Flutter (3,6 MB em poucas linhas): não mostrar no diff.
+public/aplicativo/main.dart.js -diff

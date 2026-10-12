@@ -5,7 +5,8 @@
  *
  * Usa os mesmos models e o mesmo banco MySQL da versão web, sempre filtrando
  * pela empresa do usuário autenticado. Autenticação por Bearer token
- * (ApiAuthMiddleware) em vez de sessão/cookie.
+ * (ApiAuthMiddleware) em vez de sessão/cookie. Responde CORS (Api::cors) para o app web
+ * funcionar também quando aberto em outro endereço.
  *
  * Rotas (todas sob /api):
  *   POST /api/login            {email, senha}
@@ -22,6 +23,13 @@ class ApiController
 {
     public function despachar(string $uri, string $metodo): never
     {
+        Api::cors();
+        if ($metodo === 'OPTIONS') {
+            // Pré-verificação do navegador (CORS): só confirma que pode enviar a requisição de verdade.
+            http_response_code(204);
+            exit;
+        }
+
         $rota = '/' . trim(substr($uri, strlen('/api')), '/');
 
         if ($rota === '/login') {

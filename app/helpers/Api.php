@@ -7,6 +7,23 @@
  */
 class Api
 {
+    /**
+     * CORS: a versão web do aplicativo pode abrir em outro endereço que o da API (por exemplo
+     * `flutter run -d chrome`, em http://localhost:PORTA, ou o app hospedado em outro domínio). Sem estes
+     * cabeçalhos o navegador bloqueia o login antes mesmo de ele chegar aqui.
+     *
+     * Liberar qualquer origem é seguro porque a API autentica por token no cabeçalho Authorization e
+     * nunca por cookie: um site de terceiros não consegue "pegar carona" na sessão de ninguém, e
+     * sem o token todas as rotas (menos o login) respondem 401.
+     */
+    public static function cors(): void
+    {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type, Accept');
+        header('Access-Control-Max-Age: 86400');
+    }
+
     public static function json(array $dados, int $status = 200): never
     {
         http_response_code($status);

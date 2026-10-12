@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Aplicativo do SICAPDA (Windows e Android) oferecido para download na página /sicapda.
+ * Aplicativo do SICAPDA oferecido na página /sicapda: instaladores para Windows e Android (download) e a
+ * versão web (abre no navegador, em public/aplicativo; veja web()).
  *
  * Os instaladores ficam FORA de public/ (storage/downloads) e só saem pelas rotas /app/baixar...
  * (AppMobileController). Ao lado de cada um fica um manifesto .json (versão, tamanho, data),
@@ -17,6 +18,9 @@
 class AppMobile
 {
     public const URL_DOWNLOAD = '/app/baixar';
+
+    /** Versão web do aplicativo (Flutter), publicada em public/aplicativo: abre no navegador, sem instalar. */
+    public const URL_WEB = '/aplicativo/';
 
     /** minSdk padrão do Flutter atual (Android 7.0), usado se o manifesto não informar. */
     private const MIN_SDK_PADRAO = 24;
@@ -173,6 +177,30 @@ class AppMobile
         $info['atualizado_iso'] = $data->format('Y-m-d');
 
         return $info;
+    }
+
+    /**
+     * Versão do aplicativo que roda no navegador (e pode ser instalada na tela inicial, como PWA).
+     * Fica em public/aplicativo, gerada por `flutter build web` (README do fluxe_app, "Versão web").
+     * Está "disponível" quando os arquivos principais do app estão lá.
+     *
+     * @return array{disponivel: bool, url: string, versao: ?string}
+     */
+    public static function web(): array
+    {
+        $pasta = dirname(__DIR__, 2) . '/public/aplicativo';
+        $disponivel = is_file($pasta . '/index.html') && is_file($pasta . '/main.dart.js');
+
+        $versao = null;
+        if ($disponivel && is_readable($pasta . '/version.json')) {
+            $json = json_decode(ltrim((string) @file_get_contents($pasta . '/version.json'), "\xEF\xBB\xBF"), true);
+            $candidata = is_array($json) ? (string) ($json['version'] ?? '') : '';
+            if (preg_match('/^[0-9A-Za-z][0-9A-Za-z._+-]{0,31}$/', $candidata)) {
+                $versao = $candidata;
+            }
+        }
+
+        return ['disponivel' => $disponivel, 'url' => self::URL_WEB, 'versao' => $versao];
     }
 
     /** @return array<string, array> info() de cada plataforma, indexado por plataforma */

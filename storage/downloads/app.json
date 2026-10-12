@@ -1,9 +1,9 @@
 {
   "arquivo": "SICAPDA.apk",
-  "versao": "1.0.0",
-  "build": 1,
-  "tamanho": 37386558,
-  "sha256": "6a61ed72c69bec7b54faaabc589637254a124c76ec8e86c8592038370cd602ba",
+  "versao": "1.1.0",
+  "build": 2,
+  "tamanho": 26870994,
+  "sha256": "8bee55d60551fbe4ccfe1ceb5aaf464bbc4480c5c849e1c5e06f678dc1c888fc",
   "min_sdk": 24,
-  "atualizado_em": "2026-10-08T02:08:50Z"
+  "atualizado_em": "2026-10-12T15:57:43Z"
 }
