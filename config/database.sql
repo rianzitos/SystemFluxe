@@ -6,11 +6,11 @@
 --
 -- IF NOT EXISTS: seguro rodar de novo mesmo se alguma tabela já existir.
 -- =============================================================================
-USE controle_acesso;
+USE fluxetea_controle_acesso;
 
 -- ─── Tabela empresas ────────────────────────────────────────────────────────
 -- (IF NOT EXISTS: seguro rodar de novo mesmo se ela já tiver sido criada antes)
-USE controle_acesso;
+USE fluxetea_controle_acesso;
 
 CREATE TABLE IF NOT EXISTS empresas (
     id                        INT AUTO_INCREMENT PRIMARY KEY,

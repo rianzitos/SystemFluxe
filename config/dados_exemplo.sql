@@ -25,7 +25,7 @@
 -- um arquivo antigo: baixe o dados_exemplo.sql mais recente.
 -- =============================================================================
 
-USE controle_acesso;
+USE fluxetea_controle_acesso;
 SET NAMES utf8mb4;          -- garante os acentos (Produção, Natália...) em qualquer forma de importar
 SET time_zone = '-03:00';   -- horário de Brasília (o do sistema), mesmo que o servidor do banco use outro fuso
 
