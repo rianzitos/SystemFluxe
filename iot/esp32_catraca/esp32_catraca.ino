@@ -1,21 +1,12 @@
-/*
- * SICAPDA by FLUXE — Catraca com ESP32 + leitor RFID RC522
- *
- * Fluxo: o cartão encosta no leitor → a ESP32 lê o UID → envia para o servidor
- * (POST /api/iot/acesso) → o servidor responde se está autorizado e se é entrada ou
- * saída → a ESP32 aciona o relé da catraca (ou o LED vermelho, se negado).
- * O servidor é quem decide e quem grava em logs_acesso; a ESP32 só lê e obedece.
- *
- * Bibliotecas (Gerenciador de Bibliotecas da Arduino IDE / lib_deps do Wokwi):
- *   - MFRC522 (Miguel Balboa)
- *   - ArduinoJson 7.x (Benoit Blanchon)
- *
- * Ligações do RC522 (SPI padrão da ESP32):
- *   SDA(SS) → GPIO 5   SCK → GPIO 18   MOSI → GPIO 23   MISO → GPIO 19
- *   RST     → GPIO 22  3.3V → 3V3      GND  → GND      (o RC522 é 3,3 V: nunca ligue em 5 V)
- * Saídas: relé → GPIO 26, LED verde → GPIO 25, LED vermelho → GPIO 33, buzzer → GPIO 27.
- * Mude os pinos abaixo se o seu circuito for diferente.
- */
+// SICAPDA by FLUXE — Catraca com RFID: ESP32 + MFRC522 + servo + 2 LEDs
+// Circuito simulado no Wokwi pela equipe (mesmos pinos e mesmo comportamento da catraca).
+//
+// Diferença para a versão com lista fixa de UIDs: quem decide agora é o SERVIDOR.
+// Cartão lido → POST /api/iot/acesso (com o token do dispositivo) → o servidor confere o
+// cartão no banco, alterna entrada/saída, grava em logs_acesso e responde "autorizado" ou
+// não → a ESP32 abre ou nega. Cadastrar ou desativar um cartão não exige regravar a ESP32.
+//
+// Bibliotecas (libraries.txt no Wokwi): MFRC522, ESP32Servo e ArduinoJson (versão 7)
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -23,218 +14,212 @@
 #include <ArduinoJson.h>
 #include <SPI.h>
 #include <MFRC522.h>
+#include <ESP32Servo.h>
 
-// ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
-
-const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é este; na vida real, o Wi-Fi da empresa
-const char* WIFI_SENHA = "";              // Wokwi-GUEST não tem senha
+// ----- Rede e servidor -----
+const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é esta rede (sem senha); na vida real, o Wi-Fi da empresa
+const char* WIFI_SENHA = "";
 const int   WIFI_CANAL = 6;               // 6 acelera a conexão no Wokwi; use 0 (automático) fora dele
 
 // Endereço do SICAPDA, sem a barra no final. O Wokwi roda na nuvem e NÃO enxerga o localhost
-// do seu computador: use o site publicado (ou um túnel, como ngrok, para testar localmente).
+// do seu computador: use o site publicado (ou um túnel, como ngrok).
 const char* URL_SERVIDOR = "https://fluxeteam.com.br";
 
-// Token deste dispositivo (coluna "token" da tabela dispositivos_iot). Cada catraca tem o seu.
-// Não suba o token de verdade para o GitHub: troque só no seu computador.
+// Token deste dispositivo: Configurações → Integrações → Adicionar dispositivo (aparece uma vez só).
+// Não suba o token de verdade para o GitHub: cole só no seu computador.
 const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 
-// 0 = leitor RC522 de verdade.  1 = simulado: você digita o UID no Monitor Serial e
-// pressiona Enter (serve para testar no Wokwi sem a peça do RC522).
-#define LEITOR_SIMULADO 0
+// ----- Pinos -----
+#define SS_PIN     5    // SDA do RC522
+#define RST_PIN    22   // RST do RC522
+#define SERVO_PIN  13
+#define LED_RED    26   // catraca fechada
+#define LED_GREEN  27   // catraca aberta
 
-const uint8_t PIN_RC522_SS     = 5;
-const uint8_t PIN_RC522_RST    = 22;
-const uint8_t PIN_RELE         = 26;
-const uint8_t PIN_LED_VERDE    = 25;
-const uint8_t PIN_LED_VERMELHO = 33;
-const uint8_t PIN_BUZZER       = 27;
+// SCK = 18, MISO = 19, MOSI = 23 (SPI padrão do ESP32)
 
-const unsigned long TEMPO_CATRACA_LIBERADA_MS = 3000;   // quanto tempo o relé fica acionado
-const unsigned long INTERVALO_PING_MS         = 60000;  // "estou vivo" a cada 1 minuto
+// ----- Ajustes -----
+const int ANGLE_CLOSED = 0;                      // catraca travada
+const int ANGLE_OPEN = 90;                       // catraca liberada
+const unsigned long OPEN_TIME_MS = 4000;         // tempo aberta para a pessoa passar
+const unsigned long PING_INTERVAL_MS = 60000;    // "estou vivo" a cada 1 minuto (é o que mostra Online nas Configurações)
+const unsigned long WIFI_RETRY_MS = 10000;       // intervalo entre tentativas de reconectar
 
-// ─── ESTADO ──────────────────────────────────────────────────────────────────
+MFRC522 rfid(SS_PIN, RST_PIN);
+Servo gate;
 
-MFRC522 leitor(PIN_RC522_SS, PIN_RC522_RST);
-unsigned long ultimoPing = 0;
+unsigned long lastPing = 0;
+unsigned long lastWifiTry = 0;
 
-// ─── LEITURA DO CARTÃO ───────────────────────────────────────────────────────
-
-/*
- * Devolve true e preenche "uid" quando um cartão foi lido (ex.: "A1B2C3D4").
- * Se o circuito do Wokwi lê o cartão de outro jeito, troque só o corpo desta função:
- * o resto do programa só precisa receber o UID como texto.
- */
-bool lerCartao(String& uid) {
-#if LEITOR_SIMULADO
-  if (!Serial.available()) return false;
-  String linha = Serial.readStringUntil('\n');
-  linha.trim();
-  if (linha.length() == 0) return false;
-  uid = linha;
-  return true;
-#else
-  if (!leitor.PICC_IsNewCardPresent() || !leitor.PICC_ReadCardSerial()) return false;
-
-  uid = "";
-  for (byte i = 0; i < leitor.uid.size; i++) {
-    if (leitor.uid.uidByte[i] < 0x10) uid += "0";
-    uid += String(leitor.uid.uidByte[i], HEX);
-  }
-  uid.toUpperCase();
-
-  leitor.PICC_HaltA();        // para de ler o mesmo cartão enquanto ele estiver encostado
-  leitor.PCD_StopCrypto1();
-  return true;
-#endif
+void closeGate() {
+  gate.write(ANGLE_CLOSED);
+  digitalWrite(LED_GREEN, LOW);
+  digitalWrite(LED_RED, HIGH);
 }
 
-// ─── COMUNICAÇÃO COM O SERVIDOR ──────────────────────────────────────────────
+void openGate() {
+  digitalWrite(LED_RED, LOW);
+  digitalWrite(LED_GREEN, HIGH);
+  gate.write(ANGLE_OPEN);
+}
 
-void conectarWifi() {
-  if (WiFi.status() == WL_CONNECTED) return;
+void denyAccess() {
+  // Acesso negado: LED vermelho pisca 3 vezes e a catraca continua fechada
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_RED, LOW);
+    delay(150);
+    digitalWrite(LED_RED, HIGH);
+    delay(150);
+  }
+}
 
+void printUid() {
+  Serial.print("UID lido:");
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+    Serial.print(rfid.uid.uidByte[i], HEX);
+  }
+  Serial.println();
+}
+
+// UID como o servidor guarda: hexadecimal em maiúsculas, sem espaços (ex.: "01020304").
+// É este texto que se cadastra em credenciais_acesso.identificador.
+String uidAsText() {
+  String uid = "";
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) uid += "0";
+    uid += String(rfid.uid.uidByte[i], HEX);
+  }
+  uid.toUpperCase();
+  return uid;
+}
+
+// ----- Wi-Fi e servidor -----
+
+void connectWifi() {
   Serial.print("Conectando ao Wi-Fi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_SENHA, WIFI_CANAL);
-  unsigned long inicio = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - inicio < 15000) {
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
     delay(250);
     Serial.print(".");
   }
   Serial.println(WiFi.status() == WL_CONNECTED ? " conectado" : " falhou");
 }
 
-/*
- * POST em /api/iot/<rota> com o token do dispositivo. Devolve o código HTTP (ou <= 0 se nem
- * chegou ao servidor) e o corpo da resposta em "resposta".
- */
-int postar(const char* rota, const String& corpo, String& resposta) {
-  WiFiClientSecure cliente;
-  cliente.setInsecure();   // TESTE: aceita qualquer certificado. Em produção use cliente.setCACert(<certificado raiz do site>).
+// Se a rede cair, tenta voltar sem travar a leitura dos cartões.
+void keepWifi() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  if (millis() - lastWifiTry < WIFI_RETRY_MS) return;
+  lastWifiTry = millis();
+  Serial.println("Wi-Fi caiu, reconectando...");
+  WiFi.disconnect();
+  WiFi.begin(WIFI_SSID, WIFI_SENHA, WIFI_CANAL);
+}
+
+// POST em /api/iot/<path> com o token do dispositivo.
+// Devolve o código HTTP (<= 0 se nem chegou ao servidor) e o corpo da resposta em "response".
+int postJson(const char* path, const String& body, String& response) {
+  WiFiClientSecure client;
+  client.setInsecure();   // TESTE: aceita qualquer certificado. Em produção: client.setCACert(<certificado raiz do site>)
 
   HTTPClient http;
   http.setTimeout(8000);
-  if (!http.begin(cliente, String(URL_SERVIDOR) + "/api/iot/" + rota)) return -1;
+  if (!http.begin(client, String(URL_SERVIDOR) + "/api/iot/" + path)) return -1;
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Token", TOKEN_DISPOSITIVO);
 
-  int codigo = http.POST(corpo);
-  if (codigo > 0) resposta = http.getString();
+  int code = http.POST(body);
+  if (code > 0) response = http.getString();
   http.end();
-  return codigo;
+  return code;
 }
 
-void enviarPing() {
+void sendPing() {
   if (WiFi.status() != WL_CONNECTED) return;
-  String resposta;
-  int codigo = postar("ping", "{}", resposta);
-  Serial.printf("Ping: HTTP %d\n", codigo);
+  String response;
+  int code = postJson("ping", "{}", response);
+  Serial.printf("Ping: HTTP %d\n", code);
 }
 
-// ─── SINALIZAÇÃO E CATRACA ───────────────────────────────────────────────────
-
-void bip(int vezes, int duracaoMs) {
-  for (int i = 0; i < vezes; i++) {
-    digitalWrite(PIN_BUZZER, HIGH);
-    delay(duracaoMs);
-    digitalWrite(PIN_BUZZER, LOW);
-    if (i < vezes - 1) delay(duracaoMs);
-  }
-}
-
-void liberarCatraca() {
-  digitalWrite(PIN_LED_VERDE, HIGH);
-  digitalWrite(PIN_RELE, HIGH);   // se o seu módulo de relé aciona com LOW, inverta aqui e no setup()
-  bip(1, 150);
-  delay(TEMPO_CATRACA_LIBERADA_MS);
-  digitalWrite(PIN_RELE, LOW);
-  digitalWrite(PIN_LED_VERDE, LOW);
-}
-
-void negarAcesso() {
-  digitalWrite(PIN_LED_VERMELHO, HIGH);
-  bip(3, 120);
-  delay(800);
-  digitalWrite(PIN_LED_VERMELHO, LOW);
-}
-
-// ─── PROCESSAMENTO DE UMA LEITURA ────────────────────────────────────────────
-
-void processarCartao(const String& uid) {
-  Serial.println("Cartão lido: " + uid);   // é este UID que se cadastra em credenciais_acesso
-
+// Pergunta ao servidor se o cartão pode passar. Por segurança, qualquer falha (sem Wi-Fi,
+// servidor fora do ar, token recusado, resposta estranha) NEGA o acesso: a catraca nunca abre "no escuro".
+bool isAuthorized(const String& uid) {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Sem Wi-Fi: acesso negado.");
-    negarAcesso();
-    return;
+    Serial.println("Sem Wi-Fi: acesso negado");
+    return false;
   }
 
-  JsonDocument corpo;
-  corpo["uid"] = uid;
-  String json;
-  serializeJson(corpo, json);
+  JsonDocument request;
+  request["uid"] = uid;
+  String body;
+  serializeJson(request, body);
 
-  String resposta;
-  int codigo = postar("acesso", json, resposta);
-
-  // Falha de rede ou do servidor: por segurança a catraca NÃO abre (fail-closed).
-  if (codigo != 200) {
-    Serial.printf("Servidor respondeu HTTP %d: acesso negado.\n", codigo);
-    negarAcesso();
-    return;
+  String response;
+  int code = postJson("acesso", body, response);
+  if (code != 200) {
+    Serial.printf("Servidor respondeu HTTP %d (401 = token errado): acesso negado\n", code);
+    return false;
   }
 
-  JsonDocument dados;
-  if (deserializeJson(dados, resposta)) {
-    Serial.println("Resposta inválida do servidor: acesso negado.");
-    negarAcesso();
-    return;
+  JsonDocument data;
+  if (deserializeJson(data, response)) {
+    Serial.println("Resposta invalida do servidor: acesso negado");
+    return false;
   }
 
-  bool autorizado = dados["autorizado"] | false;
-  String mensagem = dados["mensagem"] | "";
-  String nome     = dados["nome"] | "";
-  String direcao  = dados["direcao"] | "";
-
-  Serial.println((autorizado ? "LIBERADO " : "NEGADO ") + nome + " " + direcao + " — " + mensagem);
-
-  if (autorizado) liberarCatraca();
-  else negarAcesso();
+  bool authorized = data["autorizado"] | false;
+  String name = data["nome"] | "";
+  String direction = data["direcao"] | "";
+  String message = data["mensagem"] | "";
+  Serial.println(name + " " + direction + " - " + message);
+  return authorized;
 }
-
-// ─── ARDUINO ─────────────────────────────────────────────────────────────────
 
 void setup() {
   Serial.begin(115200);
 
-  pinMode(PIN_RELE, OUTPUT);
-  pinMode(PIN_LED_VERDE, OUTPUT);
-  pinMode(PIN_LED_VERMELHO, OUTPUT);
-  pinMode(PIN_BUZZER, OUTPUT);
-  digitalWrite(PIN_RELE, LOW);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
 
-#if !LEITOR_SIMULADO
+  gate.setPeriodHertz(50);
+  gate.attach(SERVO_PIN, 500, 2400);
+
   SPI.begin();
-  leitor.PCD_Init();
-#endif
+  rfid.PCD_Init();
 
-  conectarWifi();
-  enviarPing();
-  ultimoPing = millis();
-  Serial.println("Catraca pronta. Aproxime o cartão.");
+  closeGate();
+  connectWifi();
+  sendPing();
+  lastPing = millis();
+  Serial.println("Catraca pronta. Aproxime um cartao...");
 }
 
 void loop() {
-  conectarWifi();
+  keepWifi();
 
-  String uid;
-  if (lerCartao(uid)) {
-    processarCartao(uid);
-    delay(1000);   // folga para o cartão sair do leitor antes da próxima leitura
+  if (millis() - lastPing >= PING_INTERVAL_MS) {
+    sendPing();
+    lastPing = millis();
   }
 
-  if (millis() - ultimoPing >= INTERVALO_PING_MS) {
-    enviarPing();
-    ultimoPing = millis();
+  if (!rfid.PICC_IsNewCardPresent()) return;
+  if (!rfid.PICC_ReadCardSerial()) return;
+
+  printUid();
+
+  if (isAuthorized(uidAsText())) {
+    Serial.println("Acesso liberado");
+    openGate();
+    delay(OPEN_TIME_MS);   // catraca gira / pessoa passa
+    closeGate();           // trava de novo
+    Serial.println("Catraca travada");
+  } else {
+    Serial.println("Acesso negado");
+    denyAccess();
   }
+
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
 }

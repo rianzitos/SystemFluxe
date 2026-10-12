@@ -162,3 +162,37 @@ CREATE TABLE IF NOT EXISTS producao_refeicoes (
     CONSTRAINT fk_producao_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE,
     UNIQUE KEY uk_producao_dia (empresa_id, data, tipo)
 ) ENGINE=InnoDB;
+
+-- =============================================================================
+-- Migration 004: Preferências do usuário e sessões ativas (tela de Configurações)
+-- =============================================================================
+-- IF NOT EXISTS: seguro rodar de novo. No banco de produção (cPanel), rode só este
+-- bloco no phpMyAdmin (aba SQL). Enquanto ele não for rodado o sistema continua
+-- funcionando: usa as preferências padrão e não controla as sessões.
+
+-- ─── Tabela preferencias_usuario ─────────────────────────────────────────────
+-- Uma linha por usuário. "notificacoes": {"previsao_demanda":true,"acesso_negado":true,
+-- "dispositivo_offline":true}. "sistema": {"periodo_padrao":"mes","itens_pagina":20}.
+CREATE TABLE IF NOT EXISTS preferencias_usuario (
+    usuario_id    INT      NOT NULL PRIMARY KEY,
+    notificacoes  JSON     NULL,
+    sistema       JSON     NULL,
+    atualizado_em DATETIME NOT NULL,
+    CONSTRAINT fk_preferencias_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ─── Tabela sessoes_usuario ──────────────────────────────────────────────────
+-- Cada login pelo site (navegador). "sid_hash" é o SHA-256 do ID da sessão do PHP: o ID de
+-- verdade nunca é guardado, então um vazamento do banco não permite sequestrar sessões.
+-- "Encerrar" apaga a linha; a sessão que perdeu a linha é derrubada na próxima requisição.
+CREATE TABLE IF NOT EXISTS sessoes_usuario (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id    INT          NOT NULL,
+    sid_hash      CHAR(64)     NOT NULL UNIQUE,
+    ip            VARCHAR(45)  NULL,
+    navegador     VARCHAR(255) NULL,
+    criado_em     DATETIME     NOT NULL,
+    ultimo_acesso DATETIME     NOT NULL,
+    CONSTRAINT fk_sessoes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_sessoes_usuario (usuario_id, ultimo_acesso)
+) ENGINE=InnoDB;

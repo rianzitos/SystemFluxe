@@ -21,7 +21,8 @@ $cardsResumo = $dadosPainel['cardsResumo'];
 $graficoDemanda = $dadosPainel['graficoDemanda'];
 $graficoDistribuicao = $dadosPainel['graficoDistribuicao'];
 $previsaoProximasHoras = $dadosPainel['previsaoProximasHoras'];
-$alertas = $dadosPainel['alertas'];
+// Alertas de previsão + alertas das catracas, conforme as preferências de notificação do usuário.
+$alertas = Notificacoes::aplicar($dadosPainel['alertas'], Pagina::empresaId());
 $notificacoesNaoLidas = count($alertas);
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.

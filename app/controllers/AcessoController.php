@@ -55,6 +55,13 @@ class AcessoController
         $_SESSION['empresa_id'] = $usuario['empresa_id'];
         $_SESSION['usuario_foto'] = $usuario['foto'] ?? null;
 
+        // Entra na lista de "Sessões ativas" das Configurações. Se a tabela ainda não existir, o login segue normal.
+        try {
+            (new Sessao())->registrar((int) $usuario['id']);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: não foi possível registrar a sessão: ' . $e->getMessage());
+        }
+
         $this->redirecionar('/painel');
     }
 
@@ -321,6 +328,14 @@ class AcessoController
 
     public function logout(): void
     {
+        if (!empty($_SESSION['usuario_id'])) {
+            try {
+                (new Sessao())->remover();
+            } catch (PDOException $e) {
+                error_log('SICAPDA: não foi possível remover a sessão: ' . $e->getMessage());
+            }
+        }
+
         session_unset();
         session_destroy();
         $this->redirecionar('/login');

@@ -135,6 +135,16 @@ if ($uri === '/') {
     (new ConfiguracaoController())->atualizarSenha();
 } elseif ($uri === '/configuracoes/foto' && $metodo === 'POST') {
     (new ConfiguracaoController())->atualizarFoto();
+} elseif ($uri === '/configuracoes/notificacoes' && $metodo === 'POST') {
+    (new ConfiguracaoController())->salvarNotificacao();
+} elseif ($uri === '/configuracoes/sistema' && $metodo === 'POST') {
+    (new ConfiguracaoController())->salvarSistema();
+} elseif ($uri === '/configuracoes/sessoes/encerrar' && $metodo === 'POST') {
+    (new ConfiguracaoController())->encerrarSessao();
+} elseif ($uri === '/configuracoes/dispositivos' && $metodo === 'POST') {
+    (new ConfiguracaoController())->criarDispositivo();
+} elseif ($uri === '/configuracoes/dispositivos/token' && $metodo === 'POST') {
+    (new ConfiguracaoController())->regenerarTokenDispositivo();
 // Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
 
 } elseif ($uri === '/relatorios') {

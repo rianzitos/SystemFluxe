@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Backend da tela de Configurações: perfil (nome, e-mail, cargo),
- * senha e foto do usuário logado. Todas as ações respondem JSON.
+ * Backend da tela de Configurações: perfil (nome, e-mail, cargo), senha e foto do usuário logado,
+ * preferências (notificações e sistema), sessões ativas e os dispositivos IoT da empresa
+ * (só administradores). Todas as ações respondem JSON.
  */
 class ConfiguracaoController
 {
@@ -105,8 +106,14 @@ class ConfiguracaoController
             $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
         }
 
-        // Senha mudou: renova o ID da sessão (evita fixação de sessão).
+        // Senha mudou: renova o ID da sessão (evita fixação de sessão) e mantém o registro dela em "Sessões ativas".
+        $hashAntigo = Sessao::hashAtual();
         session_regenerate_id(true);
+        try {
+            (new Sessao())->trocarId($hashAntigo);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao atualizar o registro da sessão: ' . $e->getMessage());
+        }
 
         $this->responder(true, 'Senha atualizada com sucesso!');
     }
@@ -166,6 +173,134 @@ class ConfiguracaoController
         $this->responder(true, 'Foto atualizada com sucesso!', 200, ['foto' => '/' . $caminho]);
     }
 
+    // ─── Preferências ─────────────────────────────────────────────────────────
+
+    /** Liga/desliga um alerta (previsão, acesso negado, dispositivo offline) e devolve o novo número do sino. */
+    public function salvarNotificacao(): void
+    {
+        $id = $this->exigirSessao();
+
+        $chave = (string) ($_POST['chave'] ?? '');
+        if (!in_array($chave, Preferencia::NOTIFICACOES, true)) {
+            $this->responder(false, 'Notificação desconhecida.', 422);
+        }
+        $ativo = ($_POST['ativo'] ?? '') === '1';
+
+        try {
+            (new Preferencia())->salvarNotificacao($id, $chave, $ativo);
+            $empresaId = Pagina::empresaId();
+            $sino = Notificacoes::contar((new Painel($empresaId))->totalAlertas(), $empresaId);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao salvar notificação: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
+        }
+
+        $this->responder(true, 'Preferência salva.', 200, ['ativo' => $ativo, 'sino' => $sino]);
+    }
+
+    /** Período padrão e itens por página dos Relatórios. */
+    public function salvarSistema(): void
+    {
+        $id = $this->exigirSessao();
+
+        $periodo = (string) ($_POST['periodo_padrao'] ?? '');
+        $itens = (int) ($_POST['itens_pagina'] ?? 0);
+        if (!in_array($periodo, Preferencia::PERIODOS, true) || !in_array($itens, Preferencia::ITENS_PAGINA, true)) {
+            $this->responder(false, 'Valor inválido. Escolha uma das opções da lista.', 422);
+        }
+
+        try {
+            (new Preferencia())->salvarSistema($id, $periodo, $itens);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao salvar preferências do sistema: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
+        }
+
+        $this->responder(true, 'Preferências salvas.');
+    }
+
+    // ─── Sessões ativas ───────────────────────────────────────────────────────
+
+    /** Encerra uma sessão (id) ou todas as outras (todas=1). A sessão atual nunca é encerrada por aqui. */
+    public function encerrarSessao(): void
+    {
+        $id = $this->exigirSessao();
+
+        try {
+            $sessao = new Sessao();
+            if (($_POST['todas'] ?? '') === '1') {
+                $n = $sessao->encerrarOutras($id);
+                $this->responder(true, $n === 1 ? '1 sessão encerrada.' : $n . ' sessões encerradas.', 200, ['encerradas' => $n]);
+            }
+            if (!$sessao->encerrar($id, (int) ($_POST['id'] ?? 0))) {
+                $this->responder(false, 'Sessão não encontrada (talvez já tenha sido encerrada).', 404);
+            }
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao encerrar sessão: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível encerrar a sessão. Tente novamente.', 500);
+        }
+
+        $this->responder(true, 'Sessão encerrada.');
+    }
+
+    // ─── Dispositivos IoT (só administrador) ──────────────────────────────────
+
+    /** Cadastra uma catraca/leitor e devolve o token inteiro, que não será mostrado de novo. */
+    public function criarDispositivo(): void
+    {
+        $this->exigirSessao();
+        $empresaId = $this->exigirAdmin();
+
+        $nome = trim((string) ($_POST['nome'] ?? ''));
+        $tipo = (string) ($_POST['tipo'] ?? 'rfid');
+        $localizacao = trim((string) ($_POST['localizacao'] ?? ''));
+
+        if ($nome === '' || mb_strlen($nome) > 150) {
+            $this->responder(false, 'Informe o nome do dispositivo (até 150 caracteres).', 422);
+        }
+        if (!isset(Dispositivo::TIPOS[$tipo])) {
+            $this->responder(false, 'Tipo de dispositivo inválido.', 422);
+        }
+        if (mb_strlen($localizacao) > 150) {
+            $this->responder(false, 'A localização pode ter no máximo 150 caracteres.', 422);
+        }
+
+        try {
+            $modelo = new Dispositivo();
+            $novo = $modelo->criar($empresaId, $nome, $tipo, $localizacao !== '' ? $localizacao : null);
+            $dispositivo = $modelo->buscarDaEmpresa($novo['id'], $empresaId);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao criar dispositivo: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível criar o dispositivo. Tente novamente.', 500);
+        }
+
+        $this->responder(true, 'Dispositivo criado.', 200, ['dispositivo' => $dispositivo, 'token' => $novo['token']]);
+    }
+
+    /** Gera outro token para o dispositivo; o aparelho que usa o antigo deixa de ser aceito. */
+    public function regenerarTokenDispositivo(): void
+    {
+        $this->exigirSessao();
+        $empresaId = $this->exigirAdmin();
+
+        $id = (int) ($_POST['id'] ?? 0);
+
+        try {
+            $modelo = new Dispositivo();
+            $token = $id > 0 ? $modelo->regenerarToken($id, $empresaId) : false;
+            $dispositivo = $token !== false ? $modelo->buscarDaEmpresa($id, $empresaId) : false;
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao regenerar token: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível gerar o token. Tente novamente.', 500);
+        }
+
+        if ($token === false) {
+            $this->responder(false, 'Dispositivo não encontrado.', 404);
+        }
+
+        $this->responder(true, 'Novo token gerado.', 200, ['dispositivo' => $dispositivo, 'token' => $token]);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     /** Valida sessão + CSRF e devolve o ID do usuário logado. */
@@ -174,13 +309,23 @@ class ConfiguracaoController
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
             $this->responder(false, 'Método não permitido.', 405);
         }
-        if (empty($_SESSION['usuario_id'])) {
+        if (!AuthMiddleware::sessaoAtiva()) {
             $this->responder(false, 'Sessão expirada. Faça login novamente.', 401);
         }
 
         CsrfMiddleware::validar();
 
         return (int) $_SESSION['usuario_id'];
+    }
+
+    /** Só o administrador da empresa gerencia dispositivos. Devolve o ID da empresa. */
+    private function exigirAdmin(): int
+    {
+        $empresaId = Pagina::empresaId();
+        if (($_SESSION['usuario_perfil'] ?? '') !== 'admin' || $empresaId <= 0) {
+            $this->responder(false, 'Somente o administrador da empresa pode gerenciar dispositivos.', 403);
+        }
+        return $empresaId;
     }
 
     /** Encerra com 403 se a senha informada não for a do usuário. */
@@ -196,6 +341,7 @@ class ConfiguracaoController
     {
         http_response_code($status);
         header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');   // algumas respostas carregam o token inteiro de um dispositivo
         echo json_encode(['sucesso' => $sucesso, 'mensagem' => $mensagem] + $extra);
         exit;
     }

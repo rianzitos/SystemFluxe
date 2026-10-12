@@ -1,0 +1,3 @@
+MFRC522
+ESP32Servo
+ArduinoJson

@@ -18,15 +18,19 @@ class RelatorioController
         AuthMiddleware::autenticado();
 
         $empresaId = Pagina::empresaId();
-        $f = $this->filtros();
+
+        // Período padrão e itens por página escolhidos em Configurações → Sistema (só no site; a API do app usa os padrões).
+        $sistema   = (new Preferencia())->obter((int) $_SESSION['usuario_id'])['sistema'];
+        $porPagina = $sistema['itens_pagina'];
+        $f = $this->filtros($sistema['periodo_padrao']);
 
         $total   = $this->acesso->contarRegistros($empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria']);
-        $paginas = max(1, (int) ceil($total / self::POR_PAGINA));
+        $paginas = max(1, (int) ceil($total / $porPagina));
         $pagina  = min($f['pagina'], $paginas);
 
         $registros = $this->acesso->registros(
             $empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria'],
-            self::POR_PAGINA, ($pagina - 1) * self::POR_PAGINA
+            $porPagina, ($pagina - 1) * $porPagina
         );
 
         $resumo = $this->acesso->resumoRegistros($empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria']);
@@ -39,7 +43,7 @@ class RelatorioController
             'total'     => $total,
             'pagina'    => $pagina,
             'paginas'   => $paginas,
-            'porPagina' => self::POR_PAGINA,
+            'porPagina' => $porPagina,
             'cards'     => [
                 'total'   => $total,
                 'hoje'    => $hojeTotal,
@@ -48,7 +52,7 @@ class RelatorioController
                     ? '—'
                     : sprintf('%02d:00 - %02d:00', $resumo['pico_hora'], $resumo['pico_hora'] + 1),
             ],
-            'notificacoesNaoLidas' => count((new Previsao($empresaId))->alertas()),
+            'notificacoesNaoLidas' => Notificacoes::contar(count((new Previsao($empresaId))->alertas()), $empresaId),
         ];
 
         require __DIR__ . '/../views/relatorios.php';
@@ -95,12 +99,20 @@ class RelatorioController
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    /** Lê e valida os filtros da query string (nunca confia no que veio da URL). */
-    public function filtros(): array
+    /**
+     * Lê e valida os filtros da query string (nunca confia no que veio da URL).
+     * $periodoPadrao ('mes', '7', '30' ou '90') vale só quando a URL não traz a data inicial;
+     * sem ele (API do app) o padrão é o mês atual.
+     */
+    public function filtros(?string $periodoPadrao = null): array
     {
         $hoje = new DateTimeImmutable('today');
 
-        $de  = Datas::parse($_GET['de'] ?? null)  ?? $hoje->modify('first day of this month');
+        $inicioPadrao = in_array($periodoPadrao, ['7', '30', '90'], true)
+            ? $hoje->modify('-' . ((int) $periodoPadrao - 1) . ' days')
+            : $hoje->modify('first day of this month');
+
+        $de  = Datas::parse($_GET['de'] ?? null)  ?? $inicioPadrao;
         $ate = Datas::parse($_GET['ate'] ?? null) ?? $hoje;
 
         if ($de > $ate) {
