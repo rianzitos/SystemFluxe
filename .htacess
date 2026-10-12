@@ -1,0 +1,19 @@
+# ─── Projeto inteiro dentro do public_html (cPanel) ───────────────────────────
+# Use ESTE arquivo só quando não for possível apontar o DocumentRoot do domínio para a
+# pasta "public/" (o ideal, veja o README). Ele manda toda requisição para dentro de public/
+# e, com isso, app/, config/ (e o config/.env com a senha do banco), storage/, ia/, .git/ e
+# o index.html da raiz continuam inacessíveis pela web: qualquer endereço que aponte para
+# eles cai em public/, não encontra o arquivo e responde 404.
+#
+# Quem trata as rotas limpas (/login, /painel...) continua sendo o public/.htaccess.
+
+Options -Indexes
+
+RewriteEngine On
+
+# /aplicativo → /aplicativo/ (sem isso o Apache redirecionaria para /public/aplicativo/).
+RewriteRule ^aplicativo$ /aplicativo/ [R=301,L]
+
+# Tudo o que ainda não está em public/ passa a ser procurado lá dentro. O padrão é casado com o
+# caminho relativo a esta pasta, então também funciona em subpasta (XAMPP: /SystemFluxe/).
+RewriteRule ^(?!public/)(.*)$ public/$1 [L]
