@@ -18,7 +18,7 @@ class DemandaController
             'boasVindas' => $assistente->boasVindas(),
             'precisao'   => $precisao,
             'eventos'    => $previsao->eventos(3),
-            'notificacoesNaoLidas' => count($alertas),
+            'notificacoesNaoLidas' => Notificacoes::contar(count($alertas), $empresaId),
             'perguntasRapidas' => $this->perguntasRapidas(),
         ];
 
@@ -30,7 +30,7 @@ class DemandaController
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        if (empty($_SESSION['usuario_id'])) {
+        if (!AuthMiddleware::sessaoAtiva()) {
             http_response_code(401);
             echo json_encode(['sucesso' => false, 'mensagem' => 'Sessão expirada. Faça login novamente.']);
             return;

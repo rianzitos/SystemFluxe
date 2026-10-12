@@ -55,6 +55,7 @@ SystemFluxe/
 ├── public/                  # CSS, JS, imagens e o vídeo "Ver como funciona" (public/video/)
 │   └── aplicativo/          # Versão web do aplicativo (Flutter), que abre no navegador e instala como app
 ├── storage/downloads/       # Instaladores do aplicativo (Windows e Android) e manifestos, fora de public/
+├── iot/                     # Firmware da catraca (ESP32 + RFID) e o passo a passo da integração IoT
 └── ia/                      # API e modelos em Python para previsão de demanda
 ```
 
@@ -85,6 +86,27 @@ O SICAPDA tem um aplicativo feito em Flutter ([fluxe_app](https://github.com/ria
 - **Publicar ou atualizar** — o GitHub Actions do `fluxe_app` compila tudo e publica a **Release** do GitHub (`SICAPDA.apk`, `SICAPDA-Setup.exe`, `SICAPDA-web.zip` e os `.json`). Copie o APK e o `app.json` (e o instalador do Windows + `app-windows.json`) para `storage/downloads/` e extraia o `SICAPDA-web.zip` em `public/aplicativo/` (mantendo o `.htaccess`). Passo a passo em [`storage/downloads/LEIA-ME.md`](storage/downloads/LEIA-ME.md).
 
 Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` e `API_SECRET`.
+
+## Catraca IoT (ESP32 + RFID)
+
+As catracas são aparelhos independentes: a ESP32 lê o cartão, entra no **Wi-Fi** e chama o SICAPDA por HTTPS (sem cabo ligado ao servidor; o USB só grava o programa). O servidor decide se libera, alterna entrada/saída e grava em `logs_acesso` — a tabela que alimenta o painel, as pessoas presentes, os relatórios e a previsão de demanda, que por isso passam a refletir as passagens reais sem mudar nenhuma tela.
+
+- **API** — `POST /api/iot/acesso` (`{uid}` → `{autorizado, direcao, nome, mensagem}`) e `POST /api/iot/ping`, em `app/controllers/IotController.php`. Autenticam pelo cabeçalho `X-Device-Token` (token da tabela `dispositivos_iot`), não por usuário; as rotas do app (`/api/*`) continuam exigindo o Bearer token de uma pessoa.
+- **Dispositivos e tokens** — pela tela **Configurações → Integrações** (só o administrador da empresa): lista os dispositivos com status Online/Offline (pelo último sinal), cria dispositivos e gera tokens novos. O token inteiro aparece uma única vez.
+- **Firmware e passo a passo** — [`iot/README.md`](iot/README.md) (testar com o circuito do Wokwi pela internet, cadastro de pessoa e cartão, teste com `curl` e o que falta para produção).
+
+## Tela de Configurações
+
+Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configuracoes/*`):
+
+- **Perfil, senha e foto** — dados do usuário logado.
+- **Aparência** — tema claro/escuro/sistema, guardado no navegador (`localStorage`), por isso vale só para aquele navegador.
+- **Notificações** — liga/desliga, por usuário, os alertas de previsão de demanda, de acessos negados hoje e de dispositivo IoT sem sinal; o número do sino (em todas as telas) e a lista de alertas do painel seguem essas escolhas. *Resumo diário por e-mail*: marcado "Em breve" (exige envio de e-mail e uma tarefa agendada no servidor).
+- **Sistema** — período padrão e itens por página dos Relatórios (só no site; a API do aplicativo mantém os padrões). O fuso é fixo (Brasília) porque as catracas e os relatórios precisam gravar e ler no mesmo horário.
+- **Integrações** — dispositivos IoT (acima).
+- **Segurança** — troca de senha e **sessões ativas** reais: lista onde a conta está aberta no site (navegador, IP, último acesso) e "Encerrar" derruba a sessão de verdade na próxima requisição. O aplicativo usa token e não aparece nessa lista. *Autenticação em duas etapas*: marcada "Em breve" (o login do site e do aplicativo ainda não têm segundo passo).
+
+**Banco:** preferências e sessões usam duas tabelas novas (`preferencias_usuario` e `sessoes_usuario`, "Migration 004" no fim de `config/database.sql`). Em um banco que já existe, rode só esse bloco (é seguro rodar de novo). Enquanto ele não for rodado, o sistema continua funcionando com as preferências padrão e sem o controle de sessões.
 
 ## Vídeo "Ver como funciona"
 

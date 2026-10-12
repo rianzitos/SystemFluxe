@@ -135,6 +135,16 @@ if ($uri === '/') {
     (new ConfiguracaoController())->atualizarSenha();
 } elseif ($uri === '/configuracoes/foto' && $metodo === 'POST') {
     (new ConfiguracaoController())->atualizarFoto();
+} elseif ($uri === '/configuracoes/notificacoes' && $metodo === 'POST') {
+    (new ConfiguracaoController())->salvarNotificacao();
+} elseif ($uri === '/configuracoes/sistema' && $metodo === 'POST') {
+    (new ConfiguracaoController())->salvarSistema();
+} elseif ($uri === '/configuracoes/sessoes/encerrar' && $metodo === 'POST') {
+    (new ConfiguracaoController())->encerrarSessao();
+} elseif ($uri === '/configuracoes/dispositivos' && $metodo === 'POST') {
+    (new ConfiguracaoController())->criarDispositivo();
+} elseif ($uri === '/configuracoes/dispositivos/token' && $metodo === 'POST') {
+    (new ConfiguracaoController())->regenerarTokenDispositivo();
 // Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
 
 } elseif ($uri === '/relatorios') {
@@ -155,6 +165,13 @@ if ($uri === '/') {
 } elseif ($uri === '/assistente/perguntar' && $metodo === 'POST') {
     (new DemandaController())->perguntar();
 // Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).
+
+// ─── API dos dispositivos IoT (catracas ESP32) ───────────────────────────────
+
+} elseif (str_starts_with($uri, '/api/iot/')) {
+    (new IotController())->despachar($uri, $metodo);
+// Autenticação pelo token do dispositivo (X-Device-Token), não por usuário. Precisa vir ANTES
+// da rota /api/ abaixo, que exige o Bearer token de uma pessoa.
 
 // ─── API JSON (aplicativo mobile fluxe_app) ──────────────────────────────────
 

@@ -1,9 +1,8 @@
 // =========================================================
 // CONFIGURAÇÕES — SICAPDA by FLUXE
-// Perfil (nome/e-mail/cargo), senha e foto falam com o backend real
-// (ConfiguracaoController, rotas /configuracoes/perfil|senha|foto).
-// O restante (sistema, notificações, IoT, sessões) ainda é visual
-// e está marcado com "TODO backend".
+// Tudo fala com o backend real (ConfiguracaoController, rotas /configuracoes/*):
+// perfil, senha, foto, notificações, sistema, dispositivos IoT e sessões.
+// A única exceção é o tema (claro/escuro), que é por navegador e fica no localStorage.
 // =========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarMenuMobile();
     inicializarTema();
     inicializarFormularios();
+    inicializarNotificacoes();
     inicializarDispositivos();
     inicializarSessoes();
 });
@@ -178,10 +178,22 @@ function inicializarFormularios() {
     }
 
     if (formSistema) {
-        formSistema.addEventListener('submit', (e) => {
+        const msg = document.getElementById('msgSistema');
+
+        formSistema.addEventListener('submit', async (e) => {
             e.preventDefault();
-            // TODO backend: salvar preferências do sistema
-            feedbackBotao(formSistema.querySelector('button[type="submit"]'), 'Salvo!');
+            const botao = formSistema.querySelector('button[type="submit"]');
+            mostrarMensagem(msg, '');
+            botao.disabled = true;
+
+            const resultado = await enviar('/configuracoes/sistema', new FormData(formSistema));
+            botao.disabled = false;
+
+            if (!resultado.sucesso) {
+                mostrarMensagem(msg, resultado.mensagem, false);
+                return;
+            }
+            feedbackBotao(botao, 'Salvo!');
         });
     }
 
@@ -289,31 +301,259 @@ function feedbackBotao(botao, textoSucesso) {
     }, 1800);
 }
 
-// ===================== DISPOSITIVOS IOT =====================
+// ===================== NOTIFICAÇÕES =====================
 
-function inicializarDispositivos() {
-    document.querySelectorAll('.btn-regenerar-token').forEach((botao) => {
-        botao.addEventListener('click', () => {
-            // TODO backend: chamar a rota que regenera o token do dispositivo_iot
-            const tokenEl = botao.closest('.item-dispositivo').querySelector('.token-mascarado');
-            tokenEl.textContent = gerarTokenFake();
-            feedbackBotao(botao, 'Gerado!');
+/** Cada chave salva na hora; se o servidor recusar, o interruptor volta ao estado anterior. */
+function inicializarNotificacoes() {
+    const msg = document.getElementById('msgNotificacoes');
+
+    document.querySelectorAll('input[data-notificacao]:not(:disabled)').forEach((input) => {
+        input.addEventListener('change', async () => {
+            mostrarMensagem(msg, '');
+            input.disabled = true;
+
+            const dados = new FormData();
+            dados.append('chave', input.dataset.notificacao);
+            dados.append('ativo', input.checked ? '1' : '0');
+            const resultado = await enviar('/configuracoes/notificacoes', dados);
+            input.disabled = false;
+
+            if (!resultado.sucesso) {
+                input.checked = !input.checked;
+                mostrarMensagem(msg, resultado.mensagem, false);
+                return;
+            }
+            atualizarSino(resultado.sino);
         });
     });
 }
 
-function gerarTokenFake() {
-    const aleatorio = () => Math.random().toString(16).slice(2, 6);
-    return `sk_iot_${aleatorio()}${aleatorio()}...${aleatorio()}`;
+/** Atualiza o número do sino do cabeçalho sem recarregar a página. */
+function atualizarSino(total) {
+    const sino = document.getElementById('btnNotificacoes');
+    if (!sino) return;
+
+    let badge = sino.querySelector('.badge-sino');
+    if (total > 0) {
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'badge-sino';
+            sino.appendChild(badge);
+        }
+        badge.textContent = total;
+    } else if (badge) {
+        badge.remove();
+    }
+}
+
+// ===================== DISPOSITIVOS IOT =====================
+
+function inicializarDispositivos() {
+    const lista = document.getElementById('listaDispositivos');
+    if (!lista) return;
+
+    lista.querySelectorAll('.btn-regenerar-token').forEach(ligarNovoToken);
+
+    document.getElementById('btnCopiarToken')?.addEventListener('click', copiarToken);
+
+    const botaoAdicionar = document.getElementById('btnAdicionarDispositivo');
+    const form = document.getElementById('formDispositivo');
+    if (!botaoAdicionar || !form) return; // só o administrador vê o formulário
+
+    const msg = document.getElementById('msgDispositivo');
+    const fecharForm = () => {
+        form.reset();
+        form.hidden = true;
+        botaoAdicionar.hidden = false;
+        mostrarMensagem(msg, '');
+    };
+
+    botaoAdicionar.addEventListener('click', () => {
+        form.hidden = false;
+        botaoAdicionar.hidden = true;
+        document.getElementById('dispNome').focus();
+    });
+    document.getElementById('btnCancelarDispositivo').addEventListener('click', fecharForm);
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const botao = form.querySelector('button[type="submit"]');
+        mostrarMensagem(msg, '');
+        botao.disabled = true;
+
+        const resultado = await enviar('/configuracoes/dispositivos', new FormData(form));
+        botao.disabled = false;
+
+        if (!resultado.sucesso) {
+            mostrarMensagem(msg, resultado.mensagem, false);
+            return;
+        }
+
+        lista.appendChild(montarItemDispositivo(resultado.dispositivo));
+        document.getElementById('dispositivosVazio').hidden = true;
+        fecharForm();
+        revelarToken(`Dispositivo criado: ${resultado.dispositivo.nome}`, resultado.token);
+    });
+}
+
+function ligarNovoToken(botao) {
+    botao.addEventListener('click', async () => {
+        const item = botao.closest('.item-dispositivo');
+        const nome = item.querySelector('strong').textContent;
+
+        const certeza = window.confirm(
+            `Gerar um novo token para "${nome}"?\n\nO aparelho que usa o token atual deixa de ser aceito ` +
+            'até você colocar o novo token no firmware dele.'
+        );
+        if (!certeza) return;
+
+        botao.disabled = true;
+        const dados = new FormData();
+        dados.append('id', item.dataset.id);
+        const resultado = await enviar('/configuracoes/dispositivos/token', dados);
+        botao.disabled = false;
+
+        if (!resultado.sucesso) {
+            window.alert(resultado.mensagem);
+            return;
+        }
+
+        atualizarItemDispositivo(item, resultado.dispositivo);
+        revelarToken(`Novo token de ${resultado.dispositivo.nome}`, resultado.token);
+    });
+}
+
+/** Monta o item da lista com textContent (nada do servidor entra como HTML). */
+function montarItemDispositivo(d) {
+    const item = document.createElement('div');
+    item.className = 'item-dispositivo';
+    item.dataset.id = d.id;
+
+    const ponto = document.createElement('div');
+    ponto.className = 'item-dispositivo-status';
+
+    const info = document.createElement('div');
+    info.className = 'item-dispositivo-info';
+    info.append(
+        elemento('strong', d.nome),
+        elemento('span', '', 'item-dispositivo-detalhe'),
+        elemento('span', '', 'token-mascarado')
+    );
+
+    const meta = document.createElement('div');
+    meta.className = 'item-dispositivo-meta';
+    meta.append(elemento('span', '', 'status-texto'), elemento('span', '', 'item-dispositivo-tempo'));
+
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'btn-secundario btn-regenerar-token';
+    botao.innerHTML = '<i class="bi bi-arrow-repeat"></i> Novo token';
+    ligarNovoToken(botao);
+
+    item.append(ponto, info, meta, botao);
+    atualizarItemDispositivo(item, d);
+    return item;
+}
+
+function atualizarItemDispositivo(item, d) {
+    const online = d.status === 'online';
+
+    item.querySelector('.item-dispositivo-status').className = `item-dispositivo-status status-${d.status}`;
+    item.querySelector('.item-dispositivo-detalhe').textContent =
+        d.localizacao ? `${d.tipo_rotulo} · ${d.localizacao}` : d.tipo_rotulo;
+    item.querySelector('.token-mascarado').textContent = d.token;
+
+    const status = item.querySelector('.status-texto');
+    status.className = `status-texto status-texto-${d.status}`;
+    status.textContent = online ? 'Online' : 'Offline';
+    item.querySelector('.item-dispositivo-tempo').textContent = d.ultimo_sinal;
+}
+
+function elemento(tag, texto, classe) {
+    const el = document.createElement(tag);
+    if (classe) el.className = classe;
+    el.textContent = texto;
+    return el;
+}
+
+/** Mostra o token inteiro (a única vez em que ele aparece) numa caixa em destaque. */
+function revelarToken(titulo, token) {
+    const caixa = document.getElementById('tokenRevelado');
+    document.getElementById('tokenReveladoTitulo').textContent = titulo;
+    document.getElementById('tokenValor').textContent = token;
+    caixa.hidden = false;
+    caixa.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function copiarToken() {
+    const botao = document.getElementById('btnCopiarToken');
+    const valor = document.getElementById('tokenValor');
+
+    try {
+        await navigator.clipboard.writeText(valor.textContent);
+    } catch (erro) {
+        // Sem permissão da área de transferência (ex.: página sem HTTPS): seleciona o texto para Ctrl+C.
+        const faixa = document.createRange();
+        faixa.selectNodeContents(valor);
+        const selecao = window.getSelection();
+        selecao.removeAllRanges();
+        selecao.addRange(faixa);
+        return;
+    }
+    feedbackBotao(botao, 'Copiado!');
 }
 
 // ===================== SESSÕES ATIVAS =====================
 
 function inicializarSessoes() {
+    const msg = document.getElementById('msgSessoes');
+    const botaoOutras = document.getElementById('btnEncerrarOutras');
+
+    const atualizarBotaoOutras = () => {
+        if (!botaoOutras) return;
+        botaoOutras.hidden = document.querySelectorAll('#listaSessoes .btn-encerrar-sessao').length === 0;
+    };
+
     document.querySelectorAll('.btn-encerrar-sessao').forEach((botao) => {
-        botao.addEventListener('click', () => {
-            // TODO backend: invalidar a sessão correspondente no servidor
-            botao.closest('.item-sessao').remove();
+        botao.addEventListener('click', async () => {
+            const item = botao.closest('.item-sessao');
+            mostrarMensagem(msg, '');
+            botao.disabled = true;
+
+            const dados = new FormData();
+            dados.append('id', item.dataset.id);
+            const resultado = await enviar('/configuracoes/sessoes/encerrar', dados);
+
+            if (!resultado.sucesso) {
+                botao.disabled = false;
+                mostrarMensagem(msg, resultado.mensagem, false);
+                return;
+            }
+            item.remove();
+            atualizarBotaoOutras();
         });
     });
+
+    if (botaoOutras) {
+        botaoOutras.addEventListener('click', async () => {
+            if (!window.confirm('Encerrar todas as outras sessões? Quem estiver conectado nelas precisará entrar de novo.')) return;
+
+            mostrarMensagem(msg, '');
+            botaoOutras.disabled = true;
+            const dados = new FormData();
+            dados.append('todas', '1');
+            const resultado = await enviar('/configuracoes/sessoes/encerrar', dados);
+            botaoOutras.disabled = false;
+
+            if (!resultado.sucesso) {
+                mostrarMensagem(msg, resultado.mensagem, false);
+                return;
+            }
+            document.querySelectorAll('#listaSessoes .item-sessao').forEach((item) => {
+                if (!item.querySelector('.tag-atual')) item.remove();
+            });
+            atualizarBotaoOutras();
+            mostrarMensagem(msg, resultado.mensagem, true);
+        });
+    }
 }

@@ -27,7 +27,7 @@ $graficoPessoasDia = $analise['graficoPessoasDia'];
 $graficoProducao = $analise['graficoProducao'];
 $graficoDesperdicio = $analise['graficoDesperdicio'];
 $insights = $analise['insights'];
-$notificacoesNaoLidas = $painel->totalAlertas();
+$notificacoesNaoLidas = Notificacoes::contar($painel->totalAlertas(), Pagina::empresaId());
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.
 $menu = Pagina::menu();

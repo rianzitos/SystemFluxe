@@ -19,7 +19,7 @@ $dadosPessoas = $painel->pessoas();
 
 $cardsResumo = $dadosPessoas['cardsResumo'];
 $grupos = $dadosPessoas['grupos'];
-$notificacoesNaoLidas = $painel->totalAlertas();
+$notificacoesNaoLidas = Notificacoes::contar($painel->totalAlertas(), Pagina::empresaId());
 
 // Itens do menu lateral: rota, ícone (chave) e rótulo.
 $menu = Pagina::menu();

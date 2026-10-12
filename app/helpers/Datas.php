@@ -36,6 +36,28 @@ class Datas
         return ($d && $d->format('Y-m-d') === $valor) ? $d : null;
     }
 
+    /** "agora", "há 5 min", "há 3 horas", "há 2 dias" (a partir de 'Y-m-d H:i:s' no fuso do sistema). */
+    public static function haQuanto(?string $dataHora): string
+    {
+        if ($dataHora === null || $dataHora === '') {
+            return 'nunca';
+        }
+        $seg = max(0, time() - strtotime($dataHora));
+
+        if ($seg < 60) {
+            return 'agora';
+        }
+        if ($seg < 3600) {
+            return 'há ' . intdiv($seg, 60) . ' min';
+        }
+        if ($seg < 86400) {
+            $h = intdiv($seg, 3600);
+            return 'há ' . $h . ($h === 1 ? ' hora' : ' horas');
+        }
+        $d = intdiv($seg, 86400);
+        return 'há ' . $d . ($d === 1 ? ' dia' : ' dias');
+    }
+
     /** "8h 30min", "9h", "45min". */
     public static function duracao(?int $minutos): string
     {

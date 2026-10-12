@@ -8,12 +8,9 @@ require_once __DIR__ . '/../../config/app.php';
 AuthMiddleware::autenticado();
 
 // -----------------------------------------------------------------------
-// DADOS DA PÁGINA DE CONFIGURAÇÕES
-// -----------------------------------------------------------------------
-// Mesma lógica do painel.php: os arrays abaixo são mock só pra página ter
-// o que exibir enquanto o Model/Controller de configurações não existe.
-// Quando estiver pronto, é só trocar cada array pela consulta real —
-// a estrutura já está pensada pra receber esses valores sem mexer no HTML.
+// DADOS DA PÁGINA DE CONFIGURAÇÕES — tudo vem do banco: perfil (Usuario),
+// preferências (Preferencia), dispositivos IoT (Dispositivo) e sessões (Sessao).
+// As ações dessa tela ficam em ConfiguracaoController (rotas /configuracoes/*).
 // -----------------------------------------------------------------------
 
 $paginaAtual = 'config';
@@ -27,8 +24,6 @@ $menu = [
     ['chave' => 'relatorios', 'rota' => '/relatorios', 'label' => 'Relatórios', 'icone' => 'bi-clipboard-data'],
     ['chave' => 'config', 'rota' => '/configuracoes', 'label' => 'Configurações', 'icone' => 'bi-gear-fill'],
 ];
-
-$notificacoesNaoLidas = 2;
 
 // Dados reais do usuário logado (lidos do banco, não só da sessão)
 $dadosUsuario = (new Usuario())->buscarPerfilCompleto((int) $_SESSION['usuario_id']);
@@ -45,6 +40,16 @@ $emailUsuario = $dadosUsuario['email'];
 $cargoUsuario = $dadosUsuario['cargo'] ?? '';
 $instituicaoUsuario = $dadosUsuario['empresa_nome'] ?? '—';
 
+$usuarioId = (int) $_SESSION['usuario_id'];
+$empresaId = Pagina::empresaId();
+// Só o administrador da empresa cria dispositivos e gera tokens (o servidor confere de novo).
+$ehAdmin = ($_SESSION['usuario_perfil'] ?? '') === 'admin' && $empresaId > 0;
+
+// Badge do sino: o mesmo cálculo das outras telas (alertas de previsão + catracas, conforme as preferências).
+$notificacoesNaoLidas = Notificacoes::contar((new Painel($empresaId))->totalAlertas(), $empresaId);
+
+$preferencias = (new Preferencia())->obter($usuarioId);
+
 // Abas da página (equivalente ao menu vertical "Perfil / Notificações / Sistema..." do design de referência)
 $abas = [
     ['chave' => 'perfil', 'label' => 'Perfil', 'icone' => 'bi-person'],
@@ -55,25 +60,31 @@ $abas = [
     ['chave' => 'seguranca', 'label' => 'Segurança', 'icone' => 'bi-shield-lock'],
 ];
 
-// Preferências de notificação
+// Preferências de notificação. "disponivel" false = ainda não funciona (aparece desligado e travado).
 $notificacoesConfig = [
-    ['chave' => 'previsao_demanda', 'label' => 'Alertas de previsão de demanda', 'descricao' => 'Avisos quando a previsão sair do padrão esperado', 'ativo' => true],
-    ['chave' => 'acesso_negado', 'label' => 'Tentativas de acesso não autorizado', 'descricao' => 'Alerta imediato quando a catraca negar um acesso', 'ativo' => true],
-    ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com o resumo do dia anterior', 'ativo' => false],
-    ['chave' => 'dispositivo_offline', 'label' => 'Dispositivo IoT offline', 'descricao' => 'Avisar quando um ESP32 parar de responder', 'ativo' => true],
+    ['chave' => 'previsao_demanda', 'label' => 'Alertas de previsão de demanda', 'descricao' => 'Desperdício acima da meta, picos de movimento e feriados que mudam a previsão', 'disponivel' => true],
+    ['chave' => 'acesso_negado', 'label' => 'Tentativas de acesso não autorizado', 'descricao' => 'Avisa no sino e no painel quando uma catraca negar acessos hoje', 'disponivel' => true],
+    ['chave' => 'dispositivo_offline', 'label' => 'Dispositivo IoT offline', 'descricao' => 'Avisa quando uma catraca ou leitor parar de responder', 'disponivel' => true],
+    ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com o resumo do dia anterior', 'disponivel' => false],
 ];
+foreach ($notificacoesConfig as &$item) {
+    $item['ativo'] = $item['disponivel'] && ($preferencias['notificacoes'][$item['chave']] ?? false);
+}
+unset($item);
 
-// Dispositivos IoT vinculados (tabela dispositivos_iot)
-$dispositivosIot = [
-    ['nome' => 'Catraca · Entrada Principal', 'token' => 'sk_iot_8f2a1c9e...c91d', 'status' => 'online', 'ultimo_acesso' => 'há 2 min'],
-    ['nome' => 'Catraca · Refeitório', 'token' => 'sk_iot_3b7ec204...44aa', 'status' => 'offline', 'ultimo_acesso' => 'há 6 horas'],
-];
+// Opções da aba Sistema (valor => rótulo)
+$periodosRelatorio = ['mes' => 'Este mês', '7' => 'Últimos 7 dias', '30' => 'Últimos 30 dias', '90' => 'Últimos 90 dias'];
 
-// Sessões ativas (mock — futuramente ligado a uma tabela de sessões)
-$sessoesAtivas = [
-    ['dispositivo' => 'Chrome · Windows', 'local' => 'Mococa, SP', 'ultimo_acesso' => 'agora', 'atual' => true],
-    ['dispositivo' => 'App SICAPDA · Android', 'local' => 'Mococa, SP', 'ultimo_acesso' => 'há 1 dia', 'atual' => false],
-];
+// Dispositivos IoT da empresa (tabela dispositivos_iot): status vem do último sinal (ping) da ESP32.
+$dispositivosIot = $empresaId > 0 ? (new Dispositivo())->listar($empresaId) : [];
+
+// Sessões ativas do site (tabela sessoes_usuario). null = a tabela ainda não existe neste banco.
+try {
+    $sessoesAtivas = (new Sessao())->listar($usuarioId);
+} catch (PDOException $e) {
+    error_log('SICAPDA: sessoes_usuario indisponível (rode a migration 004): ' . $e->getMessage());
+    $sessoesAtivas = null;
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -288,62 +299,59 @@ $sessoesAtivas = [
                     <!-- ---------- NOTIFICAÇÕES ---------- -->
                     <section class="config-painel" data-aba-painel="notificacoes">
                         <h2>Notificações</h2>
-                        <p class="config-painel-desc">Escolha quais eventos devem gerar um alerta.</p>
+                        <p class="config-painel-desc">Escolha quais eventos aparecem no sino e na lista de alertas do painel. Vale só para a sua conta.</p>
 
                         <div class="lista-toggles">
                             <?php foreach ($notificacoesConfig as $item): ?>
                                 <div class="item-toggle">
                                     <div>
-                                        <strong><?= htmlspecialchars($item['label']) ?></strong>
+                                        <strong><?= htmlspecialchars($item['label']) ?>
+                                            <?php if (!$item['disponivel']): ?><span class="tag-breve">Em breve</span><?php endif; ?>
+                                        </strong>
                                         <p><?= htmlspecialchars($item['descricao']) ?></p>
                                     </div>
-                                    <label class="switch">
+                                    <label class="switch <?= $item['disponivel'] ? '' : 'switch-desativado' ?>">
                                         <input type="checkbox" data-notificacao="<?= htmlspecialchars($item['chave']) ?>"
-                                            <?= $item['ativo'] ? 'checked' : '' ?>>
+                                            <?= $item['ativo'] ? 'checked' : '' ?> <?= $item['disponivel'] ? '' : 'disabled' ?>>
                                         <span class="switch-trilho"></span>
                                     </label>
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                        <p class="campo-erro" id="msgNotificacoes" hidden></p>
                     </section>
 
                     <!-- ---------- SISTEMA ---------- -->
                     <section class="config-painel" data-aba-painel="sistema">
                         <h2>Sistema</h2>
-                        <p class="config-painel-desc">Preferências gerais de exibição do painel.</p>
+                        <p class="config-painel-desc">Como os Relatórios aparecem para você no site.</p>
 
                         <form class="config-form" id="formSistema" autocomplete="off">
                             <div class="campo">
-                                <label for="periodoPadrao">Período padrão do dashboard</label>
+                                <label for="periodoPadrao">Período padrão dos relatórios</label>
                                 <select id="periodoPadrao" name="periodo_padrao">
-                                    <option value="7">Últimos 7 dias</option>
-                                    <option value="30" selected>Últimos 30 dias</option>
-                                    <option value="90">Últimos 90 dias</option>
+                                    <?php foreach ($periodosRelatorio as $valor => $rotulo): ?>
+                                        <option value="<?= htmlspecialchars((string) $valor) ?>"
+                                            <?= (string) $preferencias['sistema']['periodo_padrao'] === (string) $valor ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($rotulo) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="campo">
+                                <label for="itensPagina">Itens por página nos relatórios</label>
+                                <select id="itensPagina" name="itens_pagina">
+                                    <?php foreach (Preferencia::ITENS_PAGINA as $qtd): ?>
+                                        <option value="<?= (int) $qtd ?>"
+                                            <?= (int) $preferencias['sistema']['itens_pagina'] === $qtd ? 'selected' : '' ?>>
+                                            <?= (int) $qtd ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="campo">
                                 <label for="fusoHorario">Fuso horário</label>
-                                <select id="fusoHorario" name="fuso_horario">
-                                    <option value="America/Sao_Paulo" selected>América/São Paulo (GMT-3)</option>
-                                    <option value="America/Manaus">América/Manaus (GMT-4)</option>
-                                    <option value="UTC">UTC</option>
-                                </select>
+                                <input type="text" id="fusoHorario" value="Horário de Brasília (GMT-3)" readonly>
                             </div>
-                            <div class="campo">
-                                <label for="formatoData">Formato de data</label>
-                                <select id="formatoData" name="formato_data">
-                                    <option value="dmy" selected>DD/MM/AAAA</option>
-                                    <option value="mdy">MM/DD/AAAA</option>
-                                </select>
-                            </div>
-                            <div class="campo">
-                                <label for="itensPagina">Itens por página nas listagens</label>
-                                <select id="itensPagina" name="itens_pagina">
-                                    <option value="10">10</option>
-                                    <option value="25" selected>25</option>
-                                    <option value="50">50</option>
-                                </select>
-                            </div>
+                            <p class="campo-erro" id="msgSistema" hidden></p>
 
                             <div class="config-form-acoes">
                                 <button type="submit" class="btn-primario">
@@ -351,37 +359,80 @@ $sessoesAtivas = [
                                 </button>
                             </div>
                         </form>
+                        <p class="config-nota">O fuso é fixo: as catracas gravam os horários dos acessos no horário de Brasília, e os relatórios e a previsão leem no mesmo horário.</p>
                     </section>
 
                     <!-- ---------- INTEGRAÇÕES ---------- -->
                     <section class="config-painel" data-aba-painel="integracoes">
                         <h2>Dispositivos IoT</h2>
-                        <p class="config-painel-desc">Catracas e leitores RFID vinculados a este sistema.</p>
+                        <p class="config-painel-desc">Catracas e leitores RFID vinculados a este sistema. Cada um usa um token próprio para enviar os acessos.</p>
 
                         <div class="lista-dispositivos" id="listaDispositivos">
                             <?php foreach ($dispositivosIot as $dispositivo): ?>
-                                <div class="item-dispositivo">
+                                <div class="item-dispositivo" data-id="<?= (int) $dispositivo['id'] ?>">
                                     <div class="item-dispositivo-status status-<?= htmlspecialchars($dispositivo['status']) ?>"></div>
                                     <div class="item-dispositivo-info">
                                         <strong><?= htmlspecialchars($dispositivo['nome']) ?></strong>
+                                        <span class="item-dispositivo-detalhe"><?= htmlspecialchars($dispositivo['tipo_rotulo']) ?><?= $dispositivo['localizacao'] ? ' · ' . htmlspecialchars($dispositivo['localizacao']) : '' ?></span>
                                         <span class="token-mascarado"><?= htmlspecialchars($dispositivo['token']) ?></span>
                                     </div>
                                     <div class="item-dispositivo-meta">
                                         <span class="status-texto status-texto-<?= htmlspecialchars($dispositivo['status']) ?>">
                                             <?= $dispositivo['status'] === 'online' ? 'Online' : 'Offline' ?>
                                         </span>
-                                        <span class="item-dispositivo-tempo"><?= htmlspecialchars($dispositivo['ultimo_acesso']) ?></span>
+                                        <span class="item-dispositivo-tempo"><?= htmlspecialchars($dispositivo['ultimo_sinal']) ?></span>
                                     </div>
-                                    <button type="button" class="btn-secundario btn-regenerar-token">
-                                        <i class="bi bi-arrow-repeat"></i> Novo token
-                                    </button>
+                                    <?php if ($ehAdmin): ?>
+                                        <button type="button" class="btn-secundario btn-regenerar-token">
+                                            <i class="bi bi-arrow-repeat"></i> Novo token
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
                         </div>
+                        <p class="config-nota" id="dispositivosVazio" <?= $dispositivosIot ? 'hidden' : '' ?>>Nenhum dispositivo cadastrado ainda.</p>
 
-                        <button type="button" class="btn-secundario config-btn-adicionar">
-                            <i class="bi bi-plus-lg"></i> Adicionar dispositivo
-                        </button>
+                        <!-- Token inteiro: aparece só ao criar ou gerar de novo, e some ao recarregar a página -->
+                        <div class="token-revelado" id="tokenRevelado" role="status" hidden>
+                            <strong id="tokenReveladoTitulo">Token do dispositivo</strong>
+                            <p>Copie agora e cole no firmware da ESP32 (<code>TOKEN_DISPOSITIVO</code>). Por segurança ele <b>não será mostrado de novo</b>.</p>
+                            <div class="token-revelado-linha">
+                                <code id="tokenValor"></code>
+                                <button type="button" class="btn-secundario" id="btnCopiarToken"><i class="bi bi-clipboard"></i> Copiar</button>
+                            </div>
+                        </div>
+
+                        <?php if ($ehAdmin): ?>
+                            <button type="button" class="btn-secundario config-btn-adicionar" id="btnAdicionarDispositivo">
+                                <i class="bi bi-plus-lg"></i> Adicionar dispositivo
+                            </button>
+
+                            <form class="config-form form-dispositivo" id="formDispositivo" autocomplete="off" hidden>
+                                <div class="campo">
+                                    <label for="dispNome">Nome</label>
+                                    <input type="text" id="dispNome" name="nome" maxlength="150" required placeholder="Ex.: Catraca · Entrada Principal">
+                                </div>
+                                <div class="campo">
+                                    <label for="dispTipo">Tipo</label>
+                                    <select id="dispTipo" name="tipo">
+                                        <?php foreach (Dispositivo::TIPOS as $valor => $rotulo): ?>
+                                            <option value="<?= htmlspecialchars($valor) ?>"><?= htmlspecialchars($rotulo) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="campo campo-largo">
+                                    <label for="dispLocal">Localização (opcional)</label>
+                                    <input type="text" id="dispLocal" name="localizacao" maxlength="150" placeholder="Ex.: Portaria principal">
+                                </div>
+                                <p class="campo-erro" id="msgDispositivo" hidden></p>
+                                <div class="config-form-acoes">
+                                    <button type="button" class="btn-secundario" id="btnCancelarDispositivo">Cancelar</button>
+                                    <button type="submit" class="btn-primario"><i class="bi bi-plus-lg"></i> Criar dispositivo</button>
+                                </div>
+                            </form>
+                        <?php else: ?>
+                            <p class="config-nota">Somente o administrador da empresa pode adicionar dispositivos e gerar tokens.</p>
+                        <?php endif; ?>
                     </section>
 
                     <!-- ---------- SEGURANÇA ---------- -->
@@ -415,11 +466,11 @@ $sessoesAtivas = [
                         <div class="config-bloco">
                             <div class="item-toggle item-toggle-bloco">
                                 <div>
-                                    <strong>Autenticação em duas etapas</strong>
-                                    <p>Exige um código adicional ao entrar na conta.</p>
+                                    <strong>Autenticação em duas etapas <span class="tag-breve">Em breve</span></strong>
+                                    <p>Vai exigir um código adicional ao entrar na conta. Ainda não está ativa: por enquanto o login pede só e-mail e senha.</p>
                                 </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle2FA">
+                                <label class="switch switch-desativado">
+                                    <input type="checkbox" id="toggle2FA" disabled>
                                     <span class="switch-trilho"></span>
                                 </label>
                             </div>
@@ -427,22 +478,32 @@ $sessoesAtivas = [
 
                         <div class="config-bloco">
                             <h3>Sessões ativas</h3>
-                            <div class="lista-sessoes" id="listaSessoes">
-                                <?php foreach ($sessoesAtivas as $sessao): ?>
-                                    <div class="item-sessao">
-                                        <i class="bi bi-laptop"></i>
-                                        <div class="item-sessao-info">
-                                            <strong><?= htmlspecialchars($sessao['dispositivo']) ?>
-                                                <?php if ($sessao['atual']): ?><span class="tag-atual">Esta sessão</span><?php endif; ?>
-                                            </strong>
-                                            <span><?= htmlspecialchars($sessao['local']) ?> · <?= htmlspecialchars($sessao['ultimo_acesso']) ?></span>
+                            <?php if ($sessoesAtivas === null): ?>
+                                <p class="config-nota">O controle de sessões ainda não está disponível neste servidor.</p>
+                            <?php else: ?>
+                                <div class="lista-sessoes" id="listaSessoes">
+                                    <?php foreach ($sessoesAtivas as $sessao): ?>
+                                        <div class="item-sessao" data-id="<?= (int) $sessao['id'] ?>">
+                                            <i class="bi <?= htmlspecialchars($sessao['icone']) ?>"></i>
+                                            <div class="item-sessao-info">
+                                                <strong><?= htmlspecialchars($sessao['dispositivo']) ?>
+                                                    <?php if ($sessao['atual']): ?><span class="tag-atual">Esta sessão</span><?php endif; ?>
+                                                </strong>
+                                                <span>IP <?= htmlspecialchars($sessao['ip']) ?> · <?= htmlspecialchars($sessao['ultimo_acesso']) ?></span>
+                                            </div>
+                                            <?php if (!$sessao['atual']): ?>
+                                                <button type="button" class="btn-texto btn-encerrar-sessao">Encerrar</button>
+                                            <?php endif; ?>
                                         </div>
-                                        <?php if (!$sessao['atual']): ?>
-                                            <button type="button" class="btn-texto btn-encerrar-sessao">Encerrar</button>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                <button type="button" class="btn-secundario config-btn-adicionar" id="btnEncerrarOutras"
+                                    <?= count($sessoesAtivas) > 1 ? '' : 'hidden' ?>>
+                                    <i class="bi bi-box-arrow-right"></i> Encerrar todas as outras sessões
+                                </button>
+                                <p class="campo-erro" id="msgSessoes" hidden></p>
+                                <p class="config-nota">Mostra os acessos pelo site (navegador). Quem sai e entra de novo aparece como uma sessão nova; sessões paradas há muito tempo somem sozinhas.</p>
+                            <?php endif; ?>
                         </div>
                     </section>
 
