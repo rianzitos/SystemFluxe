@@ -1079,6 +1079,58 @@ input:checked+label .descricao * {
     color: var(--branco);
 }
 
+.instagram {
+    position: relative;      /* referência para o ::before */
+    isolation: isolate;      /* mantém o ::before atrás do texto/ícone, mas dentro do botão */
+    overflow: hidden;        /* o gradiente respeita o border-radius */
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: fit-content;
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--raio-padrao);
+    background-color: transparent;
+    border: 1.5px solid var(--amarelo-secundario);
+    color: var(--branco);
+    text-decoration: none;
+    font-weight: bold;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    transition: border-color 0.4s ease;
+}
+
+/* Camada com as cores do Instagram: começa invisível */
+.instagram::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.instagram:hover {
+    border-color: transparent;
+}
+
+/* No hover só a opacidade muda, e isso anima suave */
+.instagram:hover::before {
+    opacity: 1;
+}
+
+.instagram i {
+    font-size: 1.4rem;
+    color: var(--amarelo-secundario);
+    transition: 0.3s ease;
+}
+
+
+
+.instagram:hover i {
+    color: var(--branco);
+}
+
 .miniTitulo h5 {
     font-size: 1.1rem;
     font-weight: 700;
