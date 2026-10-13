@@ -116,6 +116,27 @@ if ($uri === '/') {
 // invasores através do AuthMiddleware e só exibe a tela protegida
 // (acessos.php) se o usuário estiver logado.
 
+} elseif ($uri === '/pessoas/leituras' && $metodo === 'GET') {
+    (new PessoaController())->leituras();
+} elseif ($uri === '/pessoas/modelo.csv') {
+    (new PessoaController())->modeloCsv();
+} elseif ($uri === '/pessoas/criar' && $metodo === 'POST') {
+    (new PessoaController())->criar();
+} elseif ($uri === '/pessoas/editar' && $metodo === 'POST') {
+    (new PessoaController())->editar();
+} elseif ($uri === '/pessoas/ativo' && $metodo === 'POST') {
+    (new PessoaController())->definirAtivo();
+} elseif ($uri === '/pessoas/cartao' && $metodo === 'POST') {
+    (new PessoaController())->vincularCartao();
+} elseif ($uri === '/pessoas/cartao/ativo' && $metodo === 'POST') {
+    (new PessoaController())->definirCartaoAtivo();
+} elseif ($uri === '/pessoas/cartao/remover' && $metodo === 'POST') {
+    (new PessoaController())->removerCartao();
+} elseif ($uri === '/pessoas/importar' && $metodo === 'POST') {
+    (new PessoaController())->importar();
+// Cadastro de pessoas e cartões (aba Cadastro da tela de Pessoas): JSON, só admin, com CSRF nos POST.
+// As rotas /pessoas/* precisam vir ANTES de /pessoas, que só casa a URL exata.
+
 } elseif ($uri === '/pessoas') {
     AuthMiddleware::autenticado();
     require_once __DIR__ . '/../views/pessoas.php';
@@ -145,6 +166,8 @@ if ($uri === '/') {
     (new ConfiguracaoController())->criarDispositivo();
 } elseif ($uri === '/configuracoes/dispositivos/token' && $metodo === 'POST') {
     (new ConfiguracaoController())->regenerarTokenDispositivo();
+} elseif ($uri === '/configuracoes/dispositivos/simular' && $metodo === 'POST') {
+    (new ConfiguracaoController())->simularLeitura();
 // Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
 
 } elseif ($uri === '/relatorios') {

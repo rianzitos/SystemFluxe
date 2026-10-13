@@ -1,6 +1,9 @@
 -- =============================================================================
 -- SICAPDA — cadastro de uma pessoa + cartão RFID para testar a catraca (Wokwi ou real)
 -- =============================================================================
+-- ATENÇÃO: não é mais necessário! Pessoas e cartões se cadastram na tela Pessoas → Cadastro
+-- (adicionar pessoa, vincular cartão, importar planilha). Este script fica só como alternativa.
+--
 -- Rode no phpMyAdmin / Workbench, com o banco do sistema selecionado.
 --
 -- Antes: crie o dispositivo em Configurações → Integrações → "Adicionar dispositivo" e passe o
@@ -13,12 +16,17 @@
 SET @emp = (SELECT id FROM empresas ORDER BY id LIMIT 1);   -- ou escolha a empresa: SET @emp = 8;
 SELECT id, nome_fantasia FROM empresas WHERE id = @emp;     -- confira se é a empresa certa
 
+-- Tudo ou nada: se o cartão falhar (UID já usado), a pessoa também não é criada.
+START TRANSACTION;
+
 INSERT INTO funcionarios (empresa_id, nome, matricula, cargo, categoria, ativo, criado_em)
 VALUES (@emp, 'Pessoa Teste Wokwi', 'WOKWI01', 'Operador de Teste', 'operador', 1, NOW());
 SET @func = LAST_INSERT_ID();
 
 INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
 VALUES (@func, 'rfid', '01020304', 1, NOW());   -- troque pelo UID do seu cartão
+
+COMMIT;
 
 -- Um segundo cartão para a mesma pessoa (opcional):
 INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
