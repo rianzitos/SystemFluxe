@@ -7,6 +7,9 @@
  *
  * Rotas: POST /pessoas/criar | editar | ativo | cartao | cartao/ativo | cartao/remover | importar,
  *        GET /pessoas/leituras e GET /pessoas/modelo.csv.
+ *
+ * As regras (validação, dono do cartão, gravação) ficam em CadastroPessoas, que o aplicativo também usa
+ * pela API (/api/pessoas/*, ApiController): aqui só entram a sessão, o CSRF e a permissão do site.
  */
 class PessoaController
 {
@@ -15,10 +18,12 @@ class PessoaController
     private const TAMANHO_MAX_PLANILHA = 1024 * 1024; // 1 MB
 
     private Pessoa $pessoa;
+    private CadastroPessoas $cadastro;
 
     public function __construct()
     {
         $this->pessoa = new Pessoa();
+        $this->cadastro = new CadastroPessoas($this->pessoa);
     }
 
     // ─── Pessoas ─────────────────────────────────────────────────────────────
@@ -29,16 +34,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        [$nome, $cargo, $categoria, $matricula] = $this->dadosDaPessoa();
-        $uid = $this->uidOpcional($empresaId);
-
-        try {
-            $id = $this->pessoa->criar($empresaId, $nome, $cargo, $categoria, $matricula, $uid);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'cadastrar a pessoa');
-        }
-
-        $this->responder(true, 'Pessoa cadastrada.', 200, ['id' => $id]);
+        $this->executar(fn() => $this->cadastro->criar($empresaId, $_POST));
     }
 
     public function editar(): void
@@ -46,17 +42,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $id = (int) ($_POST['id'] ?? 0);
-        $this->pessoaDaEmpresa($id, $empresaId);
-        [$nome, $cargo, $categoria, $matricula] = $this->dadosDaPessoa();
-
-        try {
-            $this->pessoa->atualizar($id, $empresaId, $nome, $cargo, $categoria, $matricula);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'salvar a pessoa');
-        }
-
-        $this->responder(true, 'Dados atualizados.');
+        $this->executar(fn() => $this->cadastro->editar($empresaId, $_POST));
     }
 
     /** Desativa ou reativa a pessoa. Desativada, ela é negada na catraca e some das contagens, mas o histórico fica. */
@@ -65,17 +51,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $id = (int) ($_POST['id'] ?? 0);
-        $this->pessoaDaEmpresa($id, $empresaId);
-        $ativo = ($_POST['ativo'] ?? '') === '1';
-
-        try {
-            $this->pessoa->definirAtivo($id, $empresaId, $ativo);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'alterar a pessoa');
-        }
-
-        $this->responder(true, $ativo ? 'Pessoa reativada.' : 'Pessoa desativada.');
+        $this->executar(fn() => $this->cadastro->definirAtivo($empresaId, $_POST));
     }
 
     // ─── Cartões ─────────────────────────────────────────────────────────────
@@ -86,7 +62,7 @@ class PessoaController
         $this->exigirSessaoGet();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $this->responder(true, 'ok', 200, ['leituras' => $this->pessoa->leiturasDesconhecidas($empresaId)]);
+        $this->executar(fn() => $this->cadastro->leituras($empresaId));
     }
 
     public function vincularCartao(): void
@@ -94,20 +70,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $id = (int) ($_POST['funcionario_id'] ?? 0);
-        $this->pessoaDaEmpresa($id, $empresaId);
-        $uid = $this->uidOpcional($empresaId);
-        if ($uid === null) {
-            $this->responder(false, 'Informe o cartão (UID).', 422);
-        }
-
-        try {
-            $this->pessoa->vincularCartao($id, $empresaId, $uid);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'vincular o cartão');
-        }
-
-        $this->responder(true, 'Cartão vinculado.');
+        $this->executar(fn() => $this->cadastro->vincularCartao($empresaId, $_POST));
     }
 
     public function definirCartaoAtivo(): void
@@ -115,16 +78,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $cartao = $this->cartaoDaEmpresa((int) ($_POST['id'] ?? 0), $empresaId);
-        $ativo = ($_POST['ativo'] ?? '') === '1';
-
-        try {
-            $this->pessoa->definirCartaoAtivo((int) $cartao['id'], $ativo);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'alterar o cartão');
-        }
-
-        $this->responder(true, $ativo ? 'Cartão ativado.' : 'Cartão desativado.');
+        $this->executar(fn() => $this->cadastro->definirCartaoAtivo($empresaId, $_POST));
     }
 
     public function removerCartao(): void
@@ -132,15 +86,7 @@ class PessoaController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('pessoas e cartões');
 
-        $cartao = $this->cartaoDaEmpresa((int) ($_POST['id'] ?? 0), $empresaId);
-
-        try {
-            $this->pessoa->removerCartao((int) $cartao['id']);
-        } catch (PDOException $e) {
-            $this->falhaDeGravacao($e, 'remover o cartão');
-        }
-
-        $this->responder(true, 'Cartão removido.');
+        $this->executar(fn() => $this->cadastro->removerCartao($empresaId, $_POST));
     }
 
     // ─── Planilha ────────────────────────────────────────────────────────────
@@ -202,81 +148,20 @@ class PessoaController
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
-    /** Nome, cargo, categoria e matrícula do formulário, já validados. */
-    private function dadosDaPessoa(): array
-    {
-        $limpa = fn(string $campo) => trim((string) preg_replace('/\s+/u', ' ', (string) ($_POST[$campo] ?? '')));
-
-        $nome = $limpa('nome');
-        $cargo = $limpa('cargo');
-        $categoria = (string) ($_POST['categoria'] ?? 'operador');
-        $matricula = $limpa('matricula');
-
-        if ($nome === '' || mb_strlen($nome) > 150) {
-            $this->responder(false, 'Informe o nome (até 150 caracteres).', 422);
-        }
-        if ($cargo === '' || mb_strlen($cargo) > 100) {
-            $this->responder(false, 'Informe o cargo ou função (até 100 caracteres).', 422);
-        }
-        if (!isset(Acesso::CATEGORIAS[$categoria])) {
-            $this->responder(false, 'Escolha uma categoria válida.', 422);
-        }
-        if (mb_strlen($matricula) > 30) {
-            $this->responder(false, 'A matrícula pode ter no máximo 30 caracteres.', 422);
-        }
-
-        return [$nome, $cargo, $categoria, $matricula !== '' ? $matricula : null];
-    }
-
     /**
-     * UID do formulário (campo "uid"), normalizado e conferido: formato válido e livre no banco.
-     * null se o campo veio vazio (para quem aceita cadastrar sem cartão).
+     * Roda uma ação do cadastro e responde: ['mensagem' => ..., ...extras] vira {sucesso: true, mensagem, ...extras};
+     * um erro de regra (CadastroException) vira {sucesso: false, mensagem} com o código HTTP dele.
      */
-    private function uidOpcional(int $empresaId): ?string
+    private function executar(callable $acao): never
     {
-        $uid = Catraca::normalizarUid((string) ($_POST['uid'] ?? ''));
-        if ($uid === '') {
-            return null;
-        }
-        if (!preg_match(Pessoa::PADRAO_UID, $uid)) {
-            $this->responder(false, 'Cartão inválido. Use só letras, números, hífen ou sublinhado (de 4 a 100 caracteres).', 422);
+        try {
+            $resultado = $acao();
+        } catch (CadastroException $e) {
+            $this->responder(false, $e->getMessage(), $e->status());
         }
 
-        $dono = $this->pessoa->donoDoCartao($uid, $empresaId);
-        if ($dono !== null) {
-            $this->responder(false, $dono['mesma_empresa']
-                ? 'Este cartão já está vinculado a ' . $dono['nome'] . '. Remova-o dessa pessoa antes de usar de novo.'
-                : 'Este cartão já está em uso por outra empresa.', 409);
-        }
-
-        return $uid;
-    }
-
-    private function pessoaDaEmpresa(int $id, int $empresaId): array
-    {
-        $pessoa = $id > 0 ? $this->pessoa->buscar($id, $empresaId) : false;
-        if (!$pessoa) {
-            $this->responder(false, 'Pessoa não encontrada.', 404);
-        }
-        return $pessoa;
-    }
-
-    private function cartaoDaEmpresa(int $id, int $empresaId): array
-    {
-        $cartao = $id > 0 ? $this->pessoa->buscarCartao($id, $empresaId) : false;
-        if (!$cartao) {
-            $this->responder(false, 'Cartão não encontrado.', 404);
-        }
-        return $cartao;
-    }
-
-    /** Falha ao gravar: cartão que alguém vinculou no meio tempo vira 409; o resto, erro genérico no log. */
-    private function falhaDeGravacao(PDOException $e, string $acao): never
-    {
-        if (($e->errorInfo[1] ?? 0) === 1062) {
-            $this->responder(false, 'Este cartão acabou de ser vinculado a outra pessoa.', 409);
-        }
-        error_log('SICAPDA: falha ao ' . $acao . ': ' . $e->getMessage());
-        $this->responder(false, 'Não foi possível ' . $acao . '. Tente novamente.', 500);
+        $mensagem = $resultado['mensagem'];
+        unset($resultado['mensagem']);
+        $this->responder(true, $mensagem, 200, $resultado);
     }
 }

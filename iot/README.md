@@ -24,7 +24,7 @@ ser preenchida pelas passagens reais dos cartões, **sem mudar nenhuma tela**.
 | Endpoints que a ESP32 chama | `app/controllers/IotController.php`, rota em `app/routes/web.php` | Roda **no servidor**, junto com o resto do PHP. |
 | Cadastro dos dispositivos e dos tokens | Tela **Configurações → Integrações** (`ConfiguracaoController`, `app/models/Dispositivo.php`, tabela `dispositivos_iot`) | Só o administrador da empresa cria dispositivos e gera tokens. |
 | Leitura, decisão e log | `app/models/Catraca.php` (a regra), `app/models/Acesso.php`, tabelas `credenciais_acesso` e `logs_acesso` | Cartão → pessoa → entrada ou saída → log. O "Simular leitura" usa a mesma regra. |
-| Cadastro de pessoas e cartões | Tela **Pessoas → Cadastro** (`PessoaController`, `app/models/Pessoa.php`, `app/helpers/CsvPessoas.php`) | Adicionar pessoa, vincular cartão, ativar/desativar, importar planilha. Só o administrador altera. |
+| Cadastro de pessoas e cartões | Tela **Pessoas → Cadastro** (`PessoaController`, `app/models/Pessoa.php`, `app/helpers/CsvPessoas.php`) e a mesma aba no **aplicativo** (`/api/pessoas/*`, `ApiController`). As regras ficam em `app/models/CadastroPessoas.php`, as mesmas nos dois | Adicionar pessoa, vincular cartão, ativar/desativar, importar planilha (só no site). Só o administrador altera. |
 | Cartões lidos e ainda sem dono | Tabela `cartoes_nao_cadastrados` (Migration 005) | Alimenta a lista "cartões lidos nas catracas" do vínculo. |
 | Cadastro por SQL (alternativa) | `iot/teste_cartao.sql` | Só se preferir o banco à tela. |
 
@@ -97,6 +97,16 @@ Regras que valem sempre:
   físico tem um dono só. Quem tentar usar um UID de outra empresa recebe "já está em uso por outra
   empresa", sem ver de quem.
 - Usuários que não são administradores veem a lista, mas sem nenhum botão de alterar.
+
+### Pelo aplicativo (celular, PC ou navegador)
+
+O app do SICAPDA (`fluxe_app`) tem a mesma aba, em **Pessoas → Cadastro**, e faz tudo da lista acima, **menos
+importar planilha** (essa fica só no site). Para o cadastro de um cartão novo, o fluxo no celular é o mesmo:
+toque em **+ Vincular cartão**, passe o cartão numa catraca e escolha o UID que aparece destacado como *novo*.
+O app fala com a API (`/api/pessoas/*`, veja o `ApiController`), com as mesmas regras do site; só o
+administrador altera e uma empresa nunca vê nem mexe em pessoas de outra. Para o app funcionar o servidor
+precisa estar com esta versão do SystemFluxe: com um servidor antigo, a aba mostra "O servidor ainda não
+tem o cadastro pelo aplicativo".
 
 ## Simular leitura (testar sem a ESP32)
 
