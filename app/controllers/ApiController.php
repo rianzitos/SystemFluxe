@@ -206,6 +206,7 @@ class ApiController
                 'dia'       => $r['dia'],
                 'entrada'   => $r['entrada'] ? date('H:i', strtotime($r['entrada'])) : null,
                 'saida'     => $r['saida'] ? date('H:i', strtotime($r['saida'])) : null,
+                'emAndamento' => (bool) $r['em_andamento'],
                 'duracao'   => $r['duracao_min'] !== null ? Datas::duracao($r['duracao_min']) : null,
             ], $registros),
         ]);
