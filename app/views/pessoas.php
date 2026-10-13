@@ -92,8 +92,10 @@ function icone(string $nome): string
     <link
         href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/painel.css">
-    <link rel="stylesheet" href="/css/pessoas.css">
+    <!-- ?v=filemtime: muda a URL sempre que o arquivo muda, então o navegador (principalmente
+         o do celular) nunca fica preso numa cópia antiga do CSS/JS depois de uma atualização. -->
+    <link rel="stylesheet" href="/css/painel.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/painel.css') ?>">
+    <link rel="stylesheet" href="/css/pessoas.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/pessoas.css') ?>">
     <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
@@ -436,7 +438,7 @@ function icone(string $nome): string
         </dialog>
     <?php endif; ?>
 
-    <script src="/js/pessoas.js"></script>
+    <script src="/js/pessoas.js?v=<?= (int) @filemtime(__DIR__ . '/../../public/js/pessoas.js') ?>"></script>
 </body>
 
 </html>
