@@ -21,8 +21,8 @@ INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, cria
 VALUES (@func, 'rfid', '01020304', 1, NOW());   -- troque pelo UID do seu cartão
 
 -- Um segundo cartão para a mesma pessoa (opcional):
--- INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
--- VALUES (@func, 'rfid', '11223344', 1, NOW());
+INSERT INTO credenciais_acesso (funcionario_id, tipo, identificador, ativo, criado_em)
+VALUES (@func, 'rfid', '11223344', 1, NOW());
 
 -- Depois de passar o cartão, a pessoa aparece em Pessoas ("presentes agora"), no Painel e nos Relatórios.
 
