@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "author": "catraca-rfid",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": -38.4, "left": 312.04, "attrs": {} },
+    { "type": "board-mfrc522", "id": "rfid1", "top": -233.05, "left": 320.24, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "ledR",
+      "top": 28,
+      "left": 20.6,
+      "rotate": 270,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledG",
+      "top": 66.4,
+      "left": 20.6,
+      "rotate": 270,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 42.65,
+      "left": 94.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 81.05,
+      "left": 94.6,
+      "rotate": 180,
+      "attrs": { "value": "220" }
+    },
+    { "type": "wokwi-servo", "id": "servo1", "top": 122, "left": 2.8, "rotate": 180, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:5", "rfid1:SDA", "green", [ "h-187.16", "v-274.15" ] ],
+    [ "esp:18", "rfid1:SCK", "blue", [ "h-177.56", "v-254.95" ] ],
+    [ "esp:23", "rfid1:MOSI", "orange", [ "v-57.6", "h-167.96", "v-115.2" ] ],
+    [ "esp:19", "rfid1:MISO", "purple", [ "h-158.36", "v-226.15" ] ],
+    [ "esp:22", "rfid1:RST", "yellow", [ "h19.2", "v-76.8", "h-158.36", "v-67.2" ] ],
+    [ "esp:3V3", "rfid1:3.3V", "red", [ "h-33.41", "v-120.55" ] ],
+    [ "esp:GND.1", "rfid1:GND", "black", [ "h-57.45", "v-259.2" ] ],
+    [ "esp:13", "servo1:PWM", "orange", [ "h-28.65", "v48", "h-115.2" ] ],
+    [ "esp:5V", "servo1:V+", "red", [ "v19.2", "h-143.85" ] ],
+    [ "esp:GND.2", "servo1:GND", "black", [ "h38.4", "v249.6", "h-278.4" ] ],
+    [ "esp:26", "r1:1", "red", [ "h-19.05", "v-28.8" ] ],
+    [ "r1:2", "ledR:A", "red", [] ],
+    [ "ledR:C", "esp:GND.3", "black", [] ],
+    [ "esp:27", "r2:1", "green", [] ],
+    [ "r2:2", "ledG:A", "green", [] ],
+    [ "ledG:C", "esp:GND.3", "black", [] ]
+  ],
+  "dependencies": {}
+}
