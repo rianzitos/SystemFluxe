@@ -13,11 +13,24 @@
  *   GET  /api/me
  *   GET  /api/painel
  *   GET  /api/analise-mensal   ?mes=YYYY-MM
- *   GET  /api/pessoas
+ *   GET  /api/pessoas                  quem está no local agora
  *   GET  /api/relatorios       ?de&ate&busca&categoria&pagina
  *   GET  /api/relatorios/exportar  (CSV, mesmos filtros)
  *   GET  /api/assistente
  *   POST /api/assistente       {mensagem}
+ *
+ * Cadastro de pessoas e cartões (aba Cadastro de Pessoas no app; as mesmas regras do site, em CadastroPessoas):
+ *   GET  /api/pessoas/cadastro         pessoas da empresa com os cartões de cada uma (qualquer usuário; "podeEditar" = é administrador)
+ * Só o administrador da empresa (perfil "admin") usa as demais; os outros recebem 403:
+ *   GET  /api/pessoas/leituras         cartões lidos nas catracas e ainda sem dono (o app consulta de 3 em 3 s ao vincular)
+ *   POST /api/pessoas/criar            {nome, cargo, categoria, matricula?, uid?}  (uid vincula o cartão junto)
+ *   POST /api/pessoas/editar           {id, nome, cargo, categoria, matricula?}
+ *   POST /api/pessoas/ativo            {id, ativo}
+ *   POST /api/pessoas/cartao           {funcionario_id, uid}
+ *   POST /api/pessoas/cartao/ativo     {id, ativo}
+ *   POST /api/pessoas/cartao/remover   {id}
+ * As escritas respondem {sucesso, mensagem, ...}; erro de regra vem como {sucesso: false, mensagem} com 404, 409 ou 422.
+ * Sem CSRF de propósito: a API autentica por Bearer token, nunca por cookie (veja Api::cors()).
  */
 class ApiController
 {
@@ -49,6 +62,16 @@ class ApiController
                     $this->analiseMensal($empresaId);
                 case '/pessoas':
                     $this->pessoas($empresaId);
+                case '/pessoas/cadastro':
+                    $this->listarCadastro($usuario, $metodo);
+                case '/pessoas/leituras':
+                case '/pessoas/criar':
+                case '/pessoas/editar':
+                case '/pessoas/ativo':
+                case '/pessoas/cartao':
+                case '/pessoas/cartao/ativo':
+                case '/pessoas/cartao/remover':
+                    $this->gerirCadastro($usuario, $rota, $metodo);
                 case '/relatorios':
                     $this->relatorios($empresaId);
                 case '/relatorios/exportar':
@@ -163,6 +186,92 @@ class ApiController
         $dados = (new Painel($empresaId))->pessoas();
         $dados['dataExtenso'] = Datas::porExtenso($hoje);
         Api::json($dados);
+    }
+
+    // ─── Cadastro de pessoas e cartões ───────────────────────────────────────
+
+    private function ehAdmin(array $usuario): bool
+    {
+        return ($usuario['perfil'] ?? '') === 'admin';
+    }
+
+    /**
+     * Todas as pessoas da empresa com os cartões de cada uma (ativas primeiro). Qualquer usuário vê; "podeEditar"
+     * diz ao app se mostra os botões de alterar (o servidor confere o perfil de novo a cada escrita).
+     */
+    private function listarCadastro(array $usuario, string $metodo): never
+    {
+        if ($metodo !== 'GET') {
+            Api::erro(405, 'Método não permitido.');
+        }
+
+        $empresaId = (int) $usuario['empresa_id'];
+        $presentes = array_flip(array_column((new Acesso())->presentesAgora($empresaId, date('Y-m-d')), 'id'));
+
+        $ativas = 0;
+        $semCartaoAtivo = 0;
+        $pessoas = [];
+        foreach ((new Pessoa())->listar($empresaId) as $p) {
+            if ($p['ativo']) {
+                $ativas++;
+                if (!array_filter($p['cartoes'], fn($c) => $c['ativo'])) {
+                    $semCartaoAtivo++;
+                }
+            }
+            $pessoas[] = $p + [
+                'categoriaRotulo' => Acesso::CATEGORIAS[$p['categoria']] ?? $p['categoria'],
+                'presente'        => isset($presentes[$p['id']]),
+            ];
+        }
+
+        Api::json([
+            'podeEditar' => $this->ehAdmin($usuario),
+            'resumo'     => ['total' => count($pessoas), 'ativas' => $ativas, 'semCartaoAtivo' => $semCartaoAtivo],
+            'categorias' => array_map(
+                fn($valor, $rotulo) => ['valor' => $valor, 'rotulo' => $rotulo],
+                array_keys(Acesso::CATEGORIAS),
+                array_values(Acesso::CATEGORIAS)
+            ),
+            'pessoas'    => $pessoas,
+        ]);
+    }
+
+    /** Escritas do cadastro e a lista de cartões lidos: só o administrador da empresa, com as regras de CadastroPessoas. */
+    private function gerirCadastro(array $usuario, string $rota, string $metodo): never
+    {
+        if ($metodo !== ($rota === '/pessoas/leituras' ? 'GET' : 'POST')) {
+            Api::erro(405, 'Método não permitido.');
+        }
+        if (!$this->ehAdmin($usuario)) {
+            Api::erro(403, 'Somente o administrador da empresa pode gerenciar pessoas e cartões.');
+        }
+
+        $corpo = $metodo === 'POST' ? Api::corpo() : [];
+
+        // Um corpo sem "ativo" desativaria a pessoa (ou o cartão) sem ninguém ter pedido: aqui o campo é obrigatório.
+        if (in_array($rota, ['/pessoas/ativo', '/pessoas/cartao/ativo'], true)
+            && !in_array($corpo['ativo'] ?? null, [true, false, 1, 0, '1', '0'], true)) {
+            Api::erro(422, 'Informe se deve ficar ativo (ativo: true ou false).');
+        }
+
+        $empresaId = (int) $usuario['empresa_id'];
+        $cadastro = new CadastroPessoas();
+
+        try {
+            $resultado = match ($rota) {
+                '/pessoas/leituras'       => $cadastro->leituras($empresaId),
+                '/pessoas/criar'          => $cadastro->criar($empresaId, $corpo),
+                '/pessoas/editar'         => $cadastro->editar($empresaId, $corpo),
+                '/pessoas/ativo'          => $cadastro->definirAtivo($empresaId, $corpo),
+                '/pessoas/cartao'         => $cadastro->vincularCartao($empresaId, $corpo),
+                '/pessoas/cartao/ativo'   => $cadastro->definirCartaoAtivo($empresaId, $corpo),
+                '/pessoas/cartao/remover' => $cadastro->removerCartao($empresaId, $corpo),
+            };
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        }
+
+        Api::json($resultado);
     }
 
     private function relatorios(int $empresaId): never
