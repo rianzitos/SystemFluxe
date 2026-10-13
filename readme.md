@@ -61,7 +61,7 @@ SystemFluxe/
 
 ## Relatórios e Assistente virtual
 
-- **/relatorios** — registros de acesso (1ª entrada e última saída de cada pessoa por dia), com filtros por nome, período e função, indicadores (total, hoje, duração média, pico de entrada), paginação e exportação CSV (`/relatorios/exportar`).
+- **/relatorios** — **uma linha por permanência** (cada entrada com a sua saída): quem sai e volta no mesmo dia aparece em duas linhas, e quem ainda está dentro aparece como "No local". Filtros por nome, período e função, indicadores (total de permanências, hoje, duração média, pico de entrada), paginação e exportação CSV (`/relatorios/exportar`). A permanência pertence ao dia da entrada: um turno da noite (22h → 02h) aparece no dia em que começou, com "+1 dia" na saída. Uma entrada sem saída depois dela (esqueceu de bater) mostra "—", e uma saída solta, sem entrada antes, não vira linha. O total bate com "Acessos Realizados" do painel, que conta as entradas.
 - **/assistente** — assistente virtual em PHP (sem IA externa). Entende perguntas como "previsão para amanhã", "previsão para sexta", "previsão semanal", "desperdício" ou "precisão". A previsão (`app/models/Previsao.php`) usa média ponderada dos últimos dias da semana equivalentes + tendência recente, converte pessoas em refeições (meta do cadastro) e em kg (produção real − desperdício), considera feriados nacionais e mede a própria precisão refazendo os últimos 30 dias.
 - Painel, Análise mensal e Pessoas leem do banco (`app/models/Painel.php`, `Acesso.php`, `Producao.php`), sempre filtrando pela empresa do usuário logado.
 

@@ -30,18 +30,42 @@ class Acesso
         return [$de . ' 00:00:00', $fim . ' 00:00:00'];
     }
 
-    // ─── Relatório: um registro por pessoa por dia ───────────────────────────
+    // ─── Relatório: uma linha por permanência (entrada → saída) ──────────────
 
     /**
-     * Monta a parte comum (FROM/WHERE/GROUP BY) dos registros diários:
-     * 1ª entrada e última saída de cada funcionário em cada dia.
+     * Saída de uma permanência: a primeira saída autorizada depois da entrada e antes da entrada
+     * seguinte da mesma pessoa (se não houver entrada seguinte, qualquer saída depois). Assim cada
+     * volta (almoço, saída rápida) vira a sua própria linha, e uma saída nunca "gruda" na entrada errada.
+     * Espera os apelidos: $e (a entrada) e $proxima (a data da entrada seguinte, ou NULL).
      */
-    private function baseRegistros(int $empresaId, string $de, string $ate, string $busca, string $categoria): array
+    private static function sqlSaida(string $e, string $proxima): string
+    {
+        return "(SELECT MIN(s.data_hora) FROM logs_acesso s
+                 WHERE s.funcionario_id = $e.funcionario_id AND s.empresa_id = $e.empresa_id
+                   AND s.resultado = 'autorizado' AND s.direcao = 'saida'
+                   AND s.data_hora > $e.entrada
+                   AND ($proxima IS NULL OR s.data_hora < $proxima))";
+    }
+
+    /** Data da próxima entrada autorizada da mesma pessoa depois da entrada $e (ou NULL). */
+    private static function sqlProximaEntrada(string $e): string
+    {
+        return "(SELECT MIN(n.data_hora) FROM logs_acesso n
+                 WHERE n.funcionario_id = $e.funcionario_id AND n.empresa_id = $e.empresa_id
+                   AND n.resultado = 'autorizado' AND n.direcao = 'entrada'
+                   AND n.data_hora > $e.entrada)";
+    }
+
+    /**
+     * Filtro comum (WHERE) das entradas autorizadas do relatório. A permanência pertence ao dia da
+     * ENTRADA; a saída pode cair depois do fim do período (turno que passa da meia-noite).
+     */
+    private function filtroEntradas(int $empresaId, string $de, string $ate, string $busca, string $categoria): array
     {
         [$ini, $fim] = self::intervalo($de, $ate);
 
-        $where = 'l.empresa_id = :emp AND l.resultado = \'autorizado\' AND l.funcionario_id IS NOT NULL
-                  AND l.data_hora >= :ini AND l.data_hora < :fim';
+        $where = 'l.empresa_id = :emp AND l.resultado = \'autorizado\' AND l.direcao = \'entrada\'
+                  AND l.funcionario_id IS NOT NULL AND l.data_hora >= :ini AND l.data_hora < :fim';
         $params = [':emp' => $empresaId, ':ini' => $ini, ':fim' => $fim];
 
         if ($busca !== '') {
@@ -56,25 +80,33 @@ class Acesso
             $params[':cat'] = $categoria;
         }
 
-        $from = "FROM logs_acesso l
-                 JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
-                 WHERE $where
-                 GROUP BY f.id, f.nome, f.cargo, f.categoria, DATE(l.data_hora)";
-
-        return [$from, $params];
+        return [$where, $params];
     }
 
-    /** Lista paginada de registros (1 linha por pessoa/dia). */
+    /**
+     * Lista paginada: uma linha por permanência. Cada pessoa pode aparecer várias vezes no mesmo dia
+     * (entrou, saiu, voltou...). "em_andamento" = ainda está dentro (última passagem dela é esta entrada, hoje).
+     */
     public function registros(int $empresaId, string $de, string $ate, string $busca, string $categoria, int $limite, int $offset): array
     {
-        [$from, $params] = $this->baseRegistros($empresaId, $de, $ate, $busca, $categoria);
+        [$where, $params] = $this->filtroEntradas($empresaId, $de, $ate, $busca, $categoria);
 
-        $sql = "SELECT f.id, f.nome, f.cargo, f.categoria, DATE(l.data_hora) AS dia,
-                       MIN(CASE WHEN l.direcao = 'entrada' THEN l.data_hora END) AS entrada,
-                       MAX(CASE WHEN l.direcao = 'saida'   THEN l.data_hora END) AS saida
-                $from
-                ORDER BY dia DESC, entrada ASC, f.nome ASC
-                LIMIT :lim OFFSET :off";
+        // A página é recortada primeiro (consulta de dentro); só para essas linhas se procura a saída.
+        $sql = 'SELECT u.funcionario_id AS id, u.nome, u.cargo, u.categoria, DATE(u.entrada) AS dia,
+                       u.entrada, ' . self::sqlSaida('u', 'u.proxima_entrada') . ' AS saida, u.proxima_entrada
+                FROM (
+                    SELECT t.*, ' . self::sqlProximaEntrada('t') . ' AS proxima_entrada
+                    FROM (
+                        SELECT l.id AS entrada_id, l.funcionario_id, l.empresa_id, l.data_hora AS entrada,
+                               f.nome, f.cargo, f.categoria
+                        FROM logs_acesso l
+                        JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
+                        WHERE ' . $where . '
+                        ORDER BY DATE(l.data_hora) DESC, l.data_hora ASC, f.nome ASC, l.id ASC
+                        LIMIT :lim OFFSET :off
+                    ) t
+                ) u
+                ORDER BY dia DESC, u.entrada ASC, u.nome ASC, u.entrada_id ASC';
 
         $stmt = $this->db->prepare($sql);
         foreach ($params as $k => $v) {
@@ -99,44 +131,58 @@ class Acesso
         if ($r['entrada'] && $r['saida'] && $r['saida'] > $r['entrada']) {
             $r['duracao_min'] = intdiv(strtotime($r['saida']) - strtotime($r['entrada']), 60);
         }
+        // Ainda dentro: sem saída, sem outra entrada depois e a entrada é de hoje (mesmo critério de presentesAgora()).
+        $r['em_andamento'] = $r['saida'] === null && $r['proxima_entrada'] === null && $r['dia'] === date('Y-m-d');
+        unset($r['proxima_entrada']);
         return $r;
     }
 
+    /** Total de permanências (= entradas autorizadas) do filtro. */
     public function contarRegistros(int $empresaId, string $de, string $ate, string $busca, string $categoria): int
     {
-        [$from, $params] = $this->baseRegistros($empresaId, $de, $ate, $busca, $categoria);
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM (SELECT 1 $from) t");
+        [$where, $params] = $this->filtroEntradas($empresaId, $de, $ate, $busca, $categoria);
+
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) FROM logs_acesso l
+             JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
+             WHERE ' . $where
+        );
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     }
 
     /**
      * Indicadores do relatório (respeitam os mesmos filtros da tabela):
-     * duração média (só registros com entrada e saída) e pico de entrada.
+     * duração média das permanências concluídas e o horário de pico de entradas.
      */
     public function resumoRegistros(int $empresaId, string $de, string $ate, string $busca, string $categoria): array
     {
-        [$from, $params] = $this->baseRegistros($empresaId, $de, $ate, $busca, $categoria);
+        [$where, $params] = $this->filtroEntradas($empresaId, $de, $ate, $busca, $categoria);
 
         $stmt = $this->db->prepare(
-            "SELECT AVG(TIMESTAMPDIFF(MINUTE, entrada, saida)) AS media
-             FROM (SELECT MIN(CASE WHEN l.direcao = 'entrada' THEN l.data_hora END) AS entrada,
-                          MAX(CASE WHEN l.direcao = 'saida'   THEN l.data_hora END) AS saida
-                   $from) t
-             WHERE entrada IS NOT NULL AND saida > entrada"
+            'SELECT AVG(TIMESTAMPDIFF(MINUTE, u.entrada, ' . self::sqlSaida('u', 'u.proxima_entrada') . ')) AS media
+             FROM (
+                 SELECT t.*, ' . self::sqlProximaEntrada('t') . ' AS proxima_entrada
+                 FROM (
+                     SELECT l.funcionario_id, l.empresa_id, l.data_hora AS entrada
+                     FROM logs_acesso l
+                     JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
+                     WHERE ' . $where . '
+                 ) t
+             ) u'
         );
         $stmt->execute($params);
         $media = $stmt->fetchColumn();
 
-        // Pico: hora do dia com mais primeiras-entradas
+        // Pico: hora do dia com mais entradas
         $stmt = $this->db->prepare(
-            "SELECT HOUR(entrada) AS hora, COUNT(*) AS qtd
-             FROM (SELECT MIN(CASE WHEN l.direcao = 'entrada' THEN l.data_hora END) AS entrada
-                   $from) t
-             WHERE entrada IS NOT NULL
-             GROUP BY HOUR(entrada)
+            'SELECT HOUR(l.data_hora) AS hora, COUNT(*) AS qtd
+             FROM logs_acesso l
+             JOIN funcionarios f ON f.id = l.funcionario_id AND f.empresa_id = l.empresa_id
+             WHERE ' . $where . '
+             GROUP BY HOUR(l.data_hora)
              ORDER BY qtd DESC, hora ASC
-             LIMIT 1"
+             LIMIT 1'
         );
         $stmt->execute($params);
         $pico = $stmt->fetch();

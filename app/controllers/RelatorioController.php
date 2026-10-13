@@ -89,7 +89,7 @@ class RelatorioController
                 Acesso::CATEGORIAS[$r['categoria']] ?? $r['categoria'],
                 date('d/m/Y', strtotime($r['dia'])),
                 $r['entrada'] ? date('H:i', strtotime($r['entrada'])) : '',
-                $r['saida'] ? date('H:i', strtotime($r['saida'])) : '',
+                self::saidaParaCsv($r),
                 $r['duracao_min'] !== null ? Datas::duracao($r['duracao_min']) : '',
             ], ';');
         }
@@ -136,6 +136,16 @@ class RelatorioController
             'categoria' => $categoria,
             'pagina'    => max(1, (int) ($_GET['pagina'] ?? 1)),
         ];
+    }
+
+    /** Saída no CSV: "H:i"; com a data se foi em outro dia que a entrada; "No local" se ainda está dentro. */
+    private static function saidaParaCsv(array $r): string
+    {
+        if ($r['saida']) {
+            $mesmoDia = date('Y-m-d', strtotime($r['saida'])) === $r['dia'];
+            return date($mesmoDia ? 'H:i' : 'd/m H:i', strtotime($r['saida']));
+        }
+        return $r['em_andamento'] ? 'No local' : '';
     }
 
     /**

@@ -198,7 +198,10 @@ $ate = min($dados['total'], $dados['pagina'] * $dados['porPagina']);
                                         <td>
                                             <?php if ($r['saida']): ?>
                                                 <span class="hora hora-saida"><i class="bi bi-clock"></i> <?= date('H:i', strtotime($r['saida'])) ?></span>
-                                            <?php elseif ($r['dia'] === $hoje): ?>
+                                                <?php if (date('Y-m-d', strtotime($r['saida'])) !== $r['dia']): ?>
+                                                    <small class="muted" title="A saída foi no dia seguinte">+1 dia</small>
+                                                <?php endif; ?>
+                                            <?php elseif ($r['em_andamento']): ?>
                                                 <span class="badge-andamento">No local</span>
                                             <?php else: ?><span class="muted" title="Saída não registrada">—</span><?php endif; ?>
                                         </td>
