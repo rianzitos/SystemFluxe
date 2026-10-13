@@ -23,8 +23,10 @@ ser preenchida pelas passagens reais dos cartões, **sem mudar nenhuma tela**.
 | Firmware da ESP32 | `iot/esp32_catraca/esp32_catraca.ino` | Roda **na ESP32**, não no servidor. Fica no repositório só para versionar. Não precisa subir para a hospedagem. |
 | Endpoints que a ESP32 chama | `app/controllers/IotController.php`, rota em `app/routes/web.php` | Roda **no servidor**, junto com o resto do PHP. |
 | Cadastro dos dispositivos e dos tokens | Tela **Configurações → Integrações** (`ConfiguracaoController`, `app/models/Dispositivo.php`, tabela `dispositivos_iot`) | Só o administrador da empresa cria dispositivos e gera tokens. |
-| Leitura, decisão e log | `app/models/Acesso.php`, tabelas `credenciais_acesso` e `logs_acesso` | Cartão → pessoa → entrada ou saída → log. |
-| Cadastro de pessoa + cartão para testar | `iot/teste_cartao.sql` | Ainda não há tela para cadastrar cartões: por enquanto é por SQL. |
+| Leitura, decisão e log | `app/models/Catraca.php` (a regra), `app/models/Acesso.php`, tabelas `credenciais_acesso` e `logs_acesso` | Cartão → pessoa → entrada ou saída → log. O "Simular leitura" usa a mesma regra. |
+| Cadastro de pessoas e cartões | Tela **Pessoas → Cadastro** (`PessoaController`, `app/models/Pessoa.php`, `app/helpers/CsvPessoas.php`) | Adicionar pessoa, vincular cartão, ativar/desativar, importar planilha. Só o administrador altera. |
+| Cartões lidos e ainda sem dono | Tabela `cartoes_nao_cadastrados` (Migration 005) | Alimenta a lista "cartões lidos nas catracas" do vínculo. |
+| Cadastro por SQL (alternativa) | `iot/teste_cartao.sql` | Só se preferir o banco à tela. |
 
 ## Testar agora, sem a ESP32 nem o RFID de verdade (Wokwi + internet)
 
@@ -41,14 +43,18 @@ enxerga o `localhost` do seu computador. Duas formas:
 
 Passo a passo:
 
-1. **Banco:** rode o bloco `Migration 004` do final de `config/database.sql` (aba SQL do
-   phpMyAdmin). Ele cria as tabelas de preferências e de sessões usadas pela tela de Configurações.
-   O endpoint da catraca em si só usa tabelas que já existiam.
+1. **Banco:** rode os blocos `Migration 004` e `Migration 005` do final de `config/database.sql`
+   (aba SQL do phpMyAdmin; cada um só cria tabelas que ainda não existem). A 004 serve a tela de
+   Configurações (preferências e sessões) e a 005 serve o vínculo de cartões em Pessoas. O endpoint da
+   catraca em si só usa tabelas que já existiam: sem a 005 ele continua funcionando, só a lista de
+   "cartões lidos" fica vazia.
 2. **Crie o dispositivo:** entre como administrador → **Configurações → Integrações → Adicionar
    dispositivo** → dê um nome (ex.: "Catraca Wokwi") → **Copie o token** (ele aparece uma vez só; se
    perder, use "Novo token").
-3. **Cadastre uma pessoa e o cartão dela** com `iot/teste_cartao.sql`. O UID é o que o Serial Monitor
-   mostra em `UID lido: 01 02 03 04`, escrito junto: `01020304`.
+3. **Cadastre uma pessoa e o cartão dela**, sem SQL: **Pessoas → Cadastro → Adicionar pessoa**. Passe o
+   cartão no leitor (ele é negado, mas o sistema guarda o UID): ele aparece sozinho na lista "cartões lidos
+   nas catracas" do formulário. Clique nele para preencher o UID e salve. (O UID também aparece no Serial
+   Monitor, `UID lido: 01 02 03 04`, e pode ser digitado junto: `01020304`.)
 4. **No Wokwi:** abra o projeto do circuito, troque o código pelo de `iot/esp32_catraca/esp32_catraca.ino`,
    confira o `libraries.txt` (`MFRC522`, `ESP32Servo`, `ArduinoJson`), ponha o endereço em `URL_SERVIDOR` e o
    token em `TOKEN_DISPOSITIVO`, e rode.
@@ -62,7 +68,46 @@ Passo a passo:
    Configurações → Notificações).
 
 > Passar o cartão **não cria** a pessoa: ele marca a presença de quem já está cadastrado e tem o cartão
-> vinculado. Pessoa nova = cadastro (`teste_cartao.sql` ou, no futuro, a tela de Pessoas) + cartão.
+> vinculado. Pessoa nova = cadastro em **Pessoas → Cadastro** + cartão vinculado.
+
+## Cadastrar pessoas e cartões (Pessoas → Cadastro)
+
+A aba **Cadastro** da tela de Pessoas lista todas as pessoas da empresa com os cartões delas. O
+administrador pode:
+
+- **Adicionar pessoa:** nome, cargo, categoria, matrícula (opcional) e, se quiser, o cartão já na hora
+  (tudo ou nada: se o cartão não puder ser usado, a pessoa também não é criada).
+- **Vincular cartão** a quem já existe, de dois jeitos:
+  1. **Pela lista de cartões lidos:** abra "Vincular cartão", passe o cartão numa catraca e ele aparece
+     sozinho (destacado, a lista atualiza a cada 3 segundos); clique nele e confirme.
+  2. **Digitando o UID** (letras, números, hífen ou sublinhado; espaços e `:` são ignorados).
+- **Ativar/desativar** um cartão (cartão perdido) ou a pessoa inteira (desligamento). Desativada, ela é
+  negada na catraca e sai das contagens, mas o histórico fica. Pessoas **não são apagadas**: apagar
+  deixaria registros de acesso sem dono e distorceria os números.
+- **Remover** um cartão (o UID fica livre para outra pessoa).
+- **Importar planilha** (CSV): colunas `nome` e `cargo` (obrigatórias), `categoria` (operador, supervisor ou
+  prestador; padrão operador), `matricula` e `cartao` (o UID). Aceita `;` ou `,` e arquivo do Excel (UTF-8
+  ou Windows-1252). Baixe o modelo no próprio diálogo. Linhas com problema são ignoradas e explicadas
+  (com o número da linha); importar o mesmo arquivo duas vezes não duplica ninguém (matrícula e cartão
+  repetidos são ignorados). Limite: 1 MB e 1000 linhas por arquivo.
+
+Regras que valem sempre:
+
+- Um UID só pode existir **uma vez no sistema inteiro**, mesmo entre empresas diferentes: um cartão
+  físico tem um dono só. Quem tentar usar um UID de outra empresa recebe "já está em uso por outra
+  empresa", sem ver de quem.
+- Usuários que não são administradores veem a lista, mas sem nenhum botão de alterar.
+
+## Simular leitura (testar sem a ESP32)
+
+Em **Configurações → Integrações → Simular leitura**, o administrador escolhe uma catraca, digita um UID e
+vê o resultado (liberado, negado, entrada ou saída), pela **mesma regra** da catraca de verdade. Serve
+para testar o sistema sem Wokwi nem aparelho.
+
+- **Registra um acesso real**: ele aparece no painel, em Pessoas e nos relatórios, e não há marca que o
+  distinga de uma passagem verdadeira. Use só para testes e limpe depois.
+- Não marca a catraca como Online: isso só o ping da própria ESP32 faz.
+- Um cartão desconhecido simulado também entra na lista "cartões lidos", para você treinar o vínculo.
 
 ## Circuito (o mesmo do Wokwi)
 

@@ -196,3 +196,30 @@ CREATE TABLE IF NOT EXISTS sessoes_usuario (
     CONSTRAINT fk_sessoes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     INDEX idx_sessoes_usuario (usuario_id, ultimo_acesso)
 ) ENGINE=InnoDB;
+
+
+-- =============================================================================
+-- Migration 005: Cartões lidos mas ainda não cadastrados (tela Pessoas → Vincular cartão)
+-- =============================================================================
+-- IF NOT EXISTS: seguro rodar de novo. No banco de produção (cPanel), rode só este bloco no
+-- phpMyAdmin (aba SQL). Enquanto ele não for rodado, as catracas continuam funcionando; só a lista
+-- "últimas leituras" do vínculo de cartão fica vazia.
+
+-- ─── Tabela cartoes_nao_cadastrados ──────────────────────────────────────────
+-- Quando uma catraca lê um cartão que ninguém tem, o UID fica aqui (uma linha por empresa e UID,
+-- com a contagem de leituras e a última). A tela de Pessoas mostra essa lista para o administrador
+-- escolher o cartão que acabou de passar e vincular a uma pessoa; ao vincular, a linha some.
+-- Linhas paradas há mais de 30 dias são apagadas sozinhas.
+CREATE TABLE IF NOT EXISTS cartoes_nao_cadastrados (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    empresa_id       INT          NOT NULL,
+    identificador    VARCHAR(100) NOT NULL,
+    dispositivo_id   INT          NULL,
+    leituras         INT          NOT NULL DEFAULT 1,
+    primeira_leitura DATETIME     NOT NULL,
+    ultima_leitura   DATETIME     NOT NULL,
+    CONSTRAINT fk_naocad_empresa     FOREIGN KEY (empresa_id)     REFERENCES empresas(id)        ON DELETE CASCADE,
+    CONSTRAINT fk_naocad_dispositivo FOREIGN KEY (dispositivo_id) REFERENCES dispositivos_iot(id) ON DELETE SET NULL,
+    UNIQUE KEY uk_naocad_empresa_uid (empresa_id, identificador),
+    INDEX idx_naocad_ultima (empresa_id, ultima_leitura)
+) ENGINE=InnoDB;

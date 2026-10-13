@@ -7,6 +7,8 @@
  */
 class ConfiguracaoController
 {
+    use RespondeJson;
+
     private Usuario $usuario;
 
     public function __construct()
@@ -249,7 +251,7 @@ class ConfiguracaoController
     public function criarDispositivo(): void
     {
         $this->exigirSessao();
-        $empresaId = $this->exigirAdmin();
+        $empresaId = $this->exigirAdmin('dispositivos');
 
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $tipo = (string) ($_POST['tipo'] ?? 'rfid');
@@ -281,7 +283,7 @@ class ConfiguracaoController
     public function regenerarTokenDispositivo(): void
     {
         $this->exigirSessao();
-        $empresaId = $this->exigirAdmin();
+        $empresaId = $this->exigirAdmin('dispositivos');
 
         $id = (int) ($_POST['id'] ?? 0);
 
@@ -301,32 +303,38 @@ class ConfiguracaoController
         $this->responder(true, 'Novo token gerado.', 200, ['dispositivo' => $dispositivo, 'token' => $token]);
     }
 
+    /**
+     * "Simular leitura": passa um UID por uma catraca da empresa como se a ESP32 o tivesse lido, pela mesma
+     * regra (Catraca::passar). Grava um acesso DE VERDADE (aparece no painel e nos relatórios); não marca o
+     * dispositivo como online, porque isso só quem manda o ping é o aparelho.
+     */
+    public function simularLeitura(): void
+    {
+        $this->exigirSessao();
+        $empresaId = $this->exigirAdmin('dispositivos');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $dispositivo = $id > 0 ? (new Dispositivo())->buscarDaEmpresa($id, $empresaId) : false;
+        if (!$dispositivo) {
+            $this->responder(false, 'Dispositivo não encontrado.', 404);
+        }
+
+        $uid = Catraca::normalizarUid((string) ($_POST['uid'] ?? ''));
+        if ($uid === '' || strlen($uid) > 100) {
+            $this->responder(false, 'Informe o UID do cartão.', 422);
+        }
+
+        try {
+            $resultado = Catraca::passar($empresaId, $id, $uid);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha ao simular leitura: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível simular a leitura. Tente novamente.', 500);
+        }
+
+        $this->responder(true, $resultado['mensagem'], 200, ['resultado' => $resultado, 'uid' => $uid]);
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    /** Valida sessão + CSRF e devolve o ID do usuário logado. */
-    private function exigirSessao(): int
-    {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-            $this->responder(false, 'Método não permitido.', 405);
-        }
-        if (!AuthMiddleware::sessaoAtiva()) {
-            $this->responder(false, 'Sessão expirada. Faça login novamente.', 401);
-        }
-
-        CsrfMiddleware::validar();
-
-        return (int) $_SESSION['usuario_id'];
-    }
-
-    /** Só o administrador da empresa gerencia dispositivos. Devolve o ID da empresa. */
-    private function exigirAdmin(): int
-    {
-        $empresaId = Pagina::empresaId();
-        if (($_SESSION['usuario_perfil'] ?? '') !== 'admin' || $empresaId <= 0) {
-            $this->responder(false, 'Somente o administrador da empresa pode gerenciar dispositivos.', 403);
-        }
-        return $empresaId;
-    }
 
     /** Encerra com 403 se a senha informada não for a do usuário. */
     private function conferirSenha(int $id, string $senha): void
@@ -335,14 +343,5 @@ class ConfiguracaoController
         if (!$hash || !password_verify($senha, $hash)) {
             $this->responder(false, 'Senha atual incorreta.', 403);
         }
-    }
-
-    private function responder(bool $sucesso, string $mensagem, int $status = 200, array $extra = []): never
-    {
-        http_response_code($status);
-        header('Content-Type: application/json; charset=utf-8');
-        header('Cache-Control: no-store');   // algumas respostas carregam o token inteiro de um dispositivo
-        echo json_encode(['sucesso' => $sucesso, 'mensagem' => $mensagem] + $extra);
-        exit;
     }
 }

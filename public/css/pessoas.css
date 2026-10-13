@@ -237,3 +237,510 @@ html[data-tema="escuro"] .avatar-cor-2 {
 }
 
 /* interface se adapte corretamente a telas menores, como tablets e celulares. */
+
+/* =========================================================
+   ABA CADASTRO — pessoas, cartões e importação
+   ========================================================= */
+
+/* Sem isto, elementos com display próprio (flex, grid) ignoram o atributo hidden. */
+.cad-item[hidden],
+dialog.dlg [hidden],
+.aviso-pessoas[hidden] {
+    display: none !important;
+}
+
+/* ===================== ABAS ===================== */
+
+.pessoas-abas {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.pessoas-aba {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: -1px;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto-muted);
+    cursor: pointer;
+}
+
+.pessoas-aba:hover {
+    color: var(--texto);
+}
+
+.pessoas-aba.ativa {
+    color: var(--texto);
+    border-bottom-color: var(--amarelo);
+}
+
+.pessoas-aba-contagem {
+    padding: 1px 8px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 999px;
+    font-size: 11.5px;
+}
+
+/* ===================== BARRA E RESUMO ===================== */
+
+.cad-barra {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.cad-barra .busca-pessoas {
+    flex: 1;
+    min-width: 240px;
+    margin-bottom: 0;
+}
+
+.cad-acoes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cad-resumo {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--texto-muted);
+}
+
+.cad-resumo strong {
+    color: var(--texto);
+}
+
+/* ===================== BOTÕES ===================== */
+
+.btn-cad {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border: 1px solid transparent;
+    border-radius: var(--raio-sm);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.btn-cad:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+.btn-cad-primario {
+    background: var(--amarelo);
+    color: var(--preto);
+}
+
+.btn-cad-primario:hover:not(:disabled) {
+    filter: brightness(0.93);
+}
+
+.btn-cad-secundario {
+    background: var(--branco);
+    border-color: var(--borda);
+    color: var(--texto);
+}
+
+.btn-cad-secundario:hover:not(:disabled) {
+    background: var(--fundo);
+}
+
+.btn-cad-texto {
+    background: none;
+    padding-left: 8px;
+    padding-right: 8px;
+    color: var(--texto-muted);
+}
+
+.btn-cad-texto:hover {
+    color: var(--texto);
+    text-decoration: underline;
+}
+
+.btn-cad-texto.btn-perigo:hover {
+    color: #DC2626;
+}
+
+/* ===================== LISTA ===================== */
+
+.cad-lista {
+    display: flex;
+    flex-direction: column;
+}
+
+.cad-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--borda);
+}
+
+.cad-item:last-of-type {
+    border-bottom: none;
+}
+
+.cad-item-inativo .cad-info {
+    opacity: .6;
+}
+
+.cad-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cad-nome {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+}
+
+.cad-detalhe {
+    margin-top: 2px;
+    font-size: 12.5px;
+    color: var(--texto-muted);
+}
+
+.cad-cartoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.cad-botoes {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.cad-vazio {
+    margin: 0;
+    padding: 24px 0;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--texto-muted);
+}
+
+.tag-status {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+}
+
+.tag-presente {
+    background: var(--sucesso-bg);
+    color: var(--sucesso);
+}
+
+.tag-inativa {
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    color: var(--texto-muted);
+}
+
+/* ===================== CARTÕES ===================== */
+
+.cartao-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px 3px 10px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.cartao-chip code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 12px;
+}
+
+.cartao-chip-inativo {
+    opacity: .6;
+    text-decoration: line-through;
+}
+
+.cartao-chip-inativo .chip-acao {
+    text-decoration: none;
+}
+
+.chip-acao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--texto-muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.chip-acao:hover {
+    background: var(--borda);
+    color: var(--texto);
+}
+
+.chip-remover:hover {
+    color: #DC2626;
+}
+
+.sem-cartao {
+    font-size: 12px;
+    color: var(--texto-muted);
+    font-style: italic;
+}
+
+/* ===================== DIÁLOGOS ===================== */
+
+dialog.dlg {
+    width: min(560px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    background: var(--branco);
+    color: var(--texto);
+    border: none;
+    border-radius: var(--raio);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+}
+
+dialog.dlg::backdrop {
+    background: rgba(13, 13, 13, 0.55);
+}
+
+dialog.dlg form {
+    padding: 24px;
+}
+
+dialog.dlg h2 {
+    margin: 0 0 14px;
+    font-size: 18px;
+}
+
+.dlg-texto {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--texto-muted);
+}
+
+.dlg-texto strong,
+.dlg-texto code {
+    color: var(--texto);
+}
+
+.dlg-campos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.dlg-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto-muted);
+}
+
+.dlg-largo {
+    grid-column: 1 / -1;
+}
+
+.dlg-opcional {
+    font-weight: 400;
+}
+
+.dlg-campo input,
+.dlg-campo select {
+    padding: 10px 12px;
+    background: var(--fundo);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    outline: none;
+}
+
+.dlg-campo input:focus,
+.dlg-campo select:focus {
+    border-color: var(--amarelo);
+}
+
+.dlg-erro {
+    margin: 12px 0 0;
+    font-size: 12.5px;
+    color: #DC2626;
+}
+
+.dlg-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+/* ===================== CARTÕES LIDOS (no diálogo) ===================== */
+
+.leituras {
+    padding: 12px 14px;
+    background: var(--fundo);
+    border: 1px dashed var(--borda);
+    border-radius: var(--raio-sm);
+}
+
+.leituras-titulo {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-muted);
+}
+
+.leituras-status {
+    font-weight: 400;
+}
+
+.leituras-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 170px;
+    overflow-y: auto;
+}
+
+.leituras-vazio {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--texto-muted);
+}
+
+.leitura-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--branco);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio-sm);
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.leitura-chip:hover {
+    border-color: var(--amarelo);
+}
+
+.leitura-chip code {
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.leitura-chip span {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: var(--texto-muted);
+}
+
+.leitura-nova {
+    background: var(--amarelo-suave, #FFF4CC);
+    border-color: var(--amarelo);
+}
+
+.leitura-chip.selecionada {
+    border-color: var(--sucesso);
+    box-shadow: 0 0 0 2px var(--sucesso-bg);
+}
+
+/* ===================== IMPORTAÇÃO ===================== */
+
+.importacao-resultado {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: var(--sucesso-bg);
+    border: 1px solid var(--sucesso);
+    border-radius: var(--raio-sm);
+    font-size: 13px;
+}
+
+.importacao-resultado ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 12.5px;
+    color: var(--texto-muted);
+}
+
+.importacao-resultado p {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--texto-muted);
+}
+
+/* ===================== AVISO ===================== */
+
+.aviso-pessoas {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1000;
+    max-width: calc(100vw - 40px);
+    padding: 12px 18px;
+    background: #17171A;
+    color: #fff;
+    border-radius: var(--raio-sm);
+    font-size: 13.5px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 780px) {
+    .dlg-campos {
+        grid-template-columns: 1fr;
+    }
+
+    .cad-item {
+        flex-wrap: wrap;
+    }
+
+    .cad-botoes {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
