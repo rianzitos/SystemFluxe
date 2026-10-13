@@ -21,8 +21,9 @@ const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é esta rede (sem senha); 
 const char* WIFI_SENHA = "";
 const int   WIFI_CANAL = 6;               // 6 acelera a conexão no Wokwi; use 0 (automático) fora dele
 
-// Endereço do SICAPDA, sem a barra no final. O Wokwi roda na nuvem e NÃO enxerga o localhost
-// do seu computador: use o site publicado (ou um túnel, como ngrok).
+// Endereço do SICAPDA, sem a barra no final. O Wokwi no navegador roda na nuvem e NÃO enxerga o
+// localhost do seu computador: use o site publicado ou um túnel (ex.: ngrok, que dá um https://...).
+// Para testar o sistema local sem túnel, use "Simular leitura" em Configurações → Integrações.
 const char* URL_SERVIDOR = "https://fluxeteam.com.br";
 
 // Token deste dispositivo: Configurações → Integrações → Adicionar dispositivo (aparece uma vez só).
@@ -120,20 +121,50 @@ void keepWifi() {
 
 // POST em /api/iot/<path> com o token do dispositivo.
 // Devolve o código HTTP (<= 0 se nem chegou ao servidor) e o corpo da resposta em "response".
+// Endereço https:// usa conexão segura; http:// (servidor na rede local, por exemplo) usa conexão comum.
 int postJson(const char* path, const String& body, String& response) {
-  WiFiClientSecure client;
-  client.setInsecure();   // TESTE: aceita qualquer certificado. Em produção: client.setCACert(<certificado raiz do site>)
+  String url = String(URL_SERVIDOR) + "/api/iot/" + path;
 
+  WiFiClientSecure clienteSeguro;
+  WiFiClient clienteComum;
   HTTPClient http;
   http.setTimeout(8000);
-  if (!http.begin(client, String(URL_SERVIDOR) + "/api/iot/" + path)) return -1;
+
+  bool iniciou;
+  if (url.startsWith("https://")) {
+    clienteSeguro.setInsecure();   // TESTE: aceita qualquer certificado. Em produção: clienteSeguro.setCACert(<certificado raiz do site>)
+    iniciou = http.begin(clienteSeguro, url);
+  } else {
+    iniciou = http.begin(clienteComum, url);
+  }
+  if (!iniciou) return -1;
+
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Token", TOKEN_DISPOSITIVO);
 
   int code = http.POST(body);
   if (code > 0) response = http.getString();
+  else Serial.printf("Falha de conexao em %s: %s\n", url.c_str(), http.errorToString(code).c_str());
   http.end();
   return code;
+}
+
+// Diz, em português, o que cada código de resposta quer dizer (só o 401 é problema do token).
+void explicarFalha(int code) {
+  if (code == 401) {
+    Serial.println("HTTP 401: o servidor NAO reconheceu o token. Confira TOKEN_DISPOSITIVO e se a catraca foi criada neste mesmo site.");
+  } else if (code <= 0) {
+    Serial.printf("HTTP %d: nao consegui falar com o servidor (nao e problema do token). Confira URL_SERVIDOR e a rede. "
+                  "O Wokwi no navegador NAO enxerga o localhost do seu computador.\n", code);
+  } else if (code == 404) {
+    Serial.println("HTTP 404: o servidor nao tem essa rota. Confira URL_SERVIDOR (inclusive a subpasta, se houver) e se o codigo novo foi publicado.");
+  } else if (code == 403 || code == 406) {
+    Serial.printf("HTTP %d: o firewall do servidor bloqueou o pedido.\n", code);
+  } else if (code == 405 || code == 422) {
+    Serial.printf("HTTP %d: pedido recusado pelo servidor.\n", code);
+  } else {
+    Serial.printf("HTTP %d: erro no servidor.\n", code);
+  }
 }
 
 void sendPing() {
@@ -141,6 +172,7 @@ void sendPing() {
   String response;
   int code = postJson("ping", "{}", response);
   Serial.printf("Ping: HTTP %d\n", code);
+  if (code != 200) explicarFalha(code);
 }
 
 // Pergunta ao servidor se o cartão pode passar. Por segurança, qualquer falha (sem Wi-Fi,
@@ -159,7 +191,8 @@ bool isAuthorized(const String& uid) {
   String response;
   int code = postJson("acesso", body, response);
   if (code != 200) {
-    Serial.printf("Servidor respondeu HTTP %d (401 = token errado): acesso negado\n", code);
+    explicarFalha(code);
+    Serial.println("Acesso negado (sem resposta valida do servidor)");
     return false;
   }
 
@@ -190,6 +223,14 @@ void setup() {
   rfid.PCD_Init();
 
   closeGate();
+
+  // Resumo da configuração, para conferir de relance (o token aparece só pelas pontas).
+  int tamanhoToken = strlen(TOKEN_DISPOSITIVO);
+  Serial.printf("Servidor: %s\n", URL_SERVIDOR);
+  Serial.printf("Token: %d caracteres (%.6s...%s)\n", tamanhoToken, TOKEN_DISPOSITIVO,
+                TOKEN_DISPOSITIVO + (tamanhoToken > 4 ? tamanhoToken - 4 : 0));
+  if (tamanhoToken != 64) Serial.println("ATENCAO: o token deve ter exatamente 64 caracteres. Copie de novo da caixa amarela (nao da lista).");
+
   connectWifi();
   sendPing();
   lastPing = millis();

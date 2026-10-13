@@ -109,6 +109,29 @@ para testar o sistema sem Wokwi nem aparelho.
 - Não marca a catraca como Online: isso só o ping da própria ESP32 faz.
 - Um cartão desconhecido simulado também entra na lista "cartões lidos", para você treinar o vínculo.
 
+## Lendo as mensagens do Serial Monitor
+
+Ao ligar, o firmware mostra o endereço configurado e o tamanho do token (só as pontas dele, ex.:
+`Token: 64 caracteres (647834...5912)`). O token tem de ter **64 caracteres**; se o aviso disser outro
+número, o texto foi copiado errado (use a caixa amarela, não a lista). Depois, cada falha vem explicada:
+
+| Mensagem | O que é |
+|---|---|
+| `HTTP 401: o servidor NAO reconheceu o token` | Esse é o único caso de token errado: copiado errado, trocado por "Novo token", ou a catraca foi criada em **outro site/banco** (ex.: criada no site local e o firmware aponta para o de produção, ou o contrário). |
+| `HTTP -1` (ou outro valor negativo): `nao consegui falar com o servidor` | **Não é o token.** O firmware não chegou ao servidor: endereço errado, sem internet, ou o endereço não é alcançável de onde o firmware roda. |
+| `HTTP 404` | A rota não existe: `URL_SERVIDOR` com caminho errado (confira a subpasta, se houver) ou código novo ainda não publicado. |
+| `HTTP 403` ou `406` | O firewall da hospedagem (ModSecurity) bloqueou o pedido. |
+
+**`localhost` no Wokwi:** o Wokwi aberto no navegador roda nos servidores deles, então `localhost` ali **não é o seu
+computador**: o resultado é `HTTP -1`. Para testar o sistema que roda na sua máquina, escolha um:
+
+- **Simular leitura** (Configurações → Integrações): testa o sistema local sem o Wokwi e sem túnel.
+- **Túnel** (ngrok, cloudflared): `ngrok http 80` mostra um `https://...` que o Wokwi enxerga; use-o em
+  `URL_SERVIDOR` (com a subpasta, se o sistema estiver numa, como `/SystemFluxe/public`).
+- **Site publicado:** a catraca precisa ser criada **nesse** site e o token copiado dele.
+
+Endereços `http://` (sem o "s") funcionam no firmware, para um servidor na rede local de uma ESP32 de verdade.
+
 ## Circuito (o mesmo do Wokwi)
 
 | Peça | Pino da ESP32 |
