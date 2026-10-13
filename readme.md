@@ -93,7 +93,8 @@ As catracas são aparelhos independentes: a ESP32 lê o cartão, entra no **Wi-F
 
 - **API** — `POST /api/iot/acesso` (`{uid}` → `{autorizado, direcao, nome, mensagem}`) e `POST /api/iot/ping`, em `app/controllers/IotController.php`. Autenticam pelo cabeçalho `X-Device-Token` (token da tabela `dispositivos_iot`), não por usuário; as rotas do app (`/api/*`) continuam exigindo o Bearer token de uma pessoa.
 - **Dispositivos e tokens** — pela tela **Configurações → Integrações** (só o administrador da empresa): lista os dispositivos com status Online/Offline (pelo último sinal), cria dispositivos e gera tokens novos. O token inteiro aparece uma única vez.
-- **Firmware e passo a passo** — [`iot/README.md`](iot/README.md) (testar com o circuito do Wokwi pela internet, cadastro de pessoa e cartão, teste com `curl` e o que falta para produção).
+- **Pessoas e cartões** — a aba **Pessoas → Cadastro** (só administrador altera): adicionar pessoa, **vincular cartão** (passe o cartão na catraca e ele aparece sozinho numa lista para escolher, ou digite o UID), ativar/desativar pessoa e cartão, remover cartão e **importar planilha** (CSV; modelo para baixar). Um UID só existe uma vez no sistema todo. Em *Configurações → Integrações* há o **Simular leitura**, que passa um UID por uma catraca pela mesma regra (registra um acesso real; use só para testar).
+- **Firmware e passo a passo** — [`iot/README.md`](iot/README.md) (testar com o circuito do Wokwi pela internet, cadastro de pessoas e cartões, simulação sem aparelho e o que falta para produção).
 
 ## Tela de Configurações
 
@@ -106,7 +107,7 @@ Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configur
 - **Integrações** — dispositivos IoT (acima).
 - **Segurança** — troca de senha e **sessões ativas** reais: lista onde a conta está aberta no site (navegador, IP, último acesso) e "Encerrar" derruba a sessão de verdade na próxima requisição. O aplicativo usa token e não aparece nessa lista. *Autenticação em duas etapas*: marcada "Em breve" (o login do site e do aplicativo ainda não têm segundo passo).
 
-**Banco:** preferências e sessões usam duas tabelas novas (`preferencias_usuario` e `sessoes_usuario`, "Migration 004" no fim de `config/database.sql`). Em um banco que já existe, rode só esse bloco (é seguro rodar de novo). Enquanto ele não for rodado, o sistema continua funcionando com as preferências padrão e sem o controle de sessões.
+**Banco:** preferências e sessões usam duas tabelas novas (`preferencias_usuario` e `sessoes_usuario`, "Migration 004" no fim de `config/database.sql`), e o vínculo de cartões usa `cartoes_nao_cadastrados` ("Migration 005"). Em um banco que já existe, rode só esses blocos (é seguro rodar de novo). Enquanto eles não forem rodados, o sistema continua funcionando: preferências padrão, sem controle de sessões e sem a lista de "cartões lidos".
 
 ## Vídeo "Ver como funciona"
 

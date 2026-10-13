@@ -407,6 +407,32 @@ try {
                                 <i class="bi bi-plus-lg"></i> Adicionar dispositivo
                             </button>
 
+                            <!-- Simular leitura: passa um UID por uma catraca sem precisar da ESP32 -->
+                            <div class="config-bloco simulador" id="blocoSimulador" <?= $dispositivosIot ? '' : 'hidden' ?>>
+                                <h3>Simular leitura</h3>
+                                <p class="config-bloco-desc">Passa um cartão por uma catraca sem precisar do aparelho, pela mesma regra de um acesso
+                                    de verdade. <strong>Registra um acesso real</strong>: ele aparece no painel e nos relatórios.</p>
+                                <form class="config-form" id="formSimulacao" autocomplete="off">
+                                    <div class="campo">
+                                        <label for="simDispositivo">Catraca</label>
+                                        <select id="simDispositivo" name="id">
+                                            <?php foreach ($dispositivosIot as $dispositivo): ?>
+                                                <option value="<?= (int) $dispositivo['id'] ?>"><?= htmlspecialchars($dispositivo['nome']) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="campo">
+                                        <label for="simUid">UID do cartão</label>
+                                        <input type="text" id="simUid" name="uid" maxlength="100" required placeholder="Ex.: 01020304">
+                                    </div>
+                                    <p class="campo-erro" id="msgSimulacao" hidden></p>
+                                    <div class="config-form-acoes">
+                                        <button type="submit" class="btn-secundario"><i class="bi bi-credit-card-2-front"></i> Simular passagem</button>
+                                    </div>
+                                </form>
+                                <div class="resultado-simulacao" id="resultadoSimulacao" role="status" hidden></div>
+                            </div>
+
                             <form class="config-form form-dispositivo" id="formDispositivo" autocomplete="off" hidden>
                                 <div class="campo">
                                     <label for="dispNome">Nome</label>

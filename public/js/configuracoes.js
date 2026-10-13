@@ -356,6 +356,8 @@ function inicializarDispositivos() {
 
     document.getElementById('btnCopiarToken')?.addEventListener('click', copiarToken);
 
+    inicializarSimulador();
+
     const botaoAdicionar = document.getElementById('btnAdicionarDispositivo');
     const form = document.getElementById('formDispositivo');
     if (!botaoAdicionar || !form) return; // só o administrador vê o formulário
@@ -391,8 +393,62 @@ function inicializarDispositivos() {
 
         lista.appendChild(montarItemDispositivo(resultado.dispositivo));
         document.getElementById('dispositivosVazio').hidden = true;
+        adicionarAoSimulador(resultado.dispositivo);
         fecharForm();
         revelarToken(`Dispositivo criado: ${resultado.dispositivo.nome}`, resultado.token);
+    });
+}
+
+// ----- Simular leitura (só administrador) -----
+
+/** Catraca criada agora entra na lista do simulador sem recarregar a página. */
+function adicionarAoSimulador(d) {
+    const select = document.getElementById('simDispositivo');
+    const bloco = document.getElementById('blocoSimulador');
+    if (!select || !bloco) return;
+
+    select.appendChild(new Option(d.nome, d.id));
+    bloco.hidden = false;
+}
+
+function inicializarSimulador() {
+    const form = document.getElementById('formSimulacao');
+    if (!form) return;
+
+    const msg = document.getElementById('msgSimulacao');
+    const caixa = document.getElementById('resultadoSimulacao');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const botao = form.querySelector('button[type="submit"]');
+        mostrarMensagem(msg, '');
+        caixa.hidden = true;
+        botao.disabled = true;
+
+        const resposta = await enviar('/configuracoes/dispositivos/simular', new FormData(form));
+        botao.disabled = false;
+
+        if (!resposta.sucesso) {
+            mostrarMensagem(msg, resposta.mensagem, false);
+            return;
+        }
+
+        const r = resposta.resultado;
+        caixa.className = `resultado-simulacao ${r.autorizado ? 'resultado-ok' : 'resultado-negado'}`;
+        caixa.replaceChildren();
+
+        const titulo = document.createElement('strong');
+        titulo.textContent = r.autorizado
+            ? `${r.nome}: ${r.direcao === 'entrada' ? 'entrada' : 'saída'} liberada${r.repetido ? ' (leitura repetida, não gerou novo registro)' : ''}`
+            : r.mensagem;
+        caixa.appendChild(titulo);
+
+        if (r.motivo === 'cartao_desconhecido') {
+            const dica = document.createElement('p');
+            dica.textContent = `O cartão ${resposta.uid} aparece agora em Pessoas → Cadastro → Vincular cartão.`;
+            caixa.appendChild(dica);
+        }
+        caixa.hidden = false;
     });
 }
 
