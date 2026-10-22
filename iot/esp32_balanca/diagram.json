@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "author": "SICAPDA by FLUXE",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    {
+      "type": "wokwi-hx711",
+      "id": "cell1",
+      "top": -130,
+      "left": 150,
+      "attrs": { "type": "50kg" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledVerde",
+      "top": 150,
+      "left": 220,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledVermelho",
+      "top": 150,
+      "left": 280,
+      "attrs": { "color": "red" }
+    },
+    { "type": "wokwi-resistor", "id": "r1", "top": 110, "left": 200, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r2", "top": 110, "left": 260, "attrs": { "value": "220" } },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnTara",
+      "top": 232.8,
+      "left": -95.8,
+      "rotate": 180,
+      "attrs": { "color": "blue", "bounce": "1" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btnFim",
+      "top": 227,
+      "left": 144,
+      "attrs": { "color": "red" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "cell1:VCC", "esp:3V3", "red", [] ],
+    [ "cell1:GND", "esp:GND.1", "black", [] ],
+    [ "cell1:DT", "esp:D16", "green", [] ],
+    [ "cell1:SCK", "esp:D17", "orange", [] ],
+    [ "esp:D27", "r1:1", "green", [] ],
+    [ "r1:2", "ledVerde:A", "green", [] ],
+    [ "ledVerde:C", "esp:GND.2", "black", [] ],
+    [ "esp:D26", "r2:1", "red", [] ],
+    [ "r2:2", "ledVermelho:A", "red", [] ],
+    [ "ledVermelho:C", "esp:GND.2", "black", [] ],
+    [ "btnTara:1.l", "esp:D32", "blue", [ "h9.6", "v-196.6" ] ],
+    [ "btnTara:2.l", "esp:GND.1", "black", [] ],
+    [ "btnFim:1.l", "esp:D33", "red", [ "h-153.6", "v-158.3" ] ],
+    [ "btnFim:2.l", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}
