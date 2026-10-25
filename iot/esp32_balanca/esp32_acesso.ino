@@ -75,10 +75,34 @@ void piscarEnvio() {
   }
 }
 
-// Peso atual em kg; valores negativos ou sensor ausente são recusados ao enviar.
+// Toda amostra tem prazo: get_units(n)/tare() esperam indefinidamente
+// se o sensor parar de responder no meio da média.
+bool lerMediaBruta(float& media) {
+  const unsigned long prazoMs = 4000;
+  unsigned long inicio = millis();
+  long soma = 0;
+  for (int i = 0; i < AMOSTRAS; i++) {
+    unsigned long decorrido = millis() - inicio;
+    if (decorrido >= prazoMs) return false;
+    unsigned long restante = prazoMs - decorrido;
+    if (!balanca.wait_ready_timeout(restante < 1000 ? restante : 1000)) return false;
+    soma += balanca.read();
+  }
+  media = (float)soma / AMOSTRAS;
+  return true;
+}
+
 float lerPesoKg() {
-  if (!balanca.wait_ready_timeout(1000)) return NAN;
-  return balanca.get_units(AMOSTRAS);
+  float media;
+  if (!lerMediaBruta(media)) return NAN;
+  return (media - balanca.get_offset()) / FATOR_CALIBRACAO;
+}
+
+bool fazerTara() {
+  float media;
+  if (!lerMediaBruta(media)) return false;
+  balanca.set_offset(lroundf(media));
+  return true;
 }
 
 // ----- Wi-Fi e servidor -----
@@ -210,13 +234,22 @@ void tentarEnvioPendente() {
 
 void setup() {
   Serial.begin(115200);
+  delay(200);
+  Serial.println("SICAPDA BALANCA v2 - iniciando setup");
+  Serial.flush();
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BTN_TARA, INPUT_PULLUP);
   pinMode(BTN_FIM, INPUT_PULLUP);
   setStatus(false, false);
 
+  Serial.println("Inicializando HX711: DT=16, SCK=17...");
+  Serial.flush();
   balanca.begin(HX_DT_PIN, HX_SCK_PIN);
+  Serial.println("HX711 configurado. Verificando sinal...");
+  if (!balanca.wait_ready_timeout(1000)) {
+    Serial.println("HX711 sem resposta: confira DT=16, SCK=17, VCC e GND no diagram.json.");
+  }
   balanca.set_scale(FATOR_CALIBRACAO);
   // A tara é explícita: reiniciar com carga não deve apagar o peso.
 
@@ -261,10 +294,14 @@ void loop() {
 
   bool taraAgora = digitalRead(BTN_TARA) == LOW;
   bool fimAgora = digitalRead(BTN_FIM) == LOW;
-  if (taraAgora && !taraAnterior && !temPendente && balanca.wait_ready_timeout(1000)) {
-    balanca.tare();
-    taraFeita = true;
-    Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
+  if (taraAgora && !taraAnterior && !temPendente) {
+    if (fazerTara()) {
+      taraFeita = true;
+      Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
+    } else {
+      taraFeita = false;
+      Serial.println("Tara falhou: HX711 sem resposta. Confira a ligacao do sensor.");
+    }
   }
   if (fimAgora && !fimAnterior) {
     if (temPendente) {
@@ -308,6 +345,8 @@ void loop() {
   // Peso ao vivo no Serial (ajuda a calibrar e a conferir no Wokwi)
   if (millis() - lastLogPeso >= LOG_PESO_MS) {
     lastLogPeso = millis();
-    Serial.printf("Peso atual: %.3f kg\n", lerPesoKg());
+    float peso = lerPesoKg();
+    if (isfinite(peso)) Serial.printf("Peso atual: %.3f kg\n", peso);
+    else Serial.println("HX711 sem resposta: leitura cancelada; confira a ligacao do sensor.");
   }
 }
