@@ -357,6 +357,7 @@ function inicializarDispositivos() {
     document.getElementById('btnCopiarToken')?.addEventListener('click', copiarToken);
 
     inicializarSimulador();
+    inicializarPesagem();
 
     const botaoAdicionar = document.getElementById('btnAdicionarDispositivo');
     const form = document.getElementById('formDispositivo');
@@ -403,8 +404,8 @@ function inicializarDispositivos() {
 
 /** Catraca criada agora entra na lista do simulador sem recarregar a página. */
 function adicionarAoSimulador(d) {
-    const select = document.getElementById('simDispositivo');
-    const bloco = document.getElementById('blocoSimulador');
+    const select = document.getElementById(d.tipo === 'balanca' ? 'pesagemDispositivo' : 'simDispositivo');
+    const bloco = document.getElementById(d.tipo === 'balanca' ? 'blocoBalanca' : 'blocoSimulador');
     if (!select || !bloco) return;
 
     select.appendChild(new Option(d.nome, d.id));
@@ -612,4 +613,22 @@ function inicializarSessoes() {
             mostrarMensagem(msg, resultado.mensagem, true);
         });
     }
+}
+
+function inicializarPesagem() {
+    const form = document.getElementById('formPesagem');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const botao = form.querySelector('[type="submit"]');
+        botao.disabled = true;
+        try {
+            const r = await enviar('/configuracoes/dispositivos/pesagem', new FormData(form));
+            mostrarMensagem(document.getElementById('msgPesagem'), r.mensagem, r.sucesso);
+            if (r.sucesso) {
+                const total = document.querySelector(`[data-peso-refeicao="${r.tipo}"]`);
+                if (total) total.textContent = Number(r.desperdicio_kg).toLocaleString('pt-BR', {minimumFractionDigits: 2}) + ' kg';
+            }
+        } finally { botao.disabled = false; }
+    });
 }

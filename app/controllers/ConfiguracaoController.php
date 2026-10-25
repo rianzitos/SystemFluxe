@@ -319,6 +319,9 @@ class ConfiguracaoController
             $this->responder(false, 'Dispositivo não encontrado.', 404);
         }
 
+        if ($dispositivo['tipo'] === 'balanca') {
+            $this->responder(false, 'Use o formulário de pesagem para esta balança.', 422);
+        }
         $uid = Catraca::normalizarUid((string) ($_POST['uid'] ?? ''));
         if ($uid === '' || strlen($uid) > 100) {
             $this->responder(false, 'Informe o UID do cartão.', 422);
@@ -332,6 +335,26 @@ class ConfiguracaoController
         }
 
         $this->responder(true, $resultado['mensagem'], 200, ['resultado' => $resultado, 'uid' => $uid]);
+    }
+
+    public function registrarPesagem(): void
+    {
+        $this->exigirSessao();
+        $empresaId = $this->exigirAdmin('dispositivos');
+        $dispositivo = (new Dispositivo())->buscarDaEmpresa((int) ($_POST['id'] ?? 0), $empresaId);
+        if (!$dispositivo) {
+            $this->responder(false, 'Balança não encontrada.', 404);
+        }
+        $dispositivo['empresa_id'] = $empresaId;
+        try {
+            $resultado = Balanca::registrar($dispositivo, $_POST);
+        } catch (InvalidArgumentException $e) {
+            $this->responder(false, $e->getMessage(), 422);
+        } catch (PDOException $e) {
+            error_log('SICAPDA pesagem: ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível salvar a pesagem.', 500);
+        }
+        $this->responder(true, $resultado['mensagem'], 200, $resultado);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

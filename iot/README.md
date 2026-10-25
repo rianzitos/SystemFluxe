@@ -213,3 +213,7 @@ alerta estiver ligado, o sino avisa).
 - **Leitor do refeitório:** esta rota trata toda leitura como passagem de portaria (entrada/saída).
   Um leitor que registre *refeição consumida* precisa de um tratamento próprio e hoje não existe.
 - **Não grave tokens reais no Git.** O token do firmware é só um marcador; troque-o no seu computador.
+
+## Balança de desperdício
+
+A integração ESP32 + HX711 está em [`esp32_balanca/README.md`](esp32_balanca/README.md), com migração do banco existente, publicação, configuração no Wokwi e testes. Em Configurações → Integrações, cadastre o tipo **Balança de desperdício**.

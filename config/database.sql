@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS dispositivos_iot (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     empresa_id    INT          NOT NULL,
     nome          VARCHAR(150) NOT NULL,
-    tipo          ENUM('rfid', 'biometria', 'hibrido') NOT NULL DEFAULT 'rfid',
+    tipo          ENUM('rfid', 'biometria', 'hibrido', 'balanca') NOT NULL DEFAULT 'rfid',
     localizacao   VARCHAR(150) NULL,
     token         VARCHAR(64)  NOT NULL UNIQUE,
     status        ENUM('online', 'offline') NOT NULL DEFAULT 'offline',

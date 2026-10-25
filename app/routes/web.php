@@ -166,6 +166,8 @@ if ($uri === '/') {
     (new ConfiguracaoController())->criarDispositivo();
 } elseif ($uri === '/configuracoes/dispositivos/token' && $metodo === 'POST') {
     (new ConfiguracaoController())->regenerarTokenDispositivo();
+} elseif ($uri === '/configuracoes/dispositivos/pesagem' && $metodo === 'POST') {
+    (new ConfiguracaoController())->registrarPesagem();
 } elseif ($uri === '/configuracoes/dispositivos/simular' && $metodo === 'POST') {
     (new ConfiguracaoController())->simularLeitura();
 // Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
