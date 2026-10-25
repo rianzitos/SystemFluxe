@@ -9,7 +9,7 @@
  */
 class Dispositivo
 {
-    public const TIPOS = ['rfid' => 'Cartão RFID', 'biometria' => 'Biometria', 'hibrido' => 'RFID + biometria'];
+    public const TIPOS = ['rfid' => 'Cartão RFID', 'biometria' => 'Biometria', 'hibrido' => 'RFID + biometria', 'balanca' => 'Balança de desperdício'];
 
     /** A ESP32 manda um ping por minuto: sem sinal há mais que isto, o dispositivo conta como offline. */
     public const SEGUNDOS_OFFLINE = 180;

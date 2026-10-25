@@ -139,3 +139,7 @@ O botão **Ver como funciona**, no início da página `/sicapda`, abre um modal 
 ---
 
 © 2026 Fluxe Soluções Inteligentes — Mococa, SP, Brasil
+
+## Balança IoT de desperdício
+
+Em **Configurações → Integrações**, cadastre uma **Balança de desperdício**, copie seu token e configure a ESP32 + HX711. A tela mostra os totais de hoje por refeição e permite testar uma pesagem. Os envios alimentam os dados de desperdício usados pelo sistema, preservando a produção e a previsão existentes. Para atualizar o site já instalado, execute primeiro `config/migrations/006_balanca.sql`. Veja o [passo a passo da balança e do Wokwi](iot/esp32_balanca/README.md).

@@ -12,6 +12,9 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <HX711.h>
+#include <Preferences.h>
+#include <time.h>
+#include <sys/time.h>
 
 // ----- Rede e servidor -----
 const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é esta rede (sem senha); na vida real, o Wi-Fi da empresa
@@ -24,6 +27,8 @@ const char* URL_SERVIDOR = "https://fluxeteam.com.br";
 // Não suba o token de verdade para o GitHub: cole só no seu computador.
 const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 
+const char* TIPO_REFEICAO = "almoco"; // cafe, almoco, jantar ou ceia
+
 // ----- Pinos -----
 #define HX_DT_PIN   16
 #define HX_SCK_PIN  17
@@ -33,8 +38,8 @@ const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 #define BTN_FIM     33   // encerra o turno e envia o desperdício
 
 // ----- Ajustes -----
-// Fator de calibração: com a balança lendo em gramas, ajuste até um peso conhecido bater.
-// No Wokwi, ~420 costuma dar gramas; na célula real, calibre com um peso de referência.
+// Wokwi 50 kg: 21000 unidades / 50 kg = 420 unidades por kg.
+// Na célula real, calibre com um peso conhecido e mantenha a unidade em kg.
 const float FATOR_CALIBRACAO = 420.0;
 const int   AMOSTRAS = 20;                        // leituras por média (mais = mais estável)
 const unsigned long PING_INTERVAL_MS = 60000;     // "estou vivo" a cada 1 minuto (mostra Online nas Configurações)
@@ -49,6 +54,11 @@ unsigned long lastReenvio = 0;
 unsigned long lastLogPeso = 0;
 bool temPendente = false;       // há um valor medido que o servidor ainda não confirmou
 float pendenteKg = 0;
+Preferences memoria;
+String pendenteJson;
+bool fimAnterior = false;
+bool taraAnterior = false;
+bool taraFeita = false;
 
 void setStatus(bool ativo, bool falha) {
   digitalWrite(LED_GREEN, ativo ? HIGH : LOW);
@@ -65,11 +75,10 @@ void piscarEnvio() {
   }
 }
 
-// Peso atual em kg (nunca negativo).
+// Peso atual em kg; valores negativos ou sensor ausente são recusados ao enviar.
 float lerPesoKg() {
-  float gramas = balanca.get_units(AMOSTRAS);
-  if (gramas < 0) gramas = 0;
-  return gramas / 1000.0;
+  if (!balanca.wait_ready_timeout(1000)) return NAN;
+  return balanca.get_units(AMOSTRAS);
 }
 
 // ----- Wi-Fi e servidor -----
@@ -130,7 +139,9 @@ void explicarFalha(int code) {
                   "O Wokwi no navegador NAO enxerga o localhost do seu computador.\n", code);
   } else if (code == 404) {
     Serial.println("HTTP 404: o servidor nao tem essa rota. Confira URL_SERVIDOR (inclusive a subpasta, se houver) e se o codigo novo foi publicado.");
-  } else if (code == 403 || code == 406) {
+  } else if (code == 403) {
+    Serial.println("HTTP 403: confira se o token pertence a uma BALANCA; consulte tambem o firewall do servidor.");
+  } else if (code == 406) {
     Serial.printf("HTTP %d: o firewall do servidor bloqueou o pedido.\n", code);
   } else if (code == 405 || code == 422) {
     Serial.printf("HTTP %d: pedido recusado pelo servidor (valor invalido?).\n", code);
@@ -144,16 +155,24 @@ void sendPing() {
   String response;
   int code = postJson("ping", "{}", response);
   Serial.printf("Ping: HTTP %d\n", code);
-  if (code != 200) explicarFalha(code);
+  if (code != 200) { explicarFalha(code); return; }
+  JsonDocument dados;
+  if (!deserializeJson(dados, response)) {
+    long agora = dados["epoch"] | 0L;
+    if (agora > 1700000000) {
+      timeval tv = {agora, 0};
+      settimeofday(&tv, nullptr);
+    }
+  }
 }
 
 // Envia o desperdício (em kg) ao servidor. Só devolve true se o servidor confirmar a gravação.
-bool enviarDesperdicio(float kg) {
+bool enviarDesperdicio() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Sem Wi-Fi: envio adiado");
     return false;
   }
-     String body = "{\"desperdicio_kg\":" + String(kg, 3) + ",\"tipo\":\"" + TIPO_REFEICAO + "\"}";
+  String body = pendenteJson;
 
   String response;
   int code = postJson("desperdicio", body, response);
@@ -177,8 +196,10 @@ void tentarEnvioPendente() {
   if (!temPendente) return;
   Serial.printf("Enviando %.3f kg...\n", pendenteKg);
   piscarEnvio();
-  if (enviarDesperdicio(pendenteKg)) {
+  if (enviarDesperdicio()) {
     Serial.printf("Desperdicio de %.3f kg registrado no servidor\n", pendenteKg);
+    memoria.remove("pendente");
+    pendenteJson = "";
     temPendente = false;
     setStatus(true, false);
   } else {
@@ -197,7 +218,7 @@ void setup() {
 
   balanca.begin(HX_DT_PIN, HX_SCK_PIN);
   balanca.set_scale(FATOR_CALIBRACAO);
-  balanca.tare();
+  // A tara é explícita: reiniciar com carga não deve apagar o peso.
 
   // Resumo da configuração, para conferir de relance (o token aparece só pelas pontas).
   int tamanhoToken = strlen(TOKEN_DISPOSITIVO);
@@ -206,10 +227,21 @@ void setup() {
                 TOKEN_DISPOSITIVO + (tamanhoToken > 4 ? tamanhoToken - 4 : 0));
   if (tamanhoToken != 64) Serial.println("ATENCAO: o token deve ter exatamente 64 caracteres. Copie de novo da caixa amarela (nao da lista).");
 
+  setenv("TZ", "BRT3", 1);
+  tzset();
+  memoria.begin("sicapda-balanca", false);
+  pendenteJson = memoria.getString("pendente", "");
+  if (pendenteJson.length()) {
+    JsonDocument salvo;
+    if (!deserializeJson(salvo, pendenteJson)) {
+      pendenteKg = salvo["desperdicio_kg"] | 0.0f;
+      temPendente = true;
+    }
+  }
   connectWifi();
   sendPing();
   lastPing = millis();
-  setStatus(true, false);   // LED verde aceso = sistema ativo
+  setStatus(true, temPendente);
   Serial.println("Balanca pronta. TARA = zerar | ENCERRAR TURNO = enviar desperdicio");
 }
 
@@ -227,26 +259,51 @@ void loop() {
     tentarEnvioPendente();
   }
 
-  // Botão TARA: zera a balança
-  if (digitalRead(BTN_TARA) == LOW) {
+  bool taraAgora = digitalRead(BTN_TARA) == LOW;
+  bool fimAgora = digitalRead(BTN_FIM) == LOW;
+  if (taraAgora && !taraAnterior && !temPendente && balanca.wait_ready_timeout(1000)) {
     balanca.tare();
-    Serial.println("Balanca zerada");
-    delay(400);   // evita repetir enquanto o botão está apertado
+    taraFeita = true;
+    Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
   }
-
-  // Botão ENCERRAR TURNO: mede e envia
-  if (digitalRead(BTN_FIM) == LOW) {
+  if (fimAgora && !fimAnterior) {
     if (temPendente) {
-      Serial.println("Ja existe um envio pendente: aguarde a confirmacao do servidor");
+      Serial.println("Aguarde o envio pendente antes de uma nova pesagem.");
+    } else if (!taraFeita) {
+      Serial.println("Faca a tara com o recipiente vazio antes de pesar.");
+    } else if (time(nullptr) < 1700000000) {
+      Serial.println("Aguarde um ping confirmado para sincronizar a data.");
     } else {
-      pendenteKg = lerPesoKg();
-      temPendente = true;
-      Serial.printf("Turno encerrado. Desperdicio medido: %.3f kg\n", pendenteKg);
-      lastReenvio = millis();
-      tentarEnvioPendente();
+      float peso = lerPesoKg();
+      if (!isfinite(peso) || peso < 0 || peso > 50) {
+        Serial.println("Peso invalido ou sensor indisponivel (capacidade: 50 kg).");
+      } else {
+        time_t agora = time(nullptr);
+        tm horario;
+        localtime_r(&agora, &horario);
+        char data[11];
+        strftime(data, sizeof(data), "%Y-%m-%d", &horario);
+        JsonDocument registro;
+        registro["desperdicio_kg"] = roundf(peso * 100) / 100;
+        registro["tipo"] = TIPO_REFEICAO;
+        registro["data"] = data;
+        String json;
+        serializeJson(registro, json);
+        if (memoria.putString("pendente", json) == 0) {
+          Serial.println("Falha ao guardar pesagem. Tente novamente.");
+        } else {
+          pendenteJson = json;
+          pendenteKg = peso;
+          temPendente = true;
+          lastReenvio = millis();
+          tentarEnvioPendente();
+        }
+      }
     }
-    delay(600);
   }
+  taraAnterior = taraAgora;
+  fimAnterior = fimAgora;
+  delay(30); // debounce; manter pressionado não cria novos envios
 
   // Peso ao vivo no Serial (ajuda a calibrar e a conferir no Wokwi)
   if (millis() - lastLogPeso >= LOG_PESO_MS) {

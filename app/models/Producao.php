@@ -90,11 +90,11 @@ class Producao
     }
 
     /**
-     * Grava o desperdício (kg) de uma refeição no dia de hoje. Cria a linha do dia se ainda não
+     * Grava o desperdício (kg) de uma refeição na data informada (padrão: hoje). Cria a linha do dia se ainda não
      * existir (previsto e produzido ficam em 0 e são preenchidos por quem os informa).
      * Sobrescreve, não soma: o envio da balança pode ser repetido sem contar em dobro.
      */
-    public function registrarDesperdicio(int $empresaId, string $tipo, float $kg): void
+    public function registrarDesperdicio(int $empresaId, string $tipo, float $kg, ?string $data = null): void
     {
         $stmt = $this->db->prepare(
             'INSERT INTO producao_refeicoes
@@ -102,6 +102,6 @@ class Producao
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE quantidade_desperdicada_kg = VALUES(quantidade_desperdicada_kg)'
         );
-        $stmt->execute([$empresaId, date('Y-m-d'), $tipo, round($kg, 2), date('Y-m-d H:i:s')]);
+        $stmt->execute([$empresaId, $data ?? date('Y-m-d'), $tipo, round($kg, 2), date('Y-m-d H:i:s')]);
     }
 }

@@ -77,6 +77,9 @@ $periodosRelatorio = ['mes' => 'Este mês', '7' => 'Últimos 7 dias', '30' => '�
 
 // Dispositivos IoT da empresa (tabela dispositivos_iot): status vem do último sinal (ping) da ESP32.
 $dispositivosIot = $empresaId > 0 ? (new Dispositivo())->listar($empresaId) : [];
+$balancas = array_filter($dispositivosIot, fn($d) => $d['tipo'] === 'balanca');
+$catracas = array_filter($dispositivosIot, fn($d) => $d['tipo'] !== 'balanca');
+$pesagensHoje = $empresaId > 0 ? Balanca::hoje($empresaId) : [];
 
 // Sessões ativas do site (tabela sessoes_usuario). null = a tabela ainda não existe neste banco.
 try {
@@ -365,7 +368,7 @@ try {
                     <!-- ---------- INTEGRAÇÕES ---------- -->
                     <section class="config-painel" data-aba-painel="integracoes">
                         <h2>Dispositivos IoT</h2>
-                        <p class="config-painel-desc">Catracas e leitores RFID vinculados a este sistema. Cada um usa um token próprio para enviar os acessos.</p>
+                        <p class="config-painel-desc">Catracas, leitores RFID e balanças vinculados à empresa. Cada dispositivo usa seu próprio token para enviar acessos ou pesagens.</p>
 
                         <div class="lista-dispositivos" id="listaDispositivos">
                             <?php foreach ($dispositivosIot as $dispositivo): ?>
@@ -392,6 +395,19 @@ try {
                         </div>
                         <p class="config-nota" id="dispositivosVazio" <?= $dispositivosIot ? 'hidden' : '' ?>>Nenhum dispositivo cadastrado ainda.</p>
 
+                        <div class="config-bloco">
+                            <h3><i class="bi bi-speedometer2"></i> Desperdício de hoje</h3>
+                            <p class="config-bloco-desc">Totais em kg por refeição, em <?= date('d/m/Y') ?>. Atualize a página após o envio da balança para consultar. Os valores alimentam a análise de desperdício.</p>
+                            <div class="lista-dispositivos">
+                                <?php foreach (Producao::TIPOS as $tipo => $rotulo): ?>
+                                    <div class="item-dispositivo">
+                                        <strong><?= htmlspecialchars($rotulo) ?></strong>
+                                        <span data-peso-refeicao="<?= $tipo ?>"><?= isset($pesagensHoje[$tipo]) ? number_format((float) $pesagensHoje[$tipo], 2, ',', '.') . ' kg' : 'Sem registro' ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
                         <!-- Token inteiro: aparece só ao criar ou gerar de novo, e some ao recarregar a página -->
                         <div class="token-revelado" id="tokenRevelado" role="status" hidden>
                             <strong id="tokenReveladoTitulo">Token do dispositivo</strong>
@@ -408,7 +424,7 @@ try {
                             </button>
 
                             <!-- Simular leitura: passa um UID por uma catraca sem precisar da ESP32 -->
-                            <div class="config-bloco simulador" id="blocoSimulador" <?= $dispositivosIot ? '' : 'hidden' ?>>
+                            <div class="config-bloco simulador" id="blocoSimulador" <?= $catracas ? '' : 'hidden' ?>>
                                 <h3>Simular leitura</h3>
                                 <p class="config-bloco-desc">Passa um cartão por uma catraca sem precisar do aparelho, pela mesma regra de um acesso
                                     de verdade. <strong>Registra um acesso real</strong>: ele aparece no painel e nos relatórios.</p>
@@ -416,7 +432,7 @@ try {
                                     <div class="campo">
                                         <label for="simDispositivo">Catraca</label>
                                         <select id="simDispositivo" name="id">
-                                            <?php foreach ($dispositivosIot as $dispositivo): ?>
+                                            <?php foreach ($catracas as $dispositivo): ?>
                                                 <option value="<?= (int) $dispositivo['id'] ?>"><?= htmlspecialchars($dispositivo['nome']) ?></option>
                                             <?php endforeach; ?>
                                         </select>
@@ -433,6 +449,22 @@ try {
                                 <div class="resultado-simulacao" id="resultadoSimulacao" role="status" hidden></div>
                             </div>
 
+                            <div class="config-bloco simulador" id="blocoBalanca" <?= $balancas ? '' : 'hidden' ?>>
+                                <h3>Testar pesagem</h3>
+                                <p class="config-bloco-desc">Registra o total real de desperdício de hoje, como no botão Encerrar turno do Wokwi. <strong>Substitui o total da refeição para toda a empresa</strong>, inclusive se houver mais de uma balança. Não soma pesagens individuais nem altera o status de conexão.</p>
+                                <form class="config-form" id="formPesagem">
+                                    <div class="campo"><label for="pesagemDispositivo">Balança</label><select id="pesagemDispositivo" name="id" required>
+                                        <?php foreach ($balancas as $d): ?><option value="<?= (int) $d['id'] ?>"><?= htmlspecialchars($d['nome']) ?></option><?php endforeach; ?>
+                                    </select></div>
+                                    <div class="campo"><label for="pesagemTipo">Refeição</label><select id="pesagemTipo" name="tipo">
+                                        <?php foreach (Producao::TIPOS as $tipo => $rotulo): ?><option value="<?= $tipo ?>"><?= htmlspecialchars($rotulo) ?></option><?php endforeach; ?>
+                                    </select></div>
+                                    <div class="campo"><label for="pesagemKg">Total de desperdício (kg)</label><input id="pesagemKg" name="desperdicio_kg" type="number" min="0" max="100000" step="0.01" required placeholder="Ex.: 2,50"></div>
+                                    <p class="campo-erro" id="msgPesagem" role="status" hidden></p>
+                                    <div class="config-form-acoes"><button type="submit" class="btn-secundario"><i class="bi bi-check-lg"></i> Registrar total</button></div>
+                                </form>
+                                <p class="config-nota">No Wokwi: use o token de uma balança, escolha a refeição no firmware, faça a tara com o recipiente vazio e pressione Encerrar turno após pesar.</p>
+                            </div>
                             <form class="config-form form-dispositivo" id="formDispositivo" autocomplete="off" hidden>
                                 <div class="campo">
                                     <label for="dispNome">Nome</label>

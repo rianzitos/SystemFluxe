@@ -65,11 +65,14 @@ class IotController
     private function ping(array $dispositivo): never
     {
         (new Dispositivo())->registrarPing((int) $dispositivo['id']);
-        Api::json(['hora' => date('Y-m-d H:i:s')]);
+        Api::json(['hora' => date('Y-m-d H:i:s'), 'epoch' => time()]);
     }
 
     private function acesso(array $dispositivo): never
     {
+        if ($dispositivo['tipo'] === 'balanca') {
+            Api::erro(403, 'Uma balança não registra passagens de cartão.');
+        }
         $corpo = Api::corpo();
         $uid = Catraca::normalizarUid((string) ($corpo['uid'] ?? ''));
         if ($uid === '' || strlen($uid) > 100) {
@@ -91,25 +94,12 @@ class IotController
             Api::erro(403, 'Este dispositivo não é uma balança.');
         }
 
-        $corpo = Api::corpo();
-
-        $kg = filter_var($corpo['desperdicio_kg'] ?? null, FILTER_VALIDATE_FLOAT);
-        if ($kg === false || $kg < 0 || $kg > 100000) {
-            Api::erro(422, 'Informe um desperdicio_kg válido.');
+        try {
+            $resultado = Balanca::registrar($dispositivo, Api::corpo());
+        } catch (InvalidArgumentException $e) {
+            Api::erro(422, $e->getMessage());
         }
-
-        $tipo = (string) ($corpo['tipo'] ?? '');
-        if (!in_array($tipo, ['cafe', 'almoco', 'jantar', 'ceia'], true)) {
-            Api::erro(422, 'Tipo de refeição inválido.');
-        }
-
         (new Dispositivo())->registrarPing((int) $dispositivo['id']);
-
-        // A empresa vem do dispositivo autenticado, nunca do corpo do pedido.
-        (new Producao())->registrarDesperdicio((int) $dispositivo['empresa_id'], $tipo, (float) $kg);
-        Api::json([
-            'sucesso'  => true,
-            'mensagem' => "Desperdício de {$kg} kg registrado ({$tipo}).",
-        ]);
+        Api::json($resultado);
     }
 }
