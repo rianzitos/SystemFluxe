@@ -51,3 +51,7 @@ Para compilar com PlatformIO instalado: `pio run -d iot/esp32_balanca`. O projet
 ### Serial parado em `entry 0x400805dc`
 
 As linhas `rst`, `load` e `entry` são do boot do ESP32, não da aplicação. Use o sketch atualizado e copie também `libraries.txt` (HX711 0.7.5 / ArduinoJson 7.4.2) e `diagram.json`. Após iniciar deve aparecer `SICAPDA BALANCA v2 - iniciando setup`, antes da inicialização do sensor ou da conexão Wi-Fi. Se essa mensagem não aparece, confira se substituiu o sketch principal do projeto e está vendo o Serial correto a 115200 baud. Se parar em `Inicializando HX711`, confira a biblioteca selecionada. Se mostrar `HX711 sem resposta`, confira DT/GPIO16, SCK/GPIO17, VCC e GND. Tara e médias agora têm prazo de 4 segundos, com cancelamento em vez de espera indefinida. O relógio das mensagens é o tempo simulado; confira também a velocidade da simulação.
+
+### Ligações da ESP32 DevKit V1 no Wokwi
+
+Nesta placa, GPIO16 se chama **RX2** no circuito e GPIO17 se chama **TX2**. Portanto, o `diagram.json` usa `cell1:DT → esp:RX2` e `cell1:SCK → esp:TX2`. Os terminais `esp:D16` e `esp:D17` não existem neste componente. No firmware, mantenha os números 16 e 17. Copie o diagrama atualizado ou refaça essas duas ligações antes de iniciar a simulação.

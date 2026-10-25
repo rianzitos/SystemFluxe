@@ -30,8 +30,8 @@ const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 const char* TIPO_REFEICAO = "almoco"; // cafe, almoco, jantar ou ceia
 
 // ----- Pinos -----
-#define HX_DT_PIN   16
-#define HX_SCK_PIN  17
+#define HX_DT_PIN   16   // terminal RX2 da ESP32 DevKit V1 no Wokwi
+#define HX_SCK_PIN  17   // terminal TX2 da ESP32 DevKit V1 no Wokwi
 #define LED_GREEN   27   // sistema ativo (pisca ao enviar)
 #define LED_RED     26   // falha no envio / envio pendente
 #define BTN_TARA    32   // zera a balança (recipiente vazio)
