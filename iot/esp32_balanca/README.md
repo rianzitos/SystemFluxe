@@ -11,7 +11,7 @@ ESP32 + HX711, seguindo o circuito em `diagram.json` e o firmware `esp32_acesso.
 
 ## Wokwi
 
-1. Crie um projeto ESP32. Copie o conteúdo de `esp32_acesso.ino` para o sketch principal, `diagram.json` para o circuito e as duas bibliotecas de `libraries.txt`.
+1. Crie um projeto ESP32. Copie o conteúdo de `esp32_acesso.ino` para o sketch principal, `diagram.json` para o circuito e as duas bibliotecas de `libraries.txt`. O nome no gerenciador é **HX711 Arduino Library**, de Bogdan Necula (bogde), e não apenas HX711.
 2. Ajuste `URL_SERVIDOR`, `TOKEN_DISPOSITIVO` e `TIPO_REFEICAO` (`cafe`, `almoco`, `jantar` ou `ceia`). O token deve ser de uma balança deste mesmo site. Nunca publique um token real no Git.
 3. Inicie a simulação e aguarde `Ping: HTTP 200`. O ping sincroniza a data com o servidor, no fuso de São Paulo. O Wokwi na nuvem precisa de um endereço acessível; não alcança o localhost desta máquina.
 4. Com a célula em **0 kg** (ou apenas o recipiente), pressione o botão azul **TARA**. Ajuste o peso da célula para **2,5 kg** e confira aproximadamente `2.500 kg` no Serial.
