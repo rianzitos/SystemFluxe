@@ -11,7 +11,7 @@ ESP32 + HX711, seguindo o circuito em `diagram.json` e o firmware `esp32_acesso.
 
 ## Wokwi
 
-1. Crie um projeto ESP32. Copie o conteúdo de `esp32_acesso.ino` para o sketch principal, `diagram.json` para o circuito e as duas bibliotecas de `libraries.txt`.
+1. Crie um projeto ESP32. Copie o conteúdo de `esp32_acesso.ino` para o sketch principal, `diagram.json` para o circuito e as duas bibliotecas de `libraries.txt`. O nome no gerenciador é **HX711 Arduino Library**, de Bogdan Necula (bogde), e não apenas HX711.
 2. Ajuste `URL_SERVIDOR`, `TOKEN_DISPOSITIVO` e `TIPO_REFEICAO` (`cafe`, `almoco`, `jantar` ou `ceia`). O token deve ser de uma balança deste mesmo site. Nunca publique um token real no Git.
 3. Inicie a simulação e aguarde `Ping: HTTP 200`. O ping sincroniza a data com o servidor, no fuso de São Paulo. O Wokwi na nuvem precisa de um endereço acessível; não alcança o localhost desta máquina.
 4. Com a célula em **0 kg** (ou apenas o recipiente), pressione o botão azul **TARA**. Ajuste o peso da célula para **2,5 kg** e confira aproximadamente `2.500 kg` no Serial.
@@ -47,3 +47,19 @@ python3 tests/balanca_http.py
 O teste cria e apaga empresas temporárias; execute apenas no banco de desenvolvimento. Verifica gravação/reenvio, datas, validação, isolamento entre empresas, CSRF, cadastro, revogação e restrição de tipo. Não substitui o teste do circuito no Wokwi.
 
 Para compilar com PlatformIO instalado: `pio run -d iot/esp32_balanca`. O projeto fixa ESP32 6.10.0, HX711 0.7.5 e ArduinoJson 7.4.2. Nesta implementação, a tentativa de compilação foi bloqueada por HTTP 403 no registro do PlatformIO; a compilação e a simulação física ainda precisam ser confirmadas no seu ambiente/Wokwi.
+
+### Serial parado em `entry 0x400805dc`
+
+As linhas `rst`, `load` e `entry` são do boot do ESP32, não da aplicação. Use o sketch atualizado e copie também `libraries.txt` (HX711 0.7.5 / ArduinoJson 7.4.2) e `diagram.json`. Após iniciar deve aparecer `SICAPDA BALANCA v3 - botoes com leitura independente`, antes da inicialização do sensor ou da conexão Wi-Fi. Se essa mensagem não aparece, confira se substituiu o sketch principal do projeto e está vendo o Serial correto a 115200 baud. Se parar em `Inicializando HX711`, confira a biblioteca selecionada. Se mostrar `HX711 sem resposta`, confira DT/GPIO16, SCK/GPIO17, VCC e GND. Tara e médias agora têm prazo de 4 segundos, com cancelamento em vez de espera indefinida. O relógio das mensagens é o tempo simulado; confira também a velocidade da simulação.
+
+### Ligações da ESP32 DevKit V1 no Wokwi
+
+Nesta placa, GPIO16 se chama **RX2** no circuito e GPIO17 se chama **TX2**. Portanto, o `diagram.json` usa `cell1:DT → esp:RX2` e `cell1:SCK → esp:TX2`. Os terminais `esp:D16` e `esp:D17` não existem neste componente. No firmware, mantenha os números 16 e 17. Copie o diagrama atualizado ou refaça essas duas ligações antes de iniciar a simulação.
+
+### Cliques nos botões
+
+O firmware v3 lê os dois botões em uma tarefa FreeRTOS separada a cada 5 ms, com debounce de 30 ms. Assim, a média de peso e o HTTP não impedem a detecção do clique. A tarefa entrega eventos ao loop (fila de até oito cliques); cada pressionamento gera uma ação e manter segurado não repete. A execução pode aguardar a medição ou requisição atual terminar. Não é necessário instalar biblioteca adicional: FreeRTOS faz parte do ESP32.
+
+Após aparecer `Botoes ativos`, clique em TARA com o recipiente vazio e aguarde `Botao TARA detectado` / `Tara feita`. Adicione peso e clique em ENCERRAR TURNO; deve aparecer `Botao ENCERRAR TURNO detectado`, seguido do resultado do envio. Mantenha o recipiente parado até a confirmação. Se o evento não aparecer, confira `btnTara:1.l → esp:D32`, `btnFim:1.l → esp:D33` e os terminais `2.l` de ambos no GND. Os pinos GPIO32/33 usam INPUT_PULLUP.
+
+Teste opcional da lógica de cliques no computador: `python3 tests/balanca_botoes.py` (requer g++). Ele simula clique rápido, ruído, botão segurado e eventos durante uma espera do loop; não substitui validação do firmware completo no Wokwi.

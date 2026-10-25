@@ -15,6 +15,9 @@
 #include <Preferences.h>
 #include <time.h>
 #include <sys/time.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
 
 // ----- Rede e servidor -----
 const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é esta rede (sem senha); na vida real, o Wi-Fi da empresa
@@ -30,8 +33,8 @@ const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 const char* TIPO_REFEICAO = "almoco"; // cafe, almoco, jantar ou ceia
 
 // ----- Pinos -----
-#define HX_DT_PIN   16
-#define HX_SCK_PIN  17
+#define HX_DT_PIN   16   // terminal RX2 da ESP32 DevKit V1 no Wokwi
+#define HX_SCK_PIN  17   // terminal TX2 da ESP32 DevKit V1 no Wokwi
 #define LED_GREEN   27   // sistema ativo (pisca ao enviar)
 #define LED_RED     26   // falha no envio / envio pendente
 #define BTN_TARA    32   // zera a balança (recipiente vazio)
@@ -56,8 +59,52 @@ bool temPendente = false;       // há um valor medido que o servidor ainda não
 float pendenteKg = 0;
 Preferences memoria;
 String pendenteJson;
-bool fimAnterior = false;
-bool taraAnterior = false;
+QueueHandle_t eventosBotoes = nullptr;
+const uint8_t EVENTO_TARA = 1;
+const uint8_t EVENTO_FIM = 2;
+
+// INICIO DEBOUNCE: lógica independente para os testes de botões.
+struct EstadoBotao {
+  bool candidato;
+  bool estavel;
+  unsigned long mudouEm;
+};
+
+// Protótipo explícito para o pré-processador de sketches Arduino.
+bool detectarPressionamento(EstadoBotao& botao, bool nivelAlto, unsigned long agora);
+
+bool detectarPressionamento(EstadoBotao& botao, bool nivelAlto, unsigned long agora) {
+  if (nivelAlto != botao.candidato) {
+    botao.candidato = nivelAlto;
+    botao.mudouEm = agora;
+  }
+  if (nivelAlto != botao.estavel && agora - botao.mudouEm >= 30) {
+    botao.estavel = nivelAlto;
+    return !nivelAlto; // INPUT_PULLUP: LOW significa botão pressionado.
+  }
+  return false;
+}
+// FIM DEBOUNCE
+
+// Esta tarefa continua lendo os GPIOs durante a média do HX711 e o HTTP.
+// Só o loop principal lê a balança, grava na memória ou faz pedidos ao site.
+void monitorarBotoes(void*) {
+  EstadoBotao tara = {true, true, 0};
+  EstadoBotao fim = {true, true, 0};
+  for (;;) {
+    unsigned long agora = millis();
+    if (detectarPressionamento(tara, digitalRead(BTN_TARA) == HIGH, agora)) {
+      uint8_t evento = EVENTO_TARA;
+      xQueueSend(eventosBotoes, &evento, 0);
+    }
+    if (detectarPressionamento(fim, digitalRead(BTN_FIM) == HIGH, agora)) {
+      uint8_t evento = EVENTO_FIM;
+      xQueueSend(eventosBotoes, &evento, 0);
+    }
+    vTaskDelay(pdMS_TO_TICKS(5));
+  }
+}
+
 bool taraFeita = false;
 
 void setStatus(bool ativo, bool falha) {
@@ -75,10 +122,34 @@ void piscarEnvio() {
   }
 }
 
-// Peso atual em kg; valores negativos ou sensor ausente são recusados ao enviar.
+// Toda amostra tem prazo: get_units(n)/tare() esperam indefinidamente
+// se o sensor parar de responder no meio da média.
+bool lerMediaBruta(float& media) {
+  const unsigned long prazoMs = 4000;
+  unsigned long inicio = millis();
+  long soma = 0;
+  for (int i = 0; i < AMOSTRAS; i++) {
+    unsigned long decorrido = millis() - inicio;
+    if (decorrido >= prazoMs) return false;
+    unsigned long restante = prazoMs - decorrido;
+    if (!balanca.wait_ready_timeout(restante < 1000 ? restante : 1000)) return false;
+    soma += balanca.read();
+  }
+  media = (float)soma / AMOSTRAS;
+  return true;
+}
+
 float lerPesoKg() {
-  if (!balanca.wait_ready_timeout(1000)) return NAN;
-  return balanca.get_units(AMOSTRAS);
+  float media;
+  if (!lerMediaBruta(media)) return NAN;
+  return (media - balanca.get_offset()) / FATOR_CALIBRACAO;
+}
+
+bool fazerTara() {
+  float media;
+  if (!lerMediaBruta(media)) return false;
+  balanca.set_offset(lroundf(media));
+  return true;
 }
 
 // ----- Wi-Fi e servidor -----
@@ -210,13 +281,22 @@ void tentarEnvioPendente() {
 
 void setup() {
   Serial.begin(115200);
+  delay(200);
+  Serial.println("SICAPDA BALANCA v3 - botoes com leitura independente");
+  Serial.flush();
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BTN_TARA, INPUT_PULLUP);
   pinMode(BTN_FIM, INPUT_PULLUP);
   setStatus(false, false);
 
+  Serial.println("Inicializando HX711: DT=16, SCK=17...");
+  Serial.flush();
   balanca.begin(HX_DT_PIN, HX_SCK_PIN);
+  Serial.println("HX711 configurado. Verificando sinal...");
+  if (!balanca.wait_ready_timeout(1000)) {
+    Serial.println("HX711 sem resposta: confira DT=16, SCK=17, VCC e GND no diagram.json.");
+  }
   balanca.set_scale(FATOR_CALIBRACAO);
   // A tara é explícita: reiniciar com carga não deve apagar o peso.
 
@@ -242,7 +322,14 @@ void setup() {
   sendPing();
   lastPing = millis();
   setStatus(true, temPendente);
-  Serial.println("Balanca pronta. TARA = zerar | ENCERRAR TURNO = enviar desperdicio");
+  eventosBotoes = xQueueCreate(8, sizeof(uint8_t));
+  if (!eventosBotoes || xTaskCreate(monitorarBotoes, "botoes", 2048, nullptr, 1, nullptr) != pdPASS) {
+    Serial.println("ERRO: nao foi possivel iniciar os botoes. Reinicie a ESP32.");
+    setStatus(false, true);
+  } else {
+    Serial.println("Botoes ativos: TARA = GPIO32 | ENCERRAR TURNO = GPIO33.");
+    Serial.println("Balanca pronta. TARA = zerar | ENCERRAR TURNO = enviar desperdicio");
+  }
 }
 
 void loop() {
@@ -259,55 +346,66 @@ void loop() {
     tentarEnvioPendente();
   }
 
-  bool taraAgora = digitalRead(BTN_TARA) == LOW;
-  bool fimAgora = digitalRead(BTN_FIM) == LOW;
-  if (taraAgora && !taraAnterior && !temPendente && balanca.wait_ready_timeout(1000)) {
-    balanca.tare();
-    taraFeita = true;
-    Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
-  }
-  if (fimAgora && !fimAnterior) {
-    if (temPendente) {
-      Serial.println("Aguarde o envio pendente antes de uma nova pesagem.");
-    } else if (!taraFeita) {
-      Serial.println("Faca a tara com o recipiente vazio antes de pesar.");
-    } else if (time(nullptr) < 1700000000) {
-      Serial.println("Aguarde um ping confirmado para sincronizar a data.");
-    } else {
-      float peso = lerPesoKg();
-      if (!isfinite(peso) || peso < 0 || peso > 50) {
-        Serial.println("Peso invalido ou sensor indisponivel (capacidade: 50 kg).");
+  uint8_t evento;
+  if (eventosBotoes && xQueueReceive(eventosBotoes, &evento, 0) == pdTRUE) {
+    if (evento == EVENTO_TARA) {
+      Serial.println("Botao TARA detectado.");
+      if (temPendente) {
+        Serial.println("Aguarde confirmar o envio pendente antes de fazer a tara.");
       } else {
-        time_t agora = time(nullptr);
-        tm horario;
-        localtime_r(&agora, &horario);
-        char data[11];
-        strftime(data, sizeof(data), "%Y-%m-%d", &horario);
-        JsonDocument registro;
-        registro["desperdicio_kg"] = roundf(peso * 100) / 100;
-        registro["tipo"] = TIPO_REFEICAO;
-        registro["data"] = data;
-        String json;
-        serializeJson(registro, json);
-        if (memoria.putString("pendente", json) == 0) {
-          Serial.println("Falha ao guardar pesagem. Tente novamente.");
+        if (fazerTara()) {
+          taraFeita = true;
+          Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
         } else {
-          pendenteJson = json;
-          pendenteKg = peso;
-          temPendente = true;
-          lastReenvio = millis();
-          tentarEnvioPendente();
+          taraFeita = false;
+          Serial.println("Tara falhou: HX711 sem resposta. Confira a ligacao do sensor.");
+        }
+      }
+    }
+    if (evento == EVENTO_FIM) {
+      Serial.println("Botao ENCERRAR TURNO detectado.");
+      if (temPendente) {
+        Serial.println("Aguarde o envio pendente antes de uma nova pesagem.");
+      } else if (!taraFeita) {
+        Serial.println("Faca a tara com o recipiente vazio antes de pesar.");
+      } else if (time(nullptr) < 1700000000) {
+        Serial.println("Aguarde um ping confirmado para sincronizar a data.");
+      } else {
+        float peso = lerPesoKg();
+        if (!isfinite(peso) || peso < 0 || peso > 50) {
+          Serial.println("Peso invalido ou sensor indisponivel (capacidade: 50 kg).");
+        } else {
+          time_t agora = time(nullptr);
+          tm horario;
+          localtime_r(&agora, &horario);
+          char data[11];
+          strftime(data, sizeof(data), "%Y-%m-%d", &horario);
+          JsonDocument registro;
+          registro["desperdicio_kg"] = roundf(peso * 100) / 100;
+          registro["tipo"] = TIPO_REFEICAO;
+          registro["data"] = data;
+          String json;
+          serializeJson(registro, json);
+          if (memoria.putString("pendente", json) == 0) {
+            Serial.println("Falha ao guardar pesagem. Tente novamente.");
+          } else {
+            pendenteJson = json;
+            pendenteKg = peso;
+            temPendente = true;
+            lastReenvio = millis();
+            tentarEnvioPendente();
+          }
         }
       }
     }
   }
-  taraAnterior = taraAgora;
-  fimAnterior = fimAgora;
-  delay(30); // debounce; manter pressionado não cria novos envios
+  delay(5); // a tarefa de botões cuida do debounce, inclusive durante HTTP/leitura
 
   // Peso ao vivo no Serial (ajuda a calibrar e a conferir no Wokwi)
   if (millis() - lastLogPeso >= LOG_PESO_MS) {
     lastLogPeso = millis();
-    Serial.printf("Peso atual: %.3f kg\n", lerPesoKg());
+    float peso = lerPesoKg();
+    if (isfinite(peso)) Serial.printf("Peso atual: %.3f kg\n", peso);
+    else Serial.println("HX711 sem resposta: leitura cancelada; confira a ligacao do sensor.");
   }
 }
