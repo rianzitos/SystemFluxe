@@ -1,4 +1,4 @@
-// SICAPDA by FLUXE — Balança de desperdício: ESP32 + HX711 (célula de carga) + 2 LEDs + 2 botões
+// SICAPDA by FLUXE — Balança de desperdício: ESP32 + HX711 (célula de carga) + LCD I2C + 2 LEDs + 3 botões
 // Circuito simulado no Wokwi, seguindo a mesma estrutura da catraca RFID.
 //
 // Fluxo: durante o turno o desperdício é colocado na balança. Ao apertar ENCERRAR TURNO, a ESP32
@@ -6,12 +6,14 @@
 // token do dispositivo. O servidor grava o valor e responde com sucesso. Se o envio falhar, o valor
 // fica PENDENTE e é reenviado automaticamente até o servidor confirmar (nenhuma medição se perde).
 //
-// Bibliotecas (libraries.txt no Wokwi): HX711 (bogde) e ArduinoJson (versão 7)
+// Bibliotecas (libraries.txt no Wokwi): HX711 (bogde), ArduinoJson (versão 7) e LiquidCrystal I2C
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <HX711.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
 #include <time.h>
 #include <sys/time.h>
@@ -30,7 +32,12 @@ const char* URL_SERVIDOR = "https://fluxeteam.com.br";
 // Não suba o token de verdade para o GitHub: cole só no seu computador.
 const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 
-const char* TIPO_REFEICAO = "almoco"; // cafe, almoco, jantar ou ceia
+// O botão amarelo escolhe a refeição. A API continua recebendo os mesmos códigos.
+const char* const TIPOS_REFEICAO[] = {"cafe", "almoco", "jantar", "ceia"};
+const char* const NOMES_REFEICAO[] = {"Cafe", "Almoco", "Jantar", "Ceia"};
+const uint8_t TOTAL_REFEICOES = 4;
+uint8_t refeicaoSelecionada = 1; // primeira inicialização: almoço
+int refeicaoPendente = -1;
 
 // ----- Pinos -----
 #define HX_DT_PIN   16   // terminal RX2 da ESP32 DevKit V1 no Wokwi
@@ -39,6 +46,10 @@ const char* TIPO_REFEICAO = "almoco"; // cafe, almoco, jantar ou ceia
 #define LED_RED     26   // falha no envio / envio pendente
 #define BTN_TARA    32   // zera a balança (recipiente vazio)
 #define BTN_FIM     33   // encerra o turno e envia o desperdício
+#define BTN_REFEICAO 25  // alterna cafe → almoco → jantar → ceia
+#define LCD_SDA     21
+#define LCD_SCL     22
+const uint8_t LCD_ENDERECO = 0x27;
 
 // ----- Ajustes -----
 // Wokwi 50 kg: 21000 unidades / 50 kg = 420 unidades por kg.
@@ -51,6 +62,8 @@ const unsigned long REENVIO_MS = 10000;           // intervalo entre tentativas 
 const unsigned long LOG_PESO_MS = 2000;           // intervalo do peso ao vivo no Serial
 
 HX711 balanca;
+LiquidCrystal_I2C lcd(LCD_ENDERECO, 16, 2);
+bool displayDisponivel = false;
 unsigned long lastPing = 0;
 unsigned long lastWifiTry = 0;
 unsigned long lastReenvio = 0;
@@ -62,6 +75,7 @@ String pendenteJson;
 QueueHandle_t eventosBotoes = nullptr;
 const uint8_t EVENTO_TARA = 1;
 const uint8_t EVENTO_FIM = 2;
+const uint8_t EVENTO_REFEICAO = 3;
 
 // INICIO DEBOUNCE: lógica independente para os testes de botões.
 struct EstadoBotao {
@@ -91,6 +105,7 @@ bool detectarPressionamento(EstadoBotao& botao, bool nivelAlto, unsigned long ag
 void monitorarBotoes(void*) {
   EstadoBotao tara = {true, true, 0};
   EstadoBotao fim = {true, true, 0};
+  EstadoBotao refeicao = {true, true, 0};
   for (;;) {
     unsigned long agora = millis();
     if (detectarPressionamento(tara, digitalRead(BTN_TARA) == HIGH, agora)) {
@@ -101,11 +116,104 @@ void monitorarBotoes(void*) {
       uint8_t evento = EVENTO_FIM;
       xQueueSend(eventosBotoes, &evento, 0);
     }
+    if (detectarPressionamento(refeicao, digitalRead(BTN_REFEICAO) == HIGH, agora)) {
+      uint8_t evento = EVENTO_REFEICAO;
+      xQueueSend(eventosBotoes, &evento, 0);
+    }
     vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
 
 bool taraFeita = false;
+
+// INICIO REFEICAO DISPLAY: somente o loop/setup acessa LCD e Preferences.
+int indiceRefeicao(const char* tipo) {
+  for (uint8_t i = 0; i < TOTAL_REFEICOES; i++) {
+    if (strcmp(tipo, TIPOS_REFEICAO[i]) == 0) return i;
+  }
+  return -1;
+}
+
+void escreverLinhaLCD(uint8_t linha, const char* texto) {
+  char preenchido[17];
+  snprintf(preenchido, sizeof(preenchido), "%-16.16s", texto);
+  lcd.setCursor(0, linha);
+  lcd.print(preenchido); // apaga o restante da linha sem piscar todo o display
+}
+
+void mostrarDisplay(const char* estado) {
+  if (!displayDisponivel) return;
+  int indice = temPendente ? refeicaoPendente : refeicaoSelecionada;
+  const char* nome = indice >= 0 && indice < TOTAL_REFEICOES ? NOMES_REFEICAO[indice] : "Desconhecida";
+  char linha[17];
+  snprintf(linha, sizeof(linha), "Ref: %.11s", nome);
+  escreverLinhaLCD(0, linha);
+  escreverLinhaLCD(1, estado);
+}
+
+void restaurarRefeicaoEPendencia() {
+  uint8_t salva = memoria.getUChar("refeicao", 1);
+  refeicaoSelecionada = salva < TOTAL_REFEICOES ? salva : 1;
+  pendenteJson = memoria.getString("pendente", "");
+  if (pendenteJson.length()) {
+    JsonDocument salvo;
+    if (!deserializeJson(salvo, pendenteJson)) {
+      pendenteKg = salvo["desperdicio_kg"] | 0.0f;
+      refeicaoPendente = indiceRefeicao(salvo["tipo"] | "");
+      temPendente = true;
+    }
+  }
+}
+
+void trocarRefeicao() {
+  if (temPendente) {
+    Serial.println("Troca bloqueada: aguarde confirmar o envio pendente.");
+    mostrarDisplay("Envio pendente");
+    return;
+  }
+  uint8_t proxima = (refeicaoSelecionada + 1) % TOTAL_REFEICOES;
+  if (memoria.putUChar("refeicao", proxima) != sizeof(uint8_t)) {
+    Serial.println("Nao foi possivel salvar a refeicao; selecao mantida.");
+    mostrarDisplay("Falha ao salvar");
+    return;
+  }
+  refeicaoSelecionada = proxima;
+  Serial.printf("Refeicao selecionada: %s\n", NOMES_REFEICAO[refeicaoSelecionada]);
+  mostrarDisplay("Selecionada");
+}
+
+// Congela a seleção e a data na pesagem persistida. Reenvios usam este JSON,
+// nunca a seleção atual do botão nem a data de uma nova tentativa.
+bool guardarPesagem(float peso, const char* data) {
+  if (temPendente) return false;
+  JsonDocument registro;
+  registro["desperdicio_kg"] = roundf(peso * 100) / 100;
+  registro["tipo"] = TIPOS_REFEICAO[refeicaoSelecionada];
+  registro["data"] = data;
+  String json;
+  serializeJson(registro, json);
+  if (memoria.putString("pendente", json) == 0) return false;
+  pendenteJson = json;
+  pendenteKg = peso;
+  refeicaoPendente = refeicaoSelecionada;
+  temPendente = true;
+  return true;
+}
+// FIM REFEICAO DISPLAY
+
+void iniciarDisplay() {
+  Wire.begin(LCD_SDA, LCD_SCL);
+  Wire.setTimeOut(50);
+  Wire.beginTransmission(LCD_ENDERECO);
+  if (Wire.endTransmission() != 0) {
+    Serial.println("LCD nao encontrado em 0x27. Confira SDA=21, SCL=22, VCC e GND.");
+    return;
+  }
+  lcd.init();
+  lcd.backlight();
+  displayDisponivel = true;
+  mostrarDisplay(temPendente ? "Envio pendente" : "Iniciando...");
+}
 
 void setStatus(bool ativo, bool falha) {
   digitalWrite(LED_GREEN, ativo ? HIGH : LOW);
@@ -266,15 +374,19 @@ bool enviarDesperdicio() {
 void tentarEnvioPendente() {
   if (!temPendente) return;
   Serial.printf("Enviando %.3f kg...\n", pendenteKg);
+  mostrarDisplay("Enviando...");
   piscarEnvio();
   if (enviarDesperdicio()) {
     Serial.printf("Desperdicio de %.3f kg registrado no servidor\n", pendenteKg);
+    mostrarDisplay("Enviado!"); // ainda mostra a refeição da pesagem confirmada
     memoria.remove("pendente");
     pendenteJson = "";
     temPendente = false;
+    refeicaoPendente = -1;
     setStatus(true, false);
   } else {
     Serial.println("Envio nao confirmado: o valor continua pendente e sera reenviado");
+    mostrarDisplay("Envio pendente");
     setStatus(true, true);
   }
 }
@@ -282,12 +394,13 @@ void tentarEnvioPendente() {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("SICAPDA BALANCA v3 - botoes com leitura independente");
+  Serial.println("SICAPDA BALANCA v4 - display e seletor de refeicao");
   Serial.flush();
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BTN_TARA, INPUT_PULLUP);
   pinMode(BTN_FIM, INPUT_PULLUP);
+  pinMode(BTN_REFEICAO, INPUT_PULLUP);
   setStatus(false, false);
 
   Serial.println("Inicializando HX711: DT=16, SCK=17...");
@@ -310,24 +423,21 @@ void setup() {
   setenv("TZ", "BRT3", 1);
   tzset();
   memoria.begin("sicapda-balanca", false);
-  pendenteJson = memoria.getString("pendente", "");
-  if (pendenteJson.length()) {
-    JsonDocument salvo;
-    if (!deserializeJson(salvo, pendenteJson)) {
-      pendenteKg = salvo["desperdicio_kg"] | 0.0f;
-      temPendente = true;
-    }
-  }
+  restaurarRefeicaoEPendencia();
+  iniciarDisplay();
+  mostrarDisplay("Conectando WiFi");
   connectWifi();
+  mostrarDisplay("Sincronizando...");
   sendPing();
   lastPing = millis();
+  mostrarDisplay(temPendente ? "Envio pendente" : "Faca a tara");
   setStatus(true, temPendente);
   eventosBotoes = xQueueCreate(8, sizeof(uint8_t));
   if (!eventosBotoes || xTaskCreate(monitorarBotoes, "botoes", 2048, nullptr, 1, nullptr) != pdPASS) {
     Serial.println("ERRO: nao foi possivel iniciar os botoes. Reinicie a ESP32.");
     setStatus(false, true);
   } else {
-    Serial.println("Botoes ativos: TARA = GPIO32 | ENCERRAR TURNO = GPIO33.");
+    Serial.println("Botoes ativos: TARA = GPIO32 | ENCERRAR TURNO = GPIO33 | REFEICAO = GPIO25.");
     Serial.println("Balanca pronta. TARA = zerar | ENCERRAR TURNO = enviar desperdicio");
   }
 }
@@ -347,17 +457,21 @@ void loop() {
   }
 
   uint8_t evento;
-  if (eventosBotoes && xQueueReceive(eventosBotoes, &evento, 0) == pdTRUE) {
+  while (eventosBotoes && xQueueReceive(eventosBotoes, &evento, 0) == pdTRUE) {
+    if (evento == EVENTO_REFEICAO) trocarRefeicao();
     if (evento == EVENTO_TARA) {
       Serial.println("Botao TARA detectado.");
+      mostrarDisplay(temPendente ? "Envio pendente" : "Fazendo tara...");
       if (temPendente) {
         Serial.println("Aguarde confirmar o envio pendente antes de fazer a tara.");
       } else {
         if (fazerTara()) {
           taraFeita = true;
+          mostrarDisplay("Tara feita");
           Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
         } else {
           taraFeita = false;
+          mostrarDisplay("Falha no sensor");
           Serial.println("Tara falhou: HX711 sem resposta. Confira a ligacao do sensor.");
         }
       }
@@ -366,32 +480,29 @@ void loop() {
       Serial.println("Botao ENCERRAR TURNO detectado.");
       if (temPendente) {
         Serial.println("Aguarde o envio pendente antes de uma nova pesagem.");
+        mostrarDisplay("Envio pendente");
       } else if (!taraFeita) {
         Serial.println("Faca a tara com o recipiente vazio antes de pesar.");
+        mostrarDisplay("Faca a tara");
       } else if (time(nullptr) < 1700000000) {
         Serial.println("Aguarde um ping confirmado para sincronizar a data.");
+        mostrarDisplay("Aguarde o ping");
       } else {
+        mostrarDisplay("Pesando...");
         float peso = lerPesoKg();
         if (!isfinite(peso) || peso < 0 || peso > 50) {
           Serial.println("Peso invalido ou sensor indisponivel (capacidade: 50 kg).");
+          mostrarDisplay("Peso invalido");
         } else {
           time_t agora = time(nullptr);
           tm horario;
           localtime_r(&agora, &horario);
           char data[11];
           strftime(data, sizeof(data), "%Y-%m-%d", &horario);
-          JsonDocument registro;
-          registro["desperdicio_kg"] = roundf(peso * 100) / 100;
-          registro["tipo"] = TIPO_REFEICAO;
-          registro["data"] = data;
-          String json;
-          serializeJson(registro, json);
-          if (memoria.putString("pendente", json) == 0) {
+          if (!guardarPesagem(peso, data)) {
             Serial.println("Falha ao guardar pesagem. Tente novamente.");
+            mostrarDisplay("Falha ao salvar");
           } else {
-            pendenteJson = json;
-            pendenteKg = peso;
-            temPendente = true;
             lastReenvio = millis();
             tentarEnvioPendente();
           }
@@ -407,5 +518,13 @@ void loop() {
     float peso = lerPesoKg();
     if (isfinite(peso)) Serial.printf("Peso atual: %.3f kg\n", peso);
     else Serial.println("HX711 sem resposta: leitura cancelada; confira a ligacao do sensor.");
+    if (temPendente) mostrarDisplay("Envio pendente");
+    else if (!isfinite(peso)) mostrarDisplay("Falha no sensor");
+    else if (!taraFeita) mostrarDisplay("Faca a tara");
+    else {
+      char linha[17];
+      snprintf(linha, sizeof(linha), "Peso: %.2f kg", peso);
+      mostrarDisplay(linha);
+    }
   }
 }

@@ -1,3 +1,4 @@
 # Versoes usadas pelo firmware SICAPDA
 HX711 Arduino Library@0.7.5
 ArduinoJson@7.4.2
+LiquidCrystal I2C@1.1.2
