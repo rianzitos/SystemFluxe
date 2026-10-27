@@ -14,8 +14,8 @@ stubs = r'''
 #include <cstdint>
 #include <vector>
 #include <iostream>
-constexpr int BTN_TARA=32, BTN_FIM=33, HIGH=1;
-constexpr uint8_t EVENTO_TARA=1, EVENTO_FIM=2;
+constexpr int BTN_TARA=32, BTN_FIM=33, BTN_REFEICAO=25, HIGH=1;
+constexpr uint8_t EVENTO_TARA=1, EVENTO_FIM=2, EVENTO_REFEICAO=3;
 void* eventosBotoes=nullptr;
 unsigned long agoraMs=0;
 std::vector<uint8_t> fila;
@@ -28,6 +28,9 @@ int digitalRead(int pin) {
   }
   // Segurar FIM não deve criar vários eventos.
   if (pin==BTN_FIM && agoraMs>=500 && agoraMs<4000) return 0;
+  // Seletor: um clique rápido e outro mantido; ambos devem gerar uma só troca.
+  if (pin==BTN_REFEICAO && ((agoraMs>=300 && agoraMs<400)
+      || (agoraMs>=4200 && agoraMs<4900))) return 0;
   return HIGH;
 }
 void xQueueSend(void*, const uint8_t* evento, int) {fila.push_back(*evento);}
@@ -54,7 +57,7 @@ int main() {
   assert(detectarPressionamento(b,false,1230));
   // A tarefa continua executando durante seis segundos sem consumo no loop.
   try { monitorarBotoes(nullptr); } catch (FimSimulacao&) {}
-  assert((fila == std::vector<uint8_t>{EVENTO_TARA, EVENTO_FIM, EVENTO_TARA}));
+  assert((fila == std::vector<uint8_t>{EVENTO_TARA, EVENTO_REFEICAO, EVENTO_FIM, EVENTO_REFEICAO, EVENTO_TARA}));
   std::cout << "PASS: clique rápido, ruído, botão segurado, novo clique e fila durante bloqueio do loop\n";
 }
 '''

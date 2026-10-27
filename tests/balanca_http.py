@@ -84,6 +84,12 @@ try:
     assert 'id="formPesagem"' not in page
     csrf=re.search(r'name="csrf-token" content="([^"]+)"',page)[1]
     call('/configuracoes/dispositivos/pesagem',403,data=manual,csrf=csrf,form=True)
+    # O seletor do ESP32 pode enviar todas as quatro refeições ao mesmo endpoint.
+    for tipo in ['cafe','almoco','jantar','ceia']:
+        r=call('/api/iot/desperdicio',data={'tipo':tipo,'data':'2020-01-03','desperdicio_kg':2.5},token=new['token'])
+        assert r['tipo']==tipo and r['desperdicio_kg']==2.5
+    totals=json.loads(subprocess.check_output(['php',fixture,'totals',user['company']]))
+    assert len([row for row in totals if row['data']=='2020-01-03' and float(row['quantidade_desperdicada_kg'])==2.5])==4
     print(f'PASS: {count} requisições; validação, isolamento, CSRF, cadastro, token, total e reenvio.')
 finally:
     for row in records:

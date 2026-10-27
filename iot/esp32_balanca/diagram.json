@@ -3,6 +3,10 @@
   "author": "SICAPDA by FLUXE",
   "editor": "wokwi",
   "parts": [
+    { "type": "wokwi-lcd1602", "id": "lcd", "top": -180, "left": -330,
+      "attrs": { "pins": "i2c", "i2cAddress": "0x27", "background": "blue", "color": "white" } },
+    { "type": "wokwi-pushbutton", "id": "btnRefeicao", "top": 335, "left": 35,
+      "attrs": { "color": "yellow", "label": "REFEICAO", "bounce": "1" } },
     { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
     {
       "type": "wokwi-hx711",
@@ -44,6 +48,12 @@
     }
   ],
   "connections": [
+    [ "lcd:GND", "esp:GND.1", "black", [] ],
+    [ "lcd:VCC", "esp:VIN", "red", [] ],
+    [ "lcd:SDA", "esp:D21", "blue", [] ],
+    [ "lcd:SCL", "esp:D22", "yellow", [] ],
+    [ "btnRefeicao:1.l", "esp:D25", "yellow", [] ],
+    [ "btnRefeicao:2.l", "esp:GND.1", "black", [] ],
     [ "esp:TX0", "$serialMonitor:RX", "", [] ],
     [ "esp:RX0", "$serialMonitor:TX", "", [] ],
     [ "cell1:VCC", "esp:3V3", "red", [] ],
