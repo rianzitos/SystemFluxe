@@ -586,6 +586,16 @@ footer span {
     /* gap: 12px; era 24px — reduz o espaço entre imagem e texto */
     z-index: 9999;
     transition: opacity 0.5s ease;
+    /* Trava de segurança: mesmo que o JavaScript não rode, a tela some sozinha depois de 6 s. */
+    animation: sumirCarregamento 0.5s ease 6s forwards;
+}
+
+@keyframes sumirCarregamento {
+    to {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
 
 #loading-screen.hidden {
