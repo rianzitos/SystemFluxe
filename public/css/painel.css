@@ -306,6 +306,7 @@ h2,
     display: flex;
     align-items: center;
     gap: 14px;
+    flex-wrap: wrap;
 }
 
 .seletor-data {
@@ -328,6 +329,7 @@ h2,
 
 .sino {
     position: relative;
+    color: var(--texto);   /* sem isto o botão usa o preto do navegador e some no tema escuro */
     background: var(--branco);
     border: 1px solid var(--borda);
     border-radius: 50%;
@@ -359,6 +361,214 @@ h2,
     align-items: center;
     justify-content: center;
     border: 2px solid var(--fundo);
+}
+
+/* Atalhos "Integrações" (amarelo) e "IoT": levam direto para Configurações. */
+.btn-atalho {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--branco);
+    color: var(--texto);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+.btn-atalho i {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.btn-atalho:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sombra);
+}
+
+.btn-atalho:focus-visible,
+.sino:focus-visible,
+.painel-notificacoes a:focus-visible {
+    outline: 2px solid var(--amarelo);
+    outline-offset: 2px;
+}
+
+.btn-atalho-integracoes {
+    background: var(--amarelo);
+    border-color: var(--amarelo);
+    color: var(--preto);
+}
+
+.btn-atalho-integracoes:hover {
+    background: #FFCE3A;
+}
+
+.btn-atalho-iot i {
+    color: var(--aviso);
+}
+
+/* Painel do sino */
+.sino-wrap {
+    position: relative;
+}
+
+.painel-notificacoes {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 60;
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    background: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    box-shadow: 0 12px 40px rgba(16, 17, 20, 0.18);
+    overflow: hidden;
+}
+
+.painel-notificacoes[hidden] {
+    display: none;
+}
+
+.painel-notificacoes-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--borda);
+    font-size: 14px;
+}
+
+.painel-notificacoes-config {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--texto-muted);
+    text-decoration: none;
+}
+
+.painel-notificacoes-config:hover {
+    color: var(--texto);
+}
+
+.painel-notificacoes-lista {
+    max-height: min(60vh, 380px);
+    overflow-y: auto;
+}
+
+.painel-notificacoes-vazio {
+    margin: 0;
+    padding: 28px 18px;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--texto-muted);
+}
+
+.notificacao {
+    display: flex;
+    gap: 12px;
+    padding: 13px 16px;
+    color: var(--texto);
+    text-decoration: none;
+    border-bottom: 1px solid var(--borda);
+}
+
+.notificacao:last-child {
+    border-bottom: 0;
+}
+
+.notificacao:hover {
+    background: var(--amarelo-suave);
+}
+
+.notificacao-icone {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+}
+
+.notificacao-aviso .notificacao-icone {
+    background: var(--aviso-bg);
+    color: var(--aviso);
+}
+
+.notificacao-info .notificacao-icone {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.notificacao-sucesso .notificacao-icone {
+    background: var(--sucesso-bg);
+    color: var(--sucesso);
+}
+
+.notificacao-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--texto-muted);
+}
+
+.notificacao-texto strong {
+    font-size: 13.5px;
+    color: var(--texto);
+}
+
+.painel-notificacoes-rodape {
+    display: block;
+    padding: 12px 16px;
+    border-top: 1px solid var(--borda);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto);
+    text-decoration: none;
+}
+
+.painel-notificacoes-rodape:hover {
+    background: var(--amarelo-suave);
+}
+
+@media (max-width: 560px) {
+    /* No celular o painel ocupa a largura da tela, em vez de ficar preso ao sino. */
+    .sino-wrap {
+        position: static;
+    }
+
+    .painel-notificacoes {
+        position: fixed;
+        top: 70px;   /* o notificacoes.js recalcula para ficar logo abaixo do sino */
+        left: 16px;
+        right: 16px;
+        width: auto;
+        max-width: none;
+    }
+
+    .btn-atalho span {
+        display: none;
+    }
+
+    .btn-atalho {
+        width: 40px;
+        padding: 0;
+        justify-content: center;
+    }
 }
 
 /* ===================== CARDS DE RESUMO ===================== */
@@ -680,6 +890,16 @@ html[data-tema="escuro"] .btn-menu-mobile {
 
 html[data-tema="escuro"] .badge-sino {
     border-color: var(--fundo);
+}
+
+/* O sino era preto sobre fundo escuro (cor padrão do botão): no tema escuro fica branco. */
+html[data-tema="escuro"] .sino {
+    color: #FFFFFF;
+}
+
+html[data-tema="escuro"] .painel-notificacoes {
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
 /* ===================== RESPONSIVO ===================== */

@@ -185,16 +185,7 @@ try {
                 </div>
 
                 <div class="cabecalho-acoes">
-                    <button class="sino" id="btnNotificacoes" aria-label="Notificações">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 8a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 12 6 8Z" />
-                            <path d="M10 18a2 2 0 0 0 4 0" />
-                        </svg>
-                        <?php if ($notificacoesNaoLidas > 0): ?>
-                            <span class="badge-sino"><?= (int) $notificacoesNaoLidas ?></span>
-                        <?php endif; ?>
-                    </button>
+                    <?php require __DIR__ . '/partials/acoes-topo.php'; ?>
                 </div>
             </header>
 
@@ -367,7 +358,7 @@ try {
 
                     <!-- ---------- INTEGRAÇÕES ---------- -->
                     <section class="config-painel" data-aba-painel="integracoes">
-                        <h2>Dispositivos IoT</h2>
+                        <h2 id="secaoIot">Dispositivos IoT</h2>
                         <p class="config-painel-desc">Catracas, leitores RFID e balanças vinculados à empresa. Cada dispositivo usa seu próprio token para enviar acessos ou pesagens.</p>
 
                         <div class="lista-dispositivos" id="listaDispositivos">

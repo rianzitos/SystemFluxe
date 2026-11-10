@@ -80,12 +80,7 @@ $ate = min($dados['total'], $dados['pagina'] * $dados['porPagina']);
                         <?= Pagina::svg('chevron') ?>
                     </label>
 
-                    <a class="sino" href="/assistente" id="btnNotificacoes" aria-label="Notificações">
-                        <?= Pagina::svg('bell') ?>
-                        <?php if ($notificacoesNaoLidas > 0): ?>
-                            <span class="badge-sino"><?= (int) $notificacoesNaoLidas ?></span>
-                        <?php endif; ?>
-                    </a>
+                    <?php require __DIR__ . '/partials/acoes-topo.php'; ?>
                 </div>
             </header>
 

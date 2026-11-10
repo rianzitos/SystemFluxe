@@ -21,25 +21,34 @@ function inicializarAbas() {
     const botoes = document.querySelectorAll('.config-aba');
     const paineis = document.querySelectorAll('.config-painel');
 
+    function ativar(alvo) {
+        botoes.forEach((b) => b.classList.toggle('ativa', b.dataset.aba === alvo));
+        paineis.forEach((painel) => {
+            painel.classList.toggle('ativa', painel.dataset.abaPainel === alvo);
+        });
+    }
+
     botoes.forEach((botao) => {
         botao.addEventListener('click', () => {
-            const alvo = botao.dataset.aba;
-
-            botoes.forEach((b) => b.classList.remove('ativa'));
-            botao.classList.add('ativa');
-
-            paineis.forEach((painel) => {
-                painel.classList.toggle('ativa', painel.dataset.abaPainel === alvo);
-            });
-
-            history.replaceState(null, '', `#${alvo}`);
+            ativar(botao.dataset.aba);
+            history.replaceState(null, '', `#${botao.dataset.aba}`);
         });
     });
 
-    // Abre a aba certa se a URL já vier com #hash (ex: /configuracoes#seguranca)
-    const hash = window.location.hash.replace('#', '');
-    const botaoInicial = [...botoes].find((b) => b.dataset.aba === hash);
-    if (botaoInicial) botaoInicial.click();
+    // Abre a aba certa pela URL (ex: /configuracoes#seguranca). "#iot" é o atalho do cabeçalho:
+    // abre Integrações e já desce até a lista de dispositivos IoT.
+    function abrirPelaUrl() {
+        const hash = window.location.hash.replace('#', '');
+        const alvo = hash === 'iot' ? 'integracoes' : hash;
+        if (![...botoes].some((b) => b.dataset.aba === alvo)) return;
+
+        ativar(alvo);
+        if (hash === 'iot') document.getElementById('secaoIot')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    abrirPelaUrl();
+    // Os botões Integrações/IoT do cabeçalho apontam para esta mesma página: só o #hash muda.
+    window.addEventListener('hashchange', abrirPelaUrl);
 }
 
 // ===================== MENU MOBILE (sidebar) =====================

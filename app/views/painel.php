@@ -161,13 +161,7 @@ function icone(string $nome): string
                         <span id="labelPeriodo">Carregando período…</span>
                     </div>
 
-                    <button class="sino" id="btnNotificacoes" aria-label="Notificações">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round"><?= icone('bell') ?></svg>
-                        <?php if ($notificacoesNaoLidas > 0): ?>
-                            <span class="badge-sino"><?= (int) $notificacoesNaoLidas ?></span>
-                        <?php endif; ?>
-                    </button>
+                    <?php require __DIR__ . '/partials/acoes-topo.php'; ?>
                 </div>
             </header>
 
