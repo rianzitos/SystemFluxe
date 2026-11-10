@@ -15,6 +15,8 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Preferences.h>
+#include <ctype.h>
+#include <math.h>
 #include <time.h>
 #include <sys/time.h>
 #include <freertos/FreeRTOS.h>
@@ -52,14 +54,23 @@ int refeicaoPendente = -1;
 const uint8_t LCD_ENDERECO = 0x27;
 
 // ----- Ajustes -----
-// Wokwi 50 kg: 21000 unidades / 50 kg = 420 unidades por kg.
-// Na célula real, calibre com um peso conhecido e mantenha a unidade em kg.
-const float FATOR_CALIBRACAO = 420.0;
-const int   AMOSTRAS = 20;                        // leituras por média (mais = mais estável)
+// true  = simulador Wokwi: a célula simulada de 50 kg gera 21000 unidades / 50 kg = 420 unidades por kg
+//         e já nasce calibrada (não tem ruído, deriva nem sinal invertido).
+// false = balança física (4 células de 50 kg + HX711): o fator de calibração (unidades do HX711 por kg)
+//         é diferente em cada montagem, costuma ficar na casa de 10 mil a 25 mil e PODE SER NEGATIVO.
+//         Calibre pelo Serial com um peso conhecido (comando "c <kg>"): o fator fica salvo na memória
+//         da ESP32 e vale nas próximas inicializações, sem recompilar. Digite "?" no Serial para ver os comandos.
+const bool  MODO_SIMULADOR = false;
+const float FATOR_SIMULADOR = 420.0;
+const float PESO_MAXIMO_KG = MODO_SIMULADOR ? 50.0 : 200.0;  // simulador: 1 célula de 50 kg; real: 4 x 50 kg
+const float TOLERANCIA_ZERO_KG = 0.05;            // ruído/deriva menor que isso, após a tara, conta como 0 kg
+const int   AMOSTRAS = 20;                        // leituras por média na tara e na pesagem (mais = mais estável)
+const int   AMOSTRAS_AO_VIVO = 10;                // leituras por média no peso ao vivo do Serial/LCD
 const unsigned long PING_INTERVAL_MS = 60000;     // "estou vivo" a cada 1 minuto (mostra Online nas Configurações)
 const unsigned long WIFI_RETRY_MS = 10000;        // intervalo entre tentativas de reconectar
 const unsigned long REENVIO_MS = 10000;           // intervalo entre tentativas de reenviar um valor pendente
 const unsigned long LOG_PESO_MS = 2000;           // intervalo do peso ao vivo no Serial
+const unsigned long LOG_BRUTO_MS = 300;           // intervalo do bruto ao vivo (comando "r" no Serial)
 
 HX711 balanca;
 LiquidCrystal_I2C lcd(LCD_ENDERECO, 16, 2);
@@ -230,34 +241,252 @@ void piscarEnvio() {
   }
 }
 
-// Toda amostra tem prazo: get_units(n)/tare() esperam indefinidamente
-// se o sensor parar de responder no meio da média.
-bool lerMediaBruta(float& media) {
-  const unsigned long prazoMs = 4000;
+// INICIO CALIBRACAO: leitura filtrada, tara e fator de calibração (testável no computador).
+float fatorCalibracao = 0;   // unidades do HX711 por kg; pode ser NEGATIVO (sinal invertido pela ligação)
+bool calibrada = false;      // só há peso em kg depois de existir um fator (salvo ou do simulador)
+bool sensorOk = false;       // a última leitura do HX711 respondeu dentro do prazo
+double brutoAtual = 0;       // última média bruta lida (unidades do HX711), para o log e o diagnóstico
+long dispersaoAtual = 0;     // maior - menor valor dessa leitura: mede o ruído
+
+const int AMOSTRAS_MAX = 32;
+
+// Lê "amostras" valores do HX711 e devolve a média APARADA: ordena e descarta os ~20% menores e os
+// ~20% maiores, então um pico isolado (Wi-Fi, fio mal encaixado no protoboard) não distorce o resultado.
+// "dispersao" = maior - menor valor lido; com a balança parada deve ser pequena.
+// Toda amostra tem prazo: read()/get_units() esperam indefinidamente se o sensor parar de responder.
+bool lerMediaBruta(double& media, int amostras, long& dispersao) {
+  long valores[AMOSTRAS_MAX];
+  if (amostras < 1) amostras = 1;
+  if (amostras > AMOSTRAS_MAX) amostras = AMOSTRAS_MAX;
+  const unsigned long prazoMs = 1000UL + 150UL * amostras;  // o HX711 faz 10 leituras/s: 20 amostras = ~2 s
   unsigned long inicio = millis();
-  long soma = 0;
-  for (int i = 0; i < AMOSTRAS; i++) {
+  for (int i = 0; i < amostras; i++) {
     unsigned long decorrido = millis() - inicio;
     if (decorrido >= prazoMs) return false;
     unsigned long restante = prazoMs - decorrido;
     if (!balanca.wait_ready_timeout(restante < 1000 ? restante : 1000)) return false;
-    soma += balanca.read();
+    valores[i] = balanca.read();
   }
-  media = (float)soma / AMOSTRAS;
+  for (int i = 1; i < amostras; i++) {  // ordenação por inserção (no máximo 32 valores)
+    long v = valores[i];
+    int j = i - 1;
+    while (j >= 0 && valores[j] > v) {
+      valores[j + 1] = valores[j];
+      j--;
+    }
+    valores[j + 1] = v;
+  }
+  dispersao = valores[amostras - 1] - valores[0];
+  int corte = amostras / 5;
+  double soma = 0;
+  for (int i = corte; i < amostras - corte; i++) soma += valores[i];
+  media = soma / (amostras - 2 * corte);
   return true;
 }
 
-float lerPesoKg() {
-  float media;
-  if (!lerMediaBruta(media)) return NAN;
-  return (media - balanca.get_offset()) / FATOR_CALIBRACAO;
+// Bruto -> kg. O fator pode ser negativo: o sinal só indica o sentido em que a ligação inverte a leitura.
+float brutoParaKg(double bruto, long offset, float fator) {
+  return (float)((bruto - offset) / fator);
+}
+
+// Peso em kg (média filtrada). NAN se o HX711 não respondeu (sensorOk = false) ou se ainda não há fator.
+float lerPesoKg(int amostras) {
+  double media;
+  long dispersao;
+  sensorOk = lerMediaBruta(media, amostras, dispersao);
+  if (!sensorOk) return NAN;
+  brutoAtual = media;
+  dispersaoAtual = dispersao;
+  if (!calibrada) return NAN;
+  float kg = brutoParaKg(media, balanca.get_offset(), fatorCalibracao);
+  if (fabsf(kg) < TOLERANCIA_ZERO_KG) kg = 0;  // ruído em torno do zero não vira "-0,01 kg"
+  return kg;
 }
 
 bool fazerTara() {
-  float media;
-  if (!lerMediaBruta(media)) return false;
-  balanca.set_offset(lroundf(media));
+  double media;
+  long dispersao;
+  if (!lerMediaBruta(media, AMOSTRAS, dispersao)) return false;
+  balanca.set_offset(lround(media));
+  Serial.printf("Tara: bruto=%.0f (ruido=%ld)\n", media, dispersao);
   return true;
+}
+
+// Fator = variação do bruto / peso conhecido, mantendo o sinal. Devolve nullptr se deu certo
+// ou o motivo da recusa (variação pequena demais perto do ruído, peso inválido...).
+const char* calcularFator(double bruto, long offset, long dispersao, float pesoKg, float& fator) {
+  if (!(pesoKg > 0.0f) || pesoKg > PESO_MAXIMO_KG) {
+    return "Peso conhecido invalido: use um valor maior que 0 e dentro da capacidade.";
+  }
+  double variacao = bruto - offset;
+  double minimo = 10.0 * (dispersao > 10 ? dispersao : 10);
+  if (fabs(variacao) < minimo) {
+    return "Variacao muito pequena perto do ruido: confira se o peso esta sobre a plataforma, se a tara foi feita SEM o peso e a ligacao das celulas.";
+  }
+  fator = (float)(variacao / pesoKg);
+  return nullptr;
+}
+
+bool aplicarFator(float fator) {
+  if (!isfinite(fator) || fabsf(fator) < 1.0f) return false;
+  if (memoria.putFloat("fator", fator) != sizeof(float)) return false;
+  fatorCalibracao = fator;
+  calibrada = true;
+  return true;
+}
+
+// Usa o fator salvo pela calibração; sem ele, só o simulador tem um valor padrão.
+void carregarCalibracao() {
+  float salvo = memoria.getFloat("fator", 0.0f);
+  if (isfinite(salvo) && fabsf(salvo) >= 1.0f) {
+    fatorCalibracao = salvo;
+    calibrada = true;
+  } else if (MODO_SIMULADOR) {
+    fatorCalibracao = FATOR_SIMULADOR;
+    calibrada = true;
+  }
+}
+// FIM CALIBRACAO
+
+// ----- Comandos pelo Serial (calibração e diagnóstico) -----
+bool modoBruto = false;           // comando "r": mostra o valor bruto ao vivo
+String comandoSerial;
+unsigned long ultimoCharSerial = 0;
+
+void mostrarAjuda() {
+  Serial.println("Comandos (Serial 115200; termine com Enter):");
+  Serial.println("  t          tara: zera a balanca (plataforma vazia)");
+  Serial.println("  c <kg>     calibra: faca a tara, ponha um peso conhecido e digite o valor. Ex.: c 5.000");
+  Serial.println("  d          diagnostico: bruto, ruido, offset, fator e peso");
+  Serial.println("  r          liga/desliga o bruto ao vivo (aperte cada canto e veja se todas as celulas variam no mesmo sentido)");
+  Serial.println("  f <fator>  define o fator manualmente (unidades por kg; aceita negativo)");
+}
+
+void executarTara() {
+  mostrarDisplay(temPendente ? "Envio pendente" : "Fazendo tara...");
+  if (temPendente) {
+    Serial.println("Aguarde confirmar o envio pendente antes de fazer a tara.");
+    return;
+  }
+  if (fazerTara()) {
+    taraFeita = true;
+    mostrarDisplay("Tara feita");
+    Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
+  } else {
+    taraFeita = false;
+    mostrarDisplay("Falha no sensor");
+    Serial.println("Tara falhou: HX711 sem resposta. Confira a ligacao do sensor.");
+  }
+}
+
+void calibrarComPeso(float pesoKg) {
+  if (!taraFeita) {
+    Serial.println("Faca a tara (comando t) com a plataforma VAZIA antes de calibrar.");
+    return;
+  }
+  Serial.printf("Calibrando com %.3f kg... mantenha o peso parado e centralizado.\n", pesoKg);
+  double bruto;
+  long dispersao;
+  if (!lerMediaBruta(bruto, AMOSTRAS, dispersao)) {
+    Serial.println("HX711 sem resposta: confira a ligacao do sensor.");
+    return;
+  }
+  float fator;
+  const char* erro = calcularFator(bruto, balanca.get_offset(), dispersao, pesoKg, fator);
+  if (erro) {
+    Serial.println(erro);
+    return;
+  }
+  if (!aplicarFator(fator)) {
+    Serial.println("Nao foi possivel salvar o fator na memoria da ESP32.");
+    return;
+  }
+  Serial.printf("Calibrado! Fator = %.2f unidades/kg (bruto=%.0f, offset=%ld, ruido=%ld). Salvo na memoria.\n",
+                fator, bruto, balanca.get_offset(), dispersao);
+  if (fator < 0) Serial.println("Fator negativo e normal: so indica que a ligacao inverte o sinal da leitura.");
+  if (fabsf(fator) < 1000 || fabsf(fator) > 100000) {
+    Serial.println("Aviso: fator fora do comum para 4 celulas de 50 kg. Confira o peso informado e a ligacao das celulas.");
+  }
+  Serial.println("Agora retire o peso, faca nova tara (t) e confira com outros pesos conhecidos.");
+}
+
+void diagnostico() {
+  float peso = lerPesoKg(AMOSTRAS);
+  if (!sensorOk) {
+    Serial.println("HX711 sem resposta: confira DT=GPIO16, SCK=GPIO17, VCC (3,3 V) e GND.");
+    return;
+  }
+  Serial.println("=== DIAGNOSTICO DA BALANCA ===");
+  Serial.printf("Bruto=%.0f | ruido (max-min)=%ld | offset da tara=%ld | variacao=%.0f\n",
+                brutoAtual, dispersaoAtual, balanca.get_offset(), brutoAtual - balanca.get_offset());
+  if (calibrada) Serial.printf("Fator=%.2f unidades/kg | peso=%.3f kg\n", fatorCalibracao, peso);
+  else Serial.println("Fator: NAO CALIBRADA (faca a tara e use c <kg>)");
+  if (fabs(brutoAtual) > 8300000) {
+    Serial.println("ALERTA: bruto no limite do HX711 (+-8388607): entrada aberta/em curto. Confira os fios E+/E-/A+/A- e as emendas.");
+  }
+  if (dispersaoAtual > 1000) {
+    Serial.println("ALERTA: ruido alto. Procure contato solto (protoboard), fios longos/sem trancar, plataforma tocando a base ou alimentacao instavel.");
+  }
+}
+
+// Aceita "c 5", "c 5.0", "c 5,0", "cal 5"...: pega o primeiro número da linha.
+bool numeroDoComando(const String& linha, float& valor) {
+  int i = 0;
+  while (i < (int)linha.length() && !isdigit(linha[i]) && linha[i] != '-' && linha[i] != '+' && linha[i] != '.' && linha[i] != ',') i++;
+  if (i >= (int)linha.length()) return false;
+  String numero = linha.substring(i);
+  numero.replace(',', '.');
+  valor = numero.toFloat();
+  return isfinite(valor);
+}
+
+void processarComando(String linha) {
+  linha.trim();
+  if (!linha.length()) return;
+  float valor;
+  switch (tolower(linha[0])) {
+    case 't':
+      Serial.println("Comando TARA recebido.");
+      executarTara();
+      break;
+    case 'c':
+      if (numeroDoComando(linha, valor)) calibrarComPeso(valor);
+      else Serial.println("Informe o peso conhecido em kg. Ex.: c 5.000");
+      break;
+    case 'f':
+      if (numeroDoComando(linha, valor) && aplicarFator(valor)) Serial.printf("Fator definido: %.2f unidades/kg. Salvo na memoria.\n", valor);
+      else Serial.println("Fator invalido. Ex.: f -15000 (aceita negativo; nao pode ser 0).");
+      break;
+    case 'd':
+      diagnostico();
+      break;
+    case 'r':
+      modoBruto = !modoBruto;
+      Serial.println(modoBruto ? "Bruto ao vivo LIGADO (digite r de novo para voltar ao peso)." : "Bruto ao vivo desligado.");
+      break;
+    default:
+      mostrarAjuda();
+  }
+}
+
+// Monta a linha digitada no Serial. Se o monitor não enviar Enter, executa após uma pausa de 400 ms.
+void lerComandosSerial() {
+  while (Serial.available()) {
+    char c = Serial.read();
+    ultimoCharSerial = millis();
+    if (c == '\n' || c == '\r') {
+      String linha = comandoSerial;
+      comandoSerial = "";
+      processarComando(linha);
+    } else if (comandoSerial.length() < 40) {
+      comandoSerial += c;
+    }
+  }
+  if (comandoSerial.length() && millis() - ultimoCharSerial > 400) {
+    String linha = comandoSerial;
+    comandoSerial = "";
+    processarComando(linha);
+  }
 }
 
 // ----- Wi-Fi e servidor -----
@@ -394,7 +623,7 @@ void tentarEnvioPendente() {
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("SICAPDA BALANCA v4 - display e seletor de refeicao");
+  Serial.println("SICAPDA BALANCA v5 - calibracao pelo Serial");
   Serial.flush();
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
@@ -408,9 +637,11 @@ void setup() {
   balanca.begin(HX_DT_PIN, HX_SCK_PIN);
   Serial.println("HX711 configurado. Verificando sinal...");
   if (!balanca.wait_ready_timeout(1000)) {
-    Serial.println("HX711 sem resposta: confira DT=16, SCK=17, VCC e GND no diagram.json.");
+    Serial.println("HX711 sem resposta: confira DT=16, SCK=17, VCC e GND (no Wokwi, no diagram.json).");
   }
-  balanca.set_scale(FATOR_CALIBRACAO);
+  // Logo após energizar, as primeiras conversões do HX711 podem vir fora do normal: descarta algumas.
+  for (int i = 0; i < 3 && balanca.wait_ready_timeout(500); i++) balanca.read();
+  // O fator de calibração vem da memória (carregarCalibracao, mais abaixo); a conversão para kg é feita em lerPesoKg.
   // A tara é explícita: reiniciar com carga não deve apagar o peso.
 
   // Resumo da configuração, para conferir de relance (o token aparece só pelas pontas).
@@ -424,6 +655,12 @@ void setup() {
   tzset();
   memoria.begin("sicapda-balanca", false);
   restaurarRefeicaoEPendencia();
+  carregarCalibracao();
+  if (calibrada) {
+    Serial.printf("Fator de calibracao: %.2f unidades/kg%s\n", fatorCalibracao, MODO_SIMULADOR ? " (simulador ou salvo)" : " (salvo)");
+  } else {
+    Serial.println("BALANCA SEM CALIBRACAO: faca a tara (t) e calibre com um peso conhecido (c <kg>). Digite ? para ver os comandos.");
+  }
   iniciarDisplay();
   mostrarDisplay("Conectando WiFi");
   connectWifi();
@@ -440,10 +677,12 @@ void setup() {
     Serial.println("Botoes ativos: TARA = GPIO32 | ENCERRAR TURNO = GPIO33 | REFEICAO = GPIO25.");
     Serial.println("Balanca pronta. TARA = zerar | ENCERRAR TURNO = enviar desperdicio");
   }
+  Serial.println("Comandos pelo Serial: t = tara | c <kg> = calibrar | d = diagnostico | r = bruto ao vivo | ? = ajuda");
 }
 
 void loop() {
   keepWifi();
+  lerComandosSerial();
 
   if (millis() - lastPing >= PING_INTERVAL_MS) {
     sendPing();
@@ -461,20 +700,7 @@ void loop() {
     if (evento == EVENTO_REFEICAO) trocarRefeicao();
     if (evento == EVENTO_TARA) {
       Serial.println("Botao TARA detectado.");
-      mostrarDisplay(temPendente ? "Envio pendente" : "Fazendo tara...");
-      if (temPendente) {
-        Serial.println("Aguarde confirmar o envio pendente antes de fazer a tara.");
-      } else {
-        if (fazerTara()) {
-          taraFeita = true;
-          mostrarDisplay("Tara feita");
-          Serial.println("Tara feita. Coloque o desperdicio no recipiente.");
-        } else {
-          taraFeita = false;
-          mostrarDisplay("Falha no sensor");
-          Serial.println("Tara falhou: HX711 sem resposta. Confira a ligacao do sensor.");
-        }
-      }
+      executarTara();
     }
     if (evento == EVENTO_FIM) {
       Serial.println("Botao ENCERRAR TURNO detectado.");
@@ -484,14 +710,24 @@ void loop() {
       } else if (!taraFeita) {
         Serial.println("Faca a tara com o recipiente vazio antes de pesar.");
         mostrarDisplay("Faca a tara");
+      } else if (!calibrada) {
+        Serial.println("Balanca sem calibracao: calibre com um peso conhecido (c <kg> no Serial) antes de pesar.");
+        mostrarDisplay("Calibre (Serial)");
       } else if (time(nullptr) < 1700000000) {
         Serial.println("Aguarde um ping confirmado para sincronizar a data.");
         mostrarDisplay("Aguarde o ping");
       } else {
         mostrarDisplay("Pesando...");
-        float peso = lerPesoKg();
-        if (!isfinite(peso) || peso < 0 || peso > 50) {
-          Serial.println("Peso invalido ou sensor indisponivel (capacidade: 50 kg).");
+        float peso = lerPesoKg(AMOSTRAS);
+        if (!isfinite(peso)) {
+          Serial.println("Sensor indisponivel: HX711 sem resposta. Confira a ligacao do sensor.");
+          mostrarDisplay("Falha no sensor");
+        } else if (peso < 0) {
+          // lerPesoKg já zera o ruído pequeno; aqui o negativo é real (tara com peso na plataforma, deriva ou ligação).
+          Serial.printf("Peso negativo (%.3f kg): refaca a tara com a plataforma vazia. Se repetir, rode d e r no Serial e confira a ligacao/montagem das celulas.\n", peso);
+          mostrarDisplay("Peso negativo");
+        } else if (peso > PESO_MAXIMO_KG) {
+          Serial.printf("Peso acima da capacidade (%.1f kg > %.0f kg): leitura descartada. Confira a calibracao (d no Serial).\n", peso, PESO_MAXIMO_KG);
           mostrarDisplay("Peso invalido");
         } else {
           time_t agora = time(nullptr);
@@ -512,15 +748,18 @@ void loop() {
   }
   delay(5); // a tarefa de botões cuida do debounce, inclusive durante HTTP/leitura
 
-  // Peso ao vivo no Serial (ajuda a calibrar e a conferir no Wokwi)
-  if (millis() - lastLogPeso >= LOG_PESO_MS) {
+  // Peso ao vivo no Serial (ajuda a calibrar e a conferir). No modo "r", mostra o valor bruto do HX711.
+  if (millis() - lastLogPeso >= (modoBruto ? LOG_BRUTO_MS : LOG_PESO_MS)) {
     lastLogPeso = millis();
-    float peso = lerPesoKg();
-    if (isfinite(peso)) Serial.printf("Peso atual: %.3f kg\n", peso);
-    else Serial.println("HX711 sem resposta: leitura cancelada; confira a ligacao do sensor.");
+    float peso = lerPesoKg(modoBruto ? 3 : AMOSTRAS_AO_VIVO);
+    if (!sensorOk) Serial.println("HX711 sem resposta: leitura cancelada; confira a ligacao do sensor.");
+    else if (modoBruto) Serial.printf("bruto=%.0f  variacao desde a tara=%+.0f\n", brutoAtual, brutoAtual - balanca.get_offset());
+    else if (!calibrada) Serial.printf("Bruto=%.0f (sem calibracao: faca a tara com t e calibre com c <kg>)\n", brutoAtual);
+    else Serial.printf("Peso atual: %.3f kg (bruto=%.0f, ruido=%ld)\n", peso, brutoAtual, dispersaoAtual);
     if (temPendente) mostrarDisplay("Envio pendente");
-    else if (!isfinite(peso)) mostrarDisplay("Falha no sensor");
+    else if (!sensorOk) mostrarDisplay("Falha no sensor");
     else if (!taraFeita) mostrarDisplay("Faca a tara");
+    else if (!calibrada) mostrarDisplay("Calibre (Serial)");
     else {
       char linha[17];
       snprintf(linha, sizeof(linha), "Peso: %.2f kg", peso);
