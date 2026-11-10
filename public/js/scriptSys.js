@@ -107,6 +107,7 @@ window.addEventListener('resize', () => {
 document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     anchor.addEventListener('click', (event) => {
         const targetId = anchor.getAttribute('href');
+        if (targetId.length < 2) return; // ignora href="#" (ex.: botões do WhatsApp)
         const target = document.querySelector(targetId);
 
         if (!target) return;

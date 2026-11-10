@@ -8,7 +8,7 @@
  *   - em fetch():           header 'X-CSRF-Token' com CsrfMiddleware::token()
  *   - no controller (POST): CsrfMiddleware::validar();
  */
-class CsrfMiddleware
+class CsrfMiddlewaregit
 {
     public static function token(): string
     {
