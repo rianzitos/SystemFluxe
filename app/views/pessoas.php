@@ -172,7 +172,7 @@ function icone(string $nome): string
                     <i class="bi bi-person-check"></i> Presentes agora
                 </button>
                 <button type="button" class="pessoas-aba" data-aba="cadastro">
-                    <i class="bi bi-person-vcard"></i> Cadastro <span class="pessoas-aba-contagem"><?= count($cadastro) ?></span>
+                    <i class="bi bi-person-vcard"></i> Cadastro <span class="pessoas-aba-contagem" data-ao-vivo="contagem"><?= count($cadastro) ?></span>
                 </button>
             </nav>
 
@@ -180,7 +180,7 @@ function icone(string $nome): string
             <div id="painelPresentes" data-aba-painel="presentes">
 
                 <!-- Cards de resumo -->
-                <section class="cards-resumo cards-resumo-4">
+                <section class="cards-resumo cards-resumo-4" data-ao-vivo="cards">
                     <?php foreach ($cardsResumo as $card): ?>
                         <div class="card">
                             <div class="card-icone card-icone-<?= htmlspecialchars($card['chave']) ?>">
@@ -201,6 +201,7 @@ function icone(string $nome): string
                 </div>
 
                 <!-- Grupos de pessoas -->
+                <div data-ao-vivo="grupos">
                 <?php foreach ($grupos as $grupo): ?>
                     <section class="painel-card grupo-pessoas">
                         <div class="grupo-cabecalho">
@@ -237,6 +238,7 @@ function icone(string $nome): string
                         <?php endif; ?>
                     </section>
                 <?php endforeach; ?>
+                </div>
 
             </div>
 
@@ -261,14 +263,14 @@ function icone(string $nome): string
                     <?php endif; ?>
                 </div>
 
-                <p class="cad-resumo">
+                <p class="cad-resumo" data-ao-vivo="resumo">
                     <strong><?= (int) $totalAtivas ?></strong> pessoas ativas
                     · <strong><?= (int) $semCartaoAtivo ?></strong> sem cartão ativo
                     <?php if (!$ehAdmin): ?> · Somente o administrador da empresa altera o cadastro.<?php endif; ?>
                 </p>
 
                 <section class="painel-card">
-                    <div class="cad-lista" id="listaCadastro">
+                    <div class="cad-lista" id="listaCadastro" data-ao-vivo="cadastro">
                         <?php foreach ($cadastro as $i => $pessoa): ?>
                             <?php
                             $uids = array_column($pessoa['cartoes'], 'uid');

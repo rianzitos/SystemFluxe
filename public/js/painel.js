@@ -1,6 +1,7 @@
 // =========================================================
 // PAINEL — interações e gráficos
-// Depende de window.DADOS_PAINEL (definido inline no painel.php)
+// Lê os dados do <script id="dadosPainel"> (JSON, definido no painel.php). O aoVivo.js troca
+// esses dados em tempo real: os gráficos são atualizados no lugar, sem recriar nem recarregar.
 // e da biblioteca Chart.js carregada antes deste arquivo.
 // =========================================================
 
@@ -43,13 +44,26 @@ function montarMenuMobile() {
 }
 
 /** Gráfico de linha: Previsto x Realizado. */
+let graficoDemanda = null;
+let graficoDistribuicao = null;
+
+/** Dados dos gráficos que o servidor deixou no HTML. */
+function lerDados(origem = document) {
+    try {
+        return JSON.parse(origem.querySelector('[data-ao-vivo-dados="painel"]').textContent);
+    } catch (erro) {
+        return null;
+    }
+}
+
 function montarGraficoDemanda() {
     const canvas = document.getElementById('graficoDemanda');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const dados = window.DADOS_PAINEL.demanda;
+    const dados = lerDados()?.demanda;
+    if (!dados) return;
 
-    new Chart(canvas, {
+    graficoDemanda = new Chart(canvas, {
         type: 'line',
         data: {
             labels: dados.labels,
@@ -93,9 +107,10 @@ function montarGraficoDistribuicao() {
     const canvas = document.getElementById('graficoDistribuicao');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const dados = window.DADOS_PAINEL.distribuicao;
+    const dados = lerDados()?.distribuicao;
+    if (!dados) return;
 
-    new Chart(canvas, {
+    graficoDistribuicao = new Chart(canvas, {
         type: 'doughnut',
         data: {
             labels: dados.labels,
@@ -113,6 +128,11 @@ function montarGraficoDistribuicao() {
         },
     });
 
+    desenharLegenda(dados);
+}
+
+/** Legenda manual da rosca (ao lado do gráfico). */
+function desenharLegenda(dados) {
     const legenda = document.getElementById('legendaDistribuicao');
     if (!legenda) return;
 
@@ -124,3 +144,24 @@ function montarGraficoDistribuicao() {
         </li>
     `).join('');
 }
+
+// Tempo real: chegaram dados novos do servidor → os gráficos se ajustam no lugar.
+document.addEventListener('aovivo:atualizado', (evento) => {
+    const dados = evento.detail.dados.painel;
+    if (!dados) return;
+
+    if (graficoDemanda) {
+        graficoDemanda.data.labels = dados.demanda.labels;
+        graficoDemanda.data.datasets[0].data = dados.demanda.previsto;
+        graficoDemanda.data.datasets[1].data = dados.demanda.realizado;
+        graficoDemanda.update();
+    }
+
+    if (graficoDistribuicao) {
+        graficoDistribuicao.data.labels = dados.distribuicao.labels;
+        graficoDistribuicao.data.datasets[0].data = dados.distribuicao.valores;
+        graficoDistribuicao.data.datasets[0].backgroundColor = dados.distribuicao.cores;
+        graficoDistribuicao.update();
+        desenharLegenda(dados.distribuicao);
+    }
+});

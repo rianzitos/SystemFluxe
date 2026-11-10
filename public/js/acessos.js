@@ -1,6 +1,7 @@
 // =========================================================
 // ACESSOS — interações e gráficos
-// Depende de window.DADOS_ACESSOS (definido inline no acessos.php)
+// Lê os dados do <script id="dadosAcessos"> (JSON, definido no acessos.php). O aoVivo.js troca
+// esses dados em tempo real: os gráficos são atualizados no lugar, sem recriar nem recarregar.
 // e da biblioteca Chart.js carregada antes deste arquivo.
 // =========================================================
 
@@ -55,14 +56,26 @@ function montarMenuMobile() {
     });
 }
 
+const graficos = {};
+
+/** Dados dos gráficos que o servidor deixou no HTML. */
+function lerDados(origem = document) {
+    try {
+        return JSON.parse(origem.querySelector('[data-ao-vivo-dados="acessos"]').textContent);
+    } catch (erro) {
+        return null;
+    }
+}
+
 /** Gráfico de área: Número de Pessoas por Dia. */
 function montarGraficoPessoasDia() {
     const canvas = document.getElementById('graficoPessoasDia');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const dados = window.DADOS_ACESSOS.pessoasDia;
+    const dados = lerDados()?.pessoasDia;
+    if (!dados) return;
 
-    new Chart(canvas, {
+    graficos.pessoasDia = new Chart(canvas, {
         type: 'line',
         data: {
             labels: dados.labels,
@@ -95,9 +108,10 @@ function montarGraficoProducao() {
     const canvas = document.getElementById('graficoProducao');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const dados = window.DADOS_ACESSOS.producao;
+    const dados = lerDados()?.producao;
+    if (!dados) return;
 
-    new Chart(canvas, {
+    graficos.producao = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: dados.labels,
@@ -126,9 +140,10 @@ function montarGraficoDesperdicio() {
     const canvas = document.getElementById('graficoDesperdicio');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const dados = window.DADOS_ACESSOS.desperdicio;
+    const dados = lerDados()?.desperdicio;
+    if (!dados) return;
 
-    new Chart(canvas, {
+    graficos.desperdicio = new Chart(canvas, {
         type: 'bar',
         data: {
             labels: dados.labels,
@@ -151,3 +166,15 @@ function montarGraficoDesperdicio() {
         },
     });
 }
+
+// Tempo real: chegaram dados novos do servidor → os gráficos se ajustam no lugar.
+document.addEventListener('aovivo:atualizado', (evento) => {
+    const dados = evento.detail.dados.acessos;
+    if (!dados) return;
+
+    Object.entries(graficos).forEach(([chave, grafico]) => {
+        grafico.data.labels = dados[chave].labels;
+        grafico.data.datasets[0].data = dados[chave].valores;
+        grafico.update();
+    });
+});

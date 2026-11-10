@@ -571,6 +571,162 @@ h2,
     }
 }
 
+/* ===================== TEMPO REAL ===================== */
+
+/* Selo "Ao vivo" do cabeçalho: bolinha verde pulsando; cinza quando perde a conexão. */
+.ao-vivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--branco);
+    color: var(--texto-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ao-vivo-ponto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sucesso);
+    animation: aoVivoPulso 2s ease-out infinite;
+}
+
+.ao-vivo-erro .ao-vivo-ponto {
+    background: var(--texto-muted);
+    animation: none;
+}
+
+@keyframes aoVivoPulso {
+    0% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+    }
+
+    70%,
+    100% {
+        box-shadow: 0 0 0 7px rgba(22, 163, 74, 0);
+    }
+}
+
+/* Avisos que aparecem no canto da tela: entrou, saiu, pesagem recebida, dispositivo sem sinal... */
+.avisos-vivo {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 80;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 330px;
+    max-width: calc(100vw - 32px);
+    pointer-events: none;
+}
+
+.aviso-vivo {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--branco);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    border-left: 4px solid var(--amarelo);
+    border-radius: var(--raio-sm);
+    box-shadow: 0 10px 30px rgba(16, 17, 20, 0.18);
+    animation: avisoVivoEntra 0.25s ease-out;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.aviso-vivo>i {
+    font-size: 18px;
+    line-height: 1.2;
+    color: var(--amarelo);
+}
+
+.aviso-vivo strong {
+    display: block;
+    font-size: 13.5px;
+}
+
+.aviso-vivo small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--texto-muted);
+}
+
+.aviso-vivo-entrada {
+    border-left-color: var(--sucesso);
+}
+
+.aviso-vivo-entrada>i {
+    color: var(--sucesso);
+}
+
+.aviso-vivo-saida {
+    border-left-color: var(--info);
+}
+
+.aviso-vivo-saida>i {
+    color: var(--info);
+}
+
+.aviso-vivo-aviso {
+    border-left-color: var(--aviso);
+}
+
+.aviso-vivo-aviso>i {
+    color: var(--aviso);
+}
+
+.aviso-vivo-saindo {
+    opacity: 0;
+    transform: translateX(16px);
+}
+
+@keyframes avisoVivoEntra {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .ao-vivo-ponto,
+    .aviso-vivo {
+        animation: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .ao-vivo-texto {
+        display: none;
+    }
+
+    .ao-vivo {
+        padding: 0 13px;
+    }
+
+    .avisos-vivo {
+        right: 16px;
+        bottom: 16px;
+    }
+}
+
+html[data-tema="escuro"] .ao-vivo {
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+html[data-tema="escuro"] .aviso-vivo {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+}
+
 /* ===================== CARDS DE RESUMO ===================== */
 
 .cards-resumo {
