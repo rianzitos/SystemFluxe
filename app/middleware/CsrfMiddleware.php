@@ -1,14 +1,6 @@
 <?php
 
-/**
- * Proteção contra CSRF (requisições forjadas a partir de outro site).
- *
- * Uso:
- *   - em formulários HTML:  <?= CsrfMiddleware::campo() ?>
- *   - em fetch():           header 'X-CSRF-Token' com CsrfMiddleware::token()
- *   - no controller (POST): CsrfMiddleware::validar();
- */
-class CsrfMiddlewaregit
+class CsrfMiddleware
 {
     public static function token(): string
     {
@@ -18,13 +10,11 @@ class CsrfMiddlewaregit
         return $_SESSION['csrf_token'];
     }
 
-    /** Campo <input hidden> pronto para colar dentro de um <form>. */
     public static function campo(): string
     {
         return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(self::token(), ENT_QUOTES) . '">';
     }
 
-    /** true se o token enviado (campo do form ou header) confere com o da sessão. */
     public static function valido(): bool
     {
         $esperado = $_SESSION['csrf_token'] ?? '';
@@ -33,7 +23,6 @@ class CsrfMiddlewaregit
         return $esperado !== '' && is_string($enviado) && hash_equals($esperado, $enviado);
     }
 
-    /** Encerra com 403 (JSON) se o token for inválido. */
     public static function validar(): void
     {
         if (!self::valido()) {
