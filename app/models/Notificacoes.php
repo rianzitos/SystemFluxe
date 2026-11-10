@@ -31,6 +31,7 @@ class Notificacoes
             if ($negados > 0) {
                 $alertas[] = [
                     'tipo'      => 'aviso',
+                    'link'      => '/relatorios',
                     'titulo'    => 'Acessos negados hoje',
                     'descricao' => $negados === 1
                         ? '1 tentativa de acesso foi negada nas catracas hoje.'
@@ -43,6 +44,7 @@ class Notificacoes
             foreach ((new Dispositivo())->semSinal($empresaId) as $d) {
                 $alertas[] = [
                     'tipo'      => 'aviso',
+                    'link'      => '/configuracoes#integracoes',
                     'titulo'    => 'Dispositivo sem sinal',
                     'descricao' => $d['nome'] . ': último sinal ' . Datas::haQuanto($d['ultimo_ping']) . '.',
                 ];
@@ -57,6 +59,22 @@ class Notificacoes
     {
         $pref = self::preferencias();
         return array_merge(self::dasCatracas($empresaId, $pref), $pref['previsao_demanda'] ? $alertasPrevisao : []);
+    }
+
+    /**
+     * O que o painel do sino mostra: a mesma lista do painel, já com o destino de cada alerta
+     * (o clique leva para a tela onde o assunto é tratado).
+     */
+    public static function listar(int $empresaId): array
+    {
+        $alertas = self::aplicar((new Previsao($empresaId))->alertas(), $empresaId);
+
+        return array_map(fn($a) => [
+            'tipo'      => $a['tipo'],
+            'titulo'    => $a['titulo'],
+            'descricao' => $a['descricao'],
+            'link'      => $a['link'] ?? '/assistente',
+        ], $alertas);
     }
 
     /** Número do sino, quando a tela só precisa da contagem dos alertas de previsão. */

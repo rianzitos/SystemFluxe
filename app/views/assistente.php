@@ -53,12 +53,7 @@ $tipoIcone = ['aviso' => 'bi-exclamation-circle-fill', 'info' => 'bi-info-circle
                         <?= Pagina::svg('calendar') ?>
                         <span><?= htmlspecialchars(Datas::porExtenso(new DateTimeImmutable('today'))) ?></span>
                     </div>
-                    <a class="sino" href="/assistente" id="btnNotificacoes" aria-label="Alertas">
-                        <?= Pagina::svg('bell') ?>
-                        <?php if ($notificacoesNaoLidas > 0): ?>
-                            <span class="badge-sino"><?= (int) $notificacoesNaoLidas ?></span>
-                        <?php endif; ?>
-                    </a>
+                    <?php require __DIR__ . '/partials/acoes-topo.php'; ?>
                 </div>
             </header>
 
