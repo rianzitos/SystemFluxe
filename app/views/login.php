@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . "/../middleware/CsrfMiddleware.php"; ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 
