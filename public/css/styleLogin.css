@@ -610,8 +610,10 @@ footer span {
 }
 
 .logoImg {
-    width: 10%;
-    /* tamanho fixo — ajuste conforme o GIF */
+    /* Tamanho pela largura da TELA (10vw, entre 150px e 260px) e não em % do contêiner:
+       porcentagem aqui dependia do tamanho do arquivo do GIF e encolhia a logo quando ele era reduzido. */
+    width: clamp(150px, 10vw, 260px);
+    height: auto;
     object-fit: contain;
     /* garante que o GIF não seja cortado */
 }
@@ -879,7 +881,7 @@ footer span {
     }
 
     .logoImg {
-        width: 32%;
+        width: clamp(125px, 32vw, 280px);
     }
 
     .footerLogin {
