@@ -45,29 +45,36 @@ function montarMenuMobile() {
  */
 function montarBusca() {
     const input = document.getElementById('buscaPessoas');
-    const grupos = document.querySelectorAll('.grupo-pessoas');
-    if (!input || !grupos.length) return;
+    if (!input) return;
 
-    input.addEventListener('input', () => {
-        const termo = input.value.trim().toLowerCase();
+    input.addEventListener('input', filtrarPresentes);
+    // Tempo real: a lista é trocada pelo aoVivo.js; o que foi digitado na busca continua valendo.
+    document.addEventListener('aovivo:atualizado', filtrarPresentes);
+}
 
-        grupos.forEach((grupo) => {
-            let algumVisivel = false;
+/** Esconde quem não bate com o texto da busca (consulta o DOM na hora: a lista pode ter sido trocada). */
+function filtrarPresentes() {
+    const input = document.getElementById('buscaPessoas');
+    if (!input) return;
 
-            grupo.querySelectorAll('.pessoa-item').forEach((item) => {
-                const nome = item.dataset.nome || '';
-                const funcao = item.dataset.funcao || '';
-                const bateComBusca = nome.includes(termo) || funcao.includes(termo);
+    const termo = input.value.trim().toLowerCase();
 
-                item.style.display = bateComBusca ? '' : 'none';
-                if (bateComBusca) algumVisivel = true;
-            });
+    document.querySelectorAll('.grupo-pessoas').forEach((grupo) => {
+        let algumVisivel = false;
 
-            grupo.style.display = (termo === '' || algumVisivel) ? '' : 'none';
+        grupo.querySelectorAll('.pessoa-item').forEach((item) => {
+            const nome = item.dataset.nome || '';
+            const funcao = item.dataset.funcao || '';
+            const bateComBusca = nome.includes(termo) || funcao.includes(termo);
 
-            const rodape = grupo.querySelector('.grupo-rodape');
-            if (rodape) rodape.style.display = termo === '' ? '' : 'none';
+            item.style.display = bateComBusca ? '' : 'none';
+            if (bateComBusca) algumVisivel = true;
         });
+
+        grupo.style.display = (termo === '' || algumVisivel) ? '' : 'none';
+
+        const rodape = grupo.querySelector('.grupo-rodape');
+        if (rodape) rodape.style.display = termo === '' ? '' : 'none';
     });
 }
 
@@ -178,25 +185,34 @@ function recarregarComAviso(texto) {
 
 function montarBuscaCadastro() {
     const input = document.getElementById('buscaCadastro');
-    const itens = document.querySelectorAll('.cad-item');
+    if (!input) return;
+
+    input.addEventListener('input', filtrarCadastro);
+    // Tempo real: a lista é trocada pelo aoVivo.js; o que foi digitado na busca continua valendo.
+    document.addEventListener('aovivo:atualizado', filtrarCadastro);
+}
+
+/** Mostra só as pessoas que batem com a busca (consulta o DOM na hora: a lista pode ter sido trocada). */
+function filtrarCadastro() {
+    const input = document.getElementById('buscaCadastro');
     const vazio = document.getElementById('cadVazio');
-    if (!input || !itens.length) return;
+    if (!input) return;
 
-    input.addEventListener('input', () => {
-        const termo = input.value.trim().toLowerCase();
-        let visiveis = 0;
+    const itens = document.querySelectorAll('.cad-item');
+    const termo = input.value.trim().toLowerCase();
+    let visiveis = 0;
 
-        itens.forEach((item) => {
-            const bate = (item.dataset.busca || '').includes(termo);
-            item.hidden = !bate;
-            if (bate) visiveis++;
-        });
-
-        if (vazio) {
-            vazio.textContent = 'Nenhuma pessoa encontrada.';
-            vazio.hidden = visiveis > 0;
-        }
+    itens.forEach((item) => {
+        const bate = (item.dataset.busca || '').includes(termo);
+        item.hidden = !bate;
+        if (bate) visiveis++;
     });
+
+    // Sem ninguém cadastrado, a mensagem do servidor ("Nenhuma pessoa cadastrada ainda...") já vem certa.
+    if (vazio && itens.length) {
+        vazio.textContent = 'Nenhuma pessoa encontrada.';
+        vazio.hidden = visiveis > 0;
+    }
 }
 
 // ===================== DIÁLOGOS =====================

@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . "/../middleware/CsrfMiddleware.php"; ?>
 <?php
 // Bootstrap próprio: esse arquivo pode ser acessado direto pelo navegador
 // (ex: http://localhost/SystemFluxe/app/views/cadastro.php), sem passar

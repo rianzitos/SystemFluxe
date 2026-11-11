@@ -121,7 +121,7 @@ $ate = min($dados['total'], $dados['pagina'] * $dados['porPagina']);
             </form>
 
             <!-- Cards de resumo -->
-            <section class="cards-resumo">
+            <section class="cards-resumo" data-ao-vivo="cards">
                 <div class="card">
                     <div class="card-icone"><i class="icone bi bi-person-fill"></i></div>
                     <p class="card-label">Total de Registros</p>
@@ -145,7 +145,7 @@ $ate = min($dados['total'], $dados['pagina'] * $dados['porPagina']);
             </section>
 
             <!-- Tabela -->
-            <section class="painel-card tabela-card">
+            <section class="painel-card tabela-card" data-ao-vivo="tabela">
                 <h2>Registros</h2>
 
                 <?php if (!$dados['registros']): ?>
