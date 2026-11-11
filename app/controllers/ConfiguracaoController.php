@@ -4,16 +4,21 @@
  * Backend da tela de Configurações: perfil (nome, e-mail, cargo), senha e foto do usuário logado,
  * preferências (notificações e sistema), sessões ativas e os dispositivos IoT da empresa
  * (só administradores). Todas as ações respondem JSON.
+ *
+ * As regras (validação e gravação) ficam em Conta e Integracoes, que o aplicativo também usa pela API
+ * (ApiController): aqui só entram a sessão, o CSRF e a permissão do site.
  */
 class ConfiguracaoController
 {
     use RespondeJson;
 
-    private Usuario $usuario;
+    private Conta $conta;
+    private Integracoes $integracoes;
 
     public function __construct()
     {
-        $this->usuario = new Usuario();
+        $this->conta = new Conta();
+        $this->integracoes = new Integracoes();
     }
 
     // ─── Perfil (nome, e-mail, cargo) ─────────────────────────────────────────
@@ -22,52 +27,15 @@ class ConfiguracaoController
     {
         $id = $this->exigirSessao();
 
-        $nome       = trim($_POST['nome'] ?? '');
-        $email      = mb_strtolower(trim($_POST['email'] ?? ''));
-        $cargo      = trim($_POST['cargo'] ?? '');
-        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+        $resultado = $this->executar(fn() => $this->conta->atualizarPerfil($id, $_POST));
 
-        if ($nome === '' || mb_strlen($nome) > 150) {
-            $this->responder(false, 'Informe um nome válido (até 150 caracteres).', 422);
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 150) {
-            $this->responder(false, 'Informe um e-mail válido.', 422);
-        }
-        if (mb_strlen($cargo) > 100) {
-            $this->responder(false, 'O cargo pode ter no máximo 100 caracteres.', 422);
-        }
+        $_SESSION['usuario_nome']  = $resultado['nome'];
+        $_SESSION['usuario_email'] = $resultado['email'];
 
-        $atual = $this->usuario->buscarPerfilCompleto($id);
-        if (!$atual) {
-            $this->responder(false, 'Usuário não encontrado.', 404);
-        }
-
-        // Trocar o e-mail muda o login: exige confirmar a senha atual.
-        if (mb_strtolower($atual['email']) !== $email) {
-            if ($senhaAtual === '') {
-                $this->responder(false, 'Para alterar o e-mail, informe sua senha atual.', 422);
-            }
-            $this->conferirSenha($id, $senhaAtual);
-
-            if ($this->usuario->emailExisteParaOutro($email, $id)) {
-                $this->responder(false, 'Este e-mail já está em uso por outra conta.', 409);
-            }
-        }
-
-        try {
-            $this->usuario->atualizarPerfil($id, $nome, $email, $cargo);
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha ao atualizar perfil: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
-        }
-
-        $_SESSION['usuario_nome']  = $nome;
-        $_SESSION['usuario_email'] = $email;
-
-        $this->responder(true, 'Perfil atualizado com sucesso!', 200, [
-            'nome'  => $nome,
-            'email' => $email,
-            'cargo' => $cargo,
+        $this->responder(true, $resultado['mensagem'], 200, [
+            'nome'  => $resultado['nome'],
+            'email' => $resultado['email'],
+            'cargo' => $resultado['cargo'],
         ]);
     }
 
@@ -77,36 +45,7 @@ class ConfiguracaoController
     {
         $id = $this->exigirSessao();
 
-        $atual     = (string) ($_POST['senha_atual'] ?? '');
-        $nova      = (string) ($_POST['senha_nova'] ?? '');
-        $confirmar = (string) ($_POST['senha_confirmar'] ?? '');
-
-        if ($atual === '' || $nova === '' || $confirmar === '') {
-            $this->responder(false, 'Preencha todos os campos de senha.', 422);
-        }
-        if (strlen($nova) < 8) {
-            $this->responder(false, 'A nova senha deve ter pelo menos 8 caracteres.', 422);
-        }
-        if (strlen($nova) > 72) {
-            // bcrypt ignora tudo após 72 bytes.
-            $this->responder(false, 'A nova senha pode ter no máximo 72 caracteres.', 422);
-        }
-        if ($nova !== $confirmar) {
-            $this->responder(false, 'As senhas não coincidem.', 422);
-        }
-
-        $this->conferirSenha($id, $atual);
-
-        if (hash_equals($atual, $nova)) {
-            $this->responder(false, 'A nova senha deve ser diferente da atual.', 422);
-        }
-
-        try {
-            $this->usuario->atualizarSenha($id, $nova);
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha ao atualizar senha: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
-        }
+        $resultado = $this->executar(fn() => $this->conta->atualizarSenha($id, $_POST));
 
         // Senha mudou: renova o ID da sessão (evita fixação de sessão) e mantém o registro dela em "Sessões ativas".
         $hashAntigo = Sessao::hashAtual();
@@ -117,7 +56,7 @@ class ConfiguracaoController
             error_log('SICAPDA: falha ao atualizar o registro da sessão: ' . $e->getMessage());
         }
 
-        $this->responder(true, 'Senha atualizada com sucesso!');
+        $this->responder(true, $resultado['mensagem']);
     }
 
     // ─── Foto ─────────────────────────────────────────────────────────────────
@@ -133,46 +72,12 @@ class ConfiguracaoController
         if ($arquivo['error'] !== UPLOAD_ERR_OK) {
             $this->responder(false, 'Falha no envio da imagem. Tente novamente.', 422);
         }
-        if ($arquivo['size'] > 5 * 1024 * 1024) {
-            $this->responder(false, 'A imagem deve ter no máximo 5 MB.', 422);
-        }
 
-        // O tipo é detectado pelo conteúdo do arquivo, nunca pelo nome/extensão.
-        $tipo = (new finfo(FILEINFO_MIME_TYPE))->file($arquivo['tmp_name']);
-        $extensoes = ['image/jpeg' => 'jpg', 'image/png' => 'png'];
-        if (!isset($extensoes[$tipo]) || @getimagesize($arquivo['tmp_name']) === false) {
-            $this->responder(false, 'Formato inválido. Envie uma imagem JPG ou PNG.', 422);
-        }
+        $resultado = $this->executar(fn() => $this->conta->salvarFoto($id, $arquivo['tmp_name'], (int) $arquivo['size']));
 
-        $pasta = __DIR__ . '/../../public/uploads/perfil/';
-        if (!is_dir($pasta) && !mkdir($pasta, 0755, true) && !is_dir($pasta)) {
-            $this->responder(false, 'Não foi possível salvar a imagem.', 500);
-        }
+        $_SESSION['usuario_foto'] = $resultado['foto'];
 
-        $nomeArquivo = 'perfil_' . bin2hex(random_bytes(12)) . '.' . $extensoes[$tipo];
-        if (!move_uploaded_file($arquivo['tmp_name'], $pasta . $nomeArquivo)) {
-            $this->responder(false, 'Não foi possível salvar a imagem.', 500);
-        }
-
-        $caminho = 'uploads/perfil/' . $nomeArquivo;
-        $fotoAntiga = $_SESSION['usuario_foto'] ?? null;
-
-        try {
-            $this->usuario->atualizarFoto($id, $caminho);
-        } catch (PDOException $e) {
-            @unlink($pasta . $nomeArquivo);
-            error_log('SICAPDA: falha ao atualizar foto: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
-        }
-
-        $_SESSION['usuario_foto'] = $caminho;
-
-        // Remove a foto anterior do disco (só se estiver dentro da pasta de perfis).
-        if ($fotoAntiga && str_starts_with($fotoAntiga, 'uploads/perfil/') && basename($fotoAntiga) !== $nomeArquivo) {
-            @unlink($pasta . basename($fotoAntiga));
-        }
-
-        $this->responder(true, 'Foto atualizada com sucesso!', 200, ['foto' => '/' . $caminho]);
+        $this->responder(true, $resultado['mensagem'], 200, ['foto' => '/' . $resultado['foto']]);
     }
 
     // ─── Preferências ─────────────────────────────────────────────────────────
@@ -247,36 +152,14 @@ class ConfiguracaoController
 
     // ─── Dispositivos IoT (só administrador) ──────────────────────────────────
 
-    /** Cadastra uma catraca/leitor e devolve o token inteiro, que não será mostrado de novo. */
+    /** Cadastra uma catraca/leitor/balança e devolve o token inteiro, que não será mostrado de novo. */
     public function criarDispositivo(): void
     {
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('dispositivos');
 
-        $nome = trim((string) ($_POST['nome'] ?? ''));
-        $tipo = (string) ($_POST['tipo'] ?? 'rfid');
-        $localizacao = trim((string) ($_POST['localizacao'] ?? ''));
-
-        if ($nome === '' || mb_strlen($nome) > 150) {
-            $this->responder(false, 'Informe o nome do dispositivo (até 150 caracteres).', 422);
-        }
-        if (!isset(Dispositivo::TIPOS[$tipo])) {
-            $this->responder(false, 'Tipo de dispositivo inválido.', 422);
-        }
-        if (mb_strlen($localizacao) > 150) {
-            $this->responder(false, 'A localização pode ter no máximo 150 caracteres.', 422);
-        }
-
-        try {
-            $modelo = new Dispositivo();
-            $novo = $modelo->criar($empresaId, $nome, $tipo, $localizacao !== '' ? $localizacao : null);
-            $dispositivo = $modelo->buscarDaEmpresa($novo['id'], $empresaId);
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha ao criar dispositivo: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível criar o dispositivo. Tente novamente.', 500);
-        }
-
-        $this->responder(true, 'Dispositivo criado.', 200, ['dispositivo' => $dispositivo, 'token' => $novo['token']]);
+        $r = $this->executar(fn() => $this->integracoes->criar($empresaId, $_POST));
+        $this->responder(true, $r['mensagem'], 200, ['dispositivo' => $r['dispositivo'], 'token' => $r['token']]);
     }
 
     /** Gera outro token para o dispositivo; o aparelho que usa o antigo deixa de ser aceito. */
@@ -285,86 +168,41 @@ class ConfiguracaoController
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('dispositivos');
 
-        $id = (int) ($_POST['id'] ?? 0);
-
-        try {
-            $modelo = new Dispositivo();
-            $token = $id > 0 ? $modelo->regenerarToken($id, $empresaId) : false;
-            $dispositivo = $token !== false ? $modelo->buscarDaEmpresa($id, $empresaId) : false;
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha ao regenerar token: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível gerar o token. Tente novamente.', 500);
-        }
-
-        if ($token === false) {
-            $this->responder(false, 'Dispositivo não encontrado.', 404);
-        }
-
-        $this->responder(true, 'Novo token gerado.', 200, ['dispositivo' => $dispositivo, 'token' => $token]);
+        $r = $this->executar(fn() => $this->integracoes->novoToken($empresaId, $_POST));
+        $this->responder(true, $r['mensagem'], 200, ['dispositivo' => $r['dispositivo'], 'token' => $r['token']]);
     }
 
     /**
-     * "Simular leitura": passa um UID por uma catraca da empresa como se a ESP32 o tivesse lido, pela mesma
-     * regra (Catraca::passar). Grava um acesso DE VERDADE (aparece no painel e nos relatórios); não marca o
-     * dispositivo como online, porque isso só quem manda o ping é o aparelho.
+     * "Simular leitura": passa um UID por uma catraca da empresa pela mesma regra de uma leitura real
+     * (Integracoes::simularLeitura). Grava um acesso DE VERDADE.
      */
     public function simularLeitura(): void
     {
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('dispositivos');
 
-        $id = (int) ($_POST['id'] ?? 0);
-        $dispositivo = $id > 0 ? (new Dispositivo())->buscarDaEmpresa($id, $empresaId) : false;
-        if (!$dispositivo) {
-            $this->responder(false, 'Dispositivo não encontrado.', 404);
-        }
-
-        if ($dispositivo['tipo'] === 'balanca') {
-            $this->responder(false, 'Use o formulário de pesagem para esta balança.', 422);
-        }
-        $uid = Catraca::normalizarUid((string) ($_POST['uid'] ?? ''));
-        if ($uid === '' || strlen($uid) > 100) {
-            $this->responder(false, 'Informe o UID do cartão.', 422);
-        }
-
-        try {
-            $resultado = Catraca::passar($empresaId, $id, $uid);
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha ao simular leitura: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível simular a leitura. Tente novamente.', 500);
-        }
-
-        $this->responder(true, $resultado['mensagem'], 200, ['resultado' => $resultado, 'uid' => $uid]);
+        $r = $this->executar(fn() => $this->integracoes->simularLeitura($empresaId, $_POST));
+        $this->responder(true, $r['mensagem'], 200, ['resultado' => $r['resultado'], 'uid' => $r['uid']]);
     }
 
     public function registrarPesagem(): void
     {
         $this->exigirSessao();
         $empresaId = $this->exigirAdmin('dispositivos');
-        $dispositivo = (new Dispositivo())->buscarDaEmpresa((int) ($_POST['id'] ?? 0), $empresaId);
-        if (!$dispositivo) {
-            $this->responder(false, 'Balança não encontrada.', 404);
-        }
-        $dispositivo['empresa_id'] = $empresaId;
-        try {
-            $resultado = Balanca::registrar($dispositivo, $_POST);
-        } catch (InvalidArgumentException $e) {
-            $this->responder(false, $e->getMessage(), 422);
-        } catch (PDOException $e) {
-            error_log('SICAPDA pesagem: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível salvar a pesagem.', 500);
-        }
-        $this->responder(true, $resultado['mensagem'], 200, $resultado);
+
+        $r = $this->executar(fn() => $this->integracoes->registrarPesagem($empresaId, $_POST));
+        $this->responder(true, $r['mensagem'], 200, $r);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Encerra com 403 se a senha informada não for a do usuário. */
-    private function conferirSenha(int $id, string $senha): void
+    /** Roda uma regra de Conta/Integracoes; um erro de regra (CadastroException) vira a resposta JSON com o código dele. */
+    private function executar(callable $acao): array
     {
-        $hash = $this->usuario->buscarHashSenha($id);
-        if (!$hash || !password_verify($senha, $hash)) {
-            $this->responder(false, 'Senha atual incorreta.', 403);
+        try {
+            return $acao();
+        } catch (CadastroException $e) {
+            $this->responder(false, $e->getMessage(), $e->status());
         }
     }
 }

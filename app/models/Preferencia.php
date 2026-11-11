@@ -16,6 +16,23 @@ class Preferencia
     public const PERIODOS = ['mes', '7', '30', '90'];
     public const ITENS_PAGINA = [10, 20, 50];
 
+    /** Rótulos do período padrão dos Relatórios (aba Sistema do site e do aplicativo). */
+    public const PERIODOS_ROTULOS = ['mes' => 'Este mês', '7' => 'Últimos 7 dias', '30' => 'Últimos 30 dias', '90' => 'Últimos 90 dias'];
+
+    /** O fuso é fixo: as catracas gravam no horário de Brasília e os relatórios e a previsão leem no mesmo horário. */
+    public const FUSO_ROTULO = 'Horário de Brasília (GMT-3)';
+
+    /**
+     * O que a aba Notificações mostra (site e aplicativo). "disponivel" false = ainda não funciona
+     * (aparece desligado e travado, com a etiqueta "Em breve").
+     */
+    public const CATALOGO_NOTIFICACOES = [
+        ['chave' => 'previsao_demanda', 'label' => 'Alertas de previsão de demanda', 'descricao' => 'Desperdício acima da meta, picos de movimento e feriados que mudam a previsão', 'disponivel' => true],
+        ['chave' => 'acesso_negado', 'label' => 'Tentativas de acesso não autorizado', 'descricao' => 'Avisa no sino e no painel quando uma catraca negar acessos hoje', 'disponivel' => true],
+        ['chave' => 'dispositivo_offline', 'label' => 'Dispositivo IoT offline', 'descricao' => 'Avisa quando uma catraca ou leitor parar de responder', 'disponivel' => true],
+        ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com o resumo do dia anterior', 'disponivel' => false],
+    ];
+
     private const PADRAO_NOTIFICACOES = ['previsao_demanda' => true, 'acesso_negado' => true, 'dispositivo_offline' => true];
     private const PADRAO_SISTEMA = ['periodo_padrao' => 'mes', 'itens_pagina' => 20];
 
@@ -59,6 +76,16 @@ class Preferencia
         }
 
         return ['notificacoes' => $notificacoes, 'sistema' => $sistema];
+    }
+
+    /** Catálogo de notificações com o estado (ligado/desligado) deste usuário. */
+    public function notificacoesDoUsuario(int $usuarioId): array
+    {
+        $atuais = $this->obter($usuarioId)['notificacoes'];
+        return array_map(
+            fn($item) => $item + ['ativo' => $item['disponivel'] && ($atuais[$item['chave']] ?? false)],
+            self::CATALOGO_NOTIFICACOES
+        );
     }
 
     public function salvarNotificacao(int $usuarioId, string $chave, bool $ativo): void

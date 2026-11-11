@@ -120,6 +120,48 @@ class CadastroPessoas
         return ['mensagem' => 'Cartão removido.'];
     }
 
+    // ─── Planilha ────────────────────────────────────────────────────────────
+
+    /** Tamanho máximo da planilha (CSV) importada de uma vez. */
+    public const TAMANHO_MAX_PLANILHA = 1024 * 1024; // 1 MB
+
+    /**
+     * Importa a planilha (texto do CSV, ver CsvPessoas): cadastra as pessoas válidas (com o cartão, se vier) e
+     * devolve quantas entraram e, por linha, o motivo das que ficaram de fora. O site manda o arquivo enviado
+     * pelo formulário; o aplicativo manda o texto do arquivo escolhido no aparelho.
+     */
+    public function importar(int $empresaId, string $conteudo): array
+    {
+        if (strlen($conteudo) > self::TAMANHO_MAX_PLANILHA) {
+            throw new CadastroException('O arquivo passa de 1 MB. Divida a planilha em partes menores.');
+        }
+
+        try {
+            $lido = CsvPessoas::interpretar($conteudo);
+        } catch (InvalidArgumentException $e) {
+            throw new CadastroException($e->getMessage());
+        }
+
+        try {
+            $resultado = $this->pessoa->importar($empresaId, $lido['linhas']);
+        } catch (PDOException $e) {
+            error_log('SICAPDA: falha na importação: ' . $e->getMessage());
+            throw new CadastroException('Não foi possível importar. Nada foi gravado; tente novamente.', 500);
+        }
+
+        $erros = array_merge($lido['erros'], $resultado['erros']);
+        usort($erros, fn($a, $b) => $a['linha'] <=> $b['linha']);
+
+        return [
+            'mensagem'  => 'Importação concluída.',
+            'total'     => $lido['total'],
+            'pessoas'   => $resultado['pessoas'],
+            'cartoes'   => $resultado['cartoes'],
+            'ignoradas' => count($erros),
+            'erros'     => array_slice($erros, 0, 100),
+        ];
+    }
+
     // ─── Validação ───────────────────────────────────────────────────────────
 
     /** Nome, cargo, categoria e matrícula do formulário, já validados. */
