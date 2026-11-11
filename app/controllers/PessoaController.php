@@ -15,8 +15,6 @@ class PessoaController
 {
     use RespondeJson;
 
-    private const TAMANHO_MAX_PLANILHA = 1024 * 1024; // 1 MB
-
     private Pessoa $pessoa;
     private CadastroPessoas $cadastro;
 
@@ -103,35 +101,12 @@ class PessoaController
         if ($arquivo['error'] !== UPLOAD_ERR_OK) {
             $this->responder(false, 'Falha no envio do arquivo. Tente novamente.', 422);
         }
-        if ($arquivo['size'] > self::TAMANHO_MAX_PLANILHA) {
+        if ($arquivo['size'] > CadastroPessoas::TAMANHO_MAX_PLANILHA) {
             $this->responder(false, 'O arquivo passa de 1 MB. Divida a planilha em partes menores.', 422);
         }
 
         $conteudo = (string) file_get_contents($arquivo['tmp_name']);
-
-        try {
-            $lido = CsvPessoas::interpretar($conteudo);
-        } catch (InvalidArgumentException $e) {
-            $this->responder(false, $e->getMessage(), 422);
-        }
-
-        try {
-            $resultado = $this->pessoa->importar($empresaId, $lido['linhas']);
-        } catch (PDOException $e) {
-            error_log('SICAPDA: falha na importação: ' . $e->getMessage());
-            $this->responder(false, 'Não foi possível importar. Nada foi gravado; tente novamente.', 500);
-        }
-
-        $erros = array_merge($lido['erros'], $resultado['erros']);
-        usort($erros, fn($a, $b) => $a['linha'] <=> $b['linha']);
-
-        $this->responder(true, 'Importação concluída.', 200, [
-            'total'     => $lido['total'],
-            'pessoas'   => $resultado['pessoas'],
-            'cartoes'   => $resultado['cartoes'],
-            'ignoradas' => count($erros),
-            'erros'     => array_slice($erros, 0, 100),
-        ]);
+        $this->executar(fn() => $this->cadastro->importar($empresaId, $conteudo));
     }
 
     /** Baixa o modelo (cabeçalho + 2 exemplos) para preencher no Excel. */

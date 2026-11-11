@@ -626,6 +626,27 @@
     color: #4a4a4a;
 }
 
+/* Etiqueta "Novo" das telas que chegaram na última versão do app */
+.abaNovo {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.08rem 0.5rem;
+    border-radius: 999px;
+    background: var(--preto);
+    color: var(--amarelo);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    vertical-align: 0.15em;
+    white-space: nowrap;
+}
+
+/* Lista "O que há de novo": um pouco de espaço antes da nota final do cartão */
+.appNovidades {
+    margin-top: 0.75rem;
+}
+
 /* visualizador do celular */
 .appTelaPalco {
     position: relative;

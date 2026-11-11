@@ -60,20 +60,11 @@ $abas = [
     ['chave' => 'seguranca', 'label' => 'Segurança', 'icone' => 'bi-shield-lock'],
 ];
 
-// Preferências de notificação. "disponivel" false = ainda não funciona (aparece desligado e travado).
-$notificacoesConfig = [
-    ['chave' => 'previsao_demanda', 'label' => 'Alertas de previsão de demanda', 'descricao' => 'Desperdício acima da meta, picos de movimento e feriados que mudam a previsão', 'disponivel' => true],
-    ['chave' => 'acesso_negado', 'label' => 'Tentativas de acesso não autorizado', 'descricao' => 'Avisa no sino e no painel quando uma catraca negar acessos hoje', 'disponivel' => true],
-    ['chave' => 'dispositivo_offline', 'label' => 'Dispositivo IoT offline', 'descricao' => 'Avisa quando uma catraca ou leitor parar de responder', 'disponivel' => true],
-    ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com o resumo do dia anterior', 'disponivel' => false],
-];
-foreach ($notificacoesConfig as &$item) {
-    $item['ativo'] = $item['disponivel'] && ($preferencias['notificacoes'][$item['chave']] ?? false);
-}
-unset($item);
+// Preferências de notificação (o mesmo catálogo que o aplicativo mostra). "disponivel" false = ainda não funciona.
+$notificacoesConfig = (new Preferencia())->notificacoesDoUsuario($usuarioId);
 
 // Opções da aba Sistema (valor => rótulo)
-$periodosRelatorio = ['mes' => 'Este mês', '7' => 'Últimos 7 dias', '30' => 'Últimos 30 dias', '90' => 'Últimos 90 dias'];
+$periodosRelatorio = Preferencia::PERIODOS_ROTULOS;
 
 // Dispositivos IoT da empresa (tabela dispositivos_iot): status vem do último sinal (ping) da ESP32.
 $dispositivosIot = $empresaId > 0 ? (new Dispositivo())->listar($empresaId) : [];
@@ -343,7 +334,7 @@ try {
                             </div>
                             <div class="campo">
                                 <label for="fusoHorario">Fuso horário</label>
-                                <input type="text" id="fusoHorario" value="Horário de Brasília (GMT-3)" readonly>
+                                <input type="text" id="fusoHorario" value="<?= htmlspecialchars(Preferencia::FUSO_ROTULO) ?>" readonly>
                             </div>
                             <p class="campo-erro" id="msgSistema" hidden></p>
 
