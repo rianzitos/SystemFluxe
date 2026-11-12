@@ -1,3 +1,4 @@
 MFRC522
 ESP32Servo
 ArduinoJson
+LiquidCrystal I2C

@@ -37,7 +37,14 @@
       "rotate": 180,
       "attrs": { "value": "220" }
     },
-    { "type": "wokwi-servo", "id": "servo1", "top": 122, "left": 2.8, "rotate": 180, "attrs": {} }
+    { "type": "wokwi-servo", "id": "servo1", "top": 122, "left": 2.8, "rotate": 180, "attrs": {} },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": -200,
+      "left": -20,
+      "attrs": { "pins": "i2c", "i2cAddress": "0x27", "background": "blue", "color": "white" }
+    }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
@@ -57,7 +64,11 @@
     [ "ledR:C", "esp:GND.3", "black", [] ],
     [ "esp:27", "r2:1", "green", [] ],
     [ "r2:2", "ledG:A", "green", [] ],
-    [ "ledG:C", "esp:GND.3", "black", [] ]
+    [ "ledG:C", "esp:GND.3", "black", [] ],
+    [ "lcd:GND", "esp:GND.1", "black", [] ],
+    [ "lcd:VCC", "esp:5V", "red", [] ],
+    [ "lcd:SDA", "esp:21", "blue", [] ],
+    [ "lcd:SCL", "esp:25", "yellow", [] ]
   ],
   "dependencies": {}
 }
