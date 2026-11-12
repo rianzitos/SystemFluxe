@@ -29,7 +29,28 @@
  *   POST /api/pessoas/cartao           {funcionario_id, uid}
  *   POST /api/pessoas/cartao/ativo     {id, ativo}
  *   POST /api/pessoas/cartao/remover   {id}
- * As escritas respondem {sucesso, mensagem, ...}; erro de regra vem como {sucesso: false, mensagem} com 404, 409 ou 422.
+ *   POST /api/pessoas/importar         {csv}  planilha (texto do CSV; mesmas regras do site)
+ *   GET  /api/pessoas/modelo           modelo da planilha (CSV, qualquer usuário)
+ *
+ * Configurações (mesmas regras do site, em Conta, Preferencia, Sessao e Integracoes):
+ *   POST /api/perfil                   {nome, email, cargo, senha_atual?}  (trocar o e-mail exige a senha atual)
+ *   POST /api/perfil/senha             {senha_atual, senha_nova, senha_confirmar}
+ *   POST /api/perfil/foto              {imagem}  JPG ou PNG em base64, até 5 MB
+ *   GET  /api/preferencias             notificações (catálogo + ligado/desligado) e sistema (período e itens dos Relatórios)
+ *   POST /api/preferencias/notificacao {chave, ativo}
+ *   POST /api/preferencias/sistema     {periodo_padrao, itens_pagina}
+ *   GET  /api/sessoes                  sessões abertas no site (navegador) com esta conta
+ *   POST /api/sessoes/encerrar         {id} ou {todas: true}
+ *   GET  /api/notificacoes             alertas do sino (previsão + catracas, conforme as preferências), com o destino de cada um
+ *   GET  /api/aovivo           ?ultimo=ID  o que mudou na empresa (para as telas se atualizarem sozinhas; ver AoVivo)
+ *   GET  /api/dispositivos             dispositivos IoT (token mascarado, online/offline) e o desperdício de hoje (qualquer usuário)
+ * Só o administrador:
+ *   POST /api/dispositivos/criar       {nome, tipo, localizacao?}  devolve o token inteiro (única vez)
+ *   POST /api/dispositivos/token       {id}  gera outro token
+ *   POST /api/dispositivos/simular     {id, uid}  passa um cartão pela catraca (registra um acesso de verdade)
+ *   POST /api/dispositivos/pesagem     {id, tipo, desperdicio_kg, data?}  total de desperdício da refeição
+ *
+ * As escritas respondem {sucesso, mensagem, ...}; erro de regra vem como {sucesso: false, mensagem} com 403, 404, 409 ou 422.
  * Sem CSRF de propósito: a API autentica por Bearer token, nunca por cookie (veja Api::cors()).
  */
 class ApiController
@@ -57,7 +78,7 @@ class ApiController
                 case '/me':
                     $this->me($usuario);
                 case '/painel':
-                    $this->painel($empresaId);
+                    $this->painel($usuario);
                 case '/analise-mensal':
                     $this->analiseMensal($empresaId);
                 case '/pessoas':
@@ -71,13 +92,40 @@ class ApiController
                 case '/pessoas/cartao':
                 case '/pessoas/cartao/ativo':
                 case '/pessoas/cartao/remover':
+                case '/pessoas/importar':
                     $this->gerirCadastro($usuario, $rota, $metodo);
+                case '/pessoas/modelo':
+                    $this->modeloPlanilha($metodo);
                 case '/relatorios':
-                    $this->relatorios($empresaId);
+                    $this->relatorios($usuario);
                 case '/relatorios/exportar':
                     (new RelatorioController())->enviarCsv($empresaId);
                 case '/assistente':
                     $metodo === 'POST' ? $this->perguntar($empresaId) : $this->assistente($empresaId);
+                case '/perfil':
+                case '/perfil/senha':
+                case '/perfil/foto':
+                    $this->conta($usuario, $rota, $metodo);
+                case '/preferencias':
+                    $this->preferencias($usuario, $metodo);
+                case '/preferencias/notificacao':
+                case '/preferencias/sistema':
+                    $this->salvarPreferencia($usuario, $rota, $metodo);
+                case '/sessoes':
+                    $this->sessoes($usuario, $metodo);
+                case '/sessoes/encerrar':
+                    $this->encerrarSessao($usuario, $metodo);
+                case '/notificacoes':
+                    $this->notificacoes($usuario, $metodo);
+                case '/aovivo':
+                    $this->aoVivo($empresaId, $metodo);
+                case '/dispositivos':
+                    $this->dispositivos($usuario, $metodo);
+                case '/dispositivos/criar':
+                case '/dispositivos/token':
+                case '/dispositivos/simular':
+                case '/dispositivos/pesagem':
+                    $this->gerirDispositivos($usuario, $rota, $metodo);
             }
         } catch (Throwable $e) {
             error_log('SICAPDA API ' . $rota . ': ' . $e->getMessage());
@@ -149,10 +197,13 @@ class ApiController
 
     // ─── Telas ───────────────────────────────────────────────────────────────
 
-    private function painel(int $empresaId): never
+    private function painel(array $usuario): never
     {
+        $empresaId = (int) $usuario['empresa_id'];
         $painel = new Painel($empresaId);
         $dados = $painel->painel();
+        // Alertas de previsão + alertas das catracas, conforme as preferências de notificação da conta (igual ao site).
+        $dados['alertas'] = Notificacoes::aplicar($dados['alertas'], $empresaId, (int) $usuario['id']);
         $dados['mesReferencia'] = Datas::mesAno(new DateTimeImmutable('today'));
         Api::json($dados);
     }
@@ -266,6 +317,7 @@ class ApiController
                 '/pessoas/cartao'         => $cadastro->vincularCartao($empresaId, $corpo),
                 '/pessoas/cartao/ativo'   => $cadastro->definirCartaoAtivo($empresaId, $corpo),
                 '/pessoas/cartao/remover' => $cadastro->removerCartao($empresaId, $corpo),
+                '/pessoas/importar'       => $cadastro->importar($empresaId, is_string($corpo['csv'] ?? null) ? $corpo['csv'] : ''),
             };
         } catch (CadastroException $e) {
             Api::erro($e->status(), $e->getMessage());
@@ -274,11 +326,14 @@ class ApiController
         Api::json($resultado);
     }
 
-    private function relatorios(int $empresaId): never
+    private function relatorios(array $usuario): never
     {
+        $empresaId = (int) $usuario['empresa_id'];
         $acesso = new Acesso();
-        $f = (new RelatorioController())->filtros();
-        $porPagina = RelatorioController::POR_PAGINA;
+        // Período padrão e itens por página de Configurações → Sistema (os mesmos do site).
+        $sistema = (new Preferencia())->obter((int) $usuario['id'])['sistema'];
+        $f = (new RelatorioController())->filtros($sistema['periodo_padrao']);
+        $porPagina = $sistema['itens_pagina'];
 
         $total   = $acesso->contarRegistros($empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria']);
         $paginas = max(1, (int) ceil($total / $porPagina));
@@ -298,6 +353,7 @@ class ApiController
             'pagina'    => $pagina,
             'paginas'   => $paginas,
             'porPagina' => $porPagina,
+            'periodoPadrao' => $sistema['periodo_padrao'],
             'cards'     => [
                 'total'   => $total,
                 'hoje'    => $hojeTotal,
@@ -319,6 +375,219 @@ class ApiController
                 'duracao'   => $r['duracao_min'] !== null ? Datas::duracao($r['duracao_min']) : null,
             ], $registros),
         ]);
+    }
+
+    /** Modelo da planilha de importação (o mesmo arquivo do site), como texto CSV. */
+    private function modeloPlanilha(string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="modelo-importacao-pessoas.csv"');
+        header('Cache-Control: no-store');
+        echo CsvPessoas::modelo();
+        exit;
+    }
+
+    // ─── Configurações: conta (perfil, senha e foto) ─────────────────────────
+
+    private function conta(array $usuario, string $rota, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'POST');
+        $id = (int) $usuario['id'];
+        $corpo = Api::corpo();
+        $conta = new Conta();
+
+        try {
+            $resultado = match ($rota) {
+                '/perfil'       => $conta->atualizarPerfil($id, $corpo),
+                '/perfil/senha' => $conta->atualizarSenha($id, $corpo),
+                '/perfil/foto'  => $conta->salvarFotoBase64($id, $corpo['imagem'] ?? null),
+            };
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        }
+
+        $extra = [];
+        if ($rota !== '/perfil/senha') {
+            // Devolve o perfil inteiro já atualizado: o app troca o que mostra sem pedir /me de novo.
+            $extra['usuario'] = $this->usuarioParaJson((new Usuario())->buscarPorId($id) ?: $usuario);
+        }
+        Api::json(['mensagem' => $resultado['mensagem']] + $extra);
+    }
+
+    // ─── Configurações: preferências (notificações e sistema) ────────────────
+
+    private function preferencias(array $usuario, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        $id = (int) $usuario['id'];
+        $preferencia = new Preferencia();
+
+        Api::json([
+            'notificacoes' => $preferencia->notificacoesDoUsuario($id),
+            'sistema'      => $preferencia->obter($id)['sistema'],
+            'opcoes'       => [
+                'periodos'    => array_map(
+                    fn($valor, $rotulo) => ['valor' => (string) $valor, 'rotulo' => $rotulo],
+                    array_keys(Preferencia::PERIODOS_ROTULOS),
+                    array_values(Preferencia::PERIODOS_ROTULOS)
+                ),
+                'itensPagina' => Preferencia::ITENS_PAGINA,
+                'fuso'        => Preferencia::FUSO_ROTULO,
+            ],
+        ]);
+    }
+
+    private function salvarPreferencia(array $usuario, string $rota, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'POST');
+        $id = (int) $usuario['id'];
+        $empresaId = (int) $usuario['empresa_id'];
+        $corpo = Api::corpo();
+        $preferencia = new Preferencia();
+
+        if ($rota === '/preferencias/notificacao') {
+            $chave = $corpo['chave'] ?? '';
+            if (!is_string($chave) || !in_array($chave, Preferencia::NOTIFICACOES, true)) {
+                Api::erro(422, 'Notificação desconhecida.');
+            }
+            $ativo = $corpo['ativo'] ?? null;
+            if (!in_array($ativo, [true, false, 1, 0, '1', '0'], true)) {
+                Api::erro(422, 'Informe se deve ficar ligada (ativo: true ou false).');
+            }
+            $ativo = in_array($ativo, [true, 1, '1'], true);
+
+            $preferencia->salvarNotificacao($id, $chave, $ativo);
+            $sino = Notificacoes::contar((new Painel($empresaId))->totalAlertas(), $empresaId, $id);
+            Api::json(['mensagem' => 'Preferência salva.', 'ativo' => $ativo, 'sino' => $sino]);
+        }
+
+        $periodo = $corpo['periodo_padrao'] ?? '';
+        $itens = $corpo['itens_pagina'] ?? 0;
+        $periodo = is_int($periodo) ? (string) $periodo : $periodo;
+        $itens = is_string($itens) && ctype_digit($itens) ? (int) $itens : $itens;
+        if (!is_string($periodo) || !in_array($periodo, Preferencia::PERIODOS, true)
+            || !is_int($itens) || !in_array($itens, Preferencia::ITENS_PAGINA, true)) {
+            Api::erro(422, 'Valor inválido. Escolha uma das opções da lista.');
+        }
+
+        $preferencia->salvarSistema($id, $periodo, $itens);
+        Api::json(['mensagem' => 'Preferências salvas.', 'sistema' => ['periodo_padrao' => $periodo, 'itens_pagina' => $itens]]);
+    }
+
+    // ─── Configurações: sessões abertas no site ──────────────────────────────
+
+    /**
+     * Onde a conta está aberta no site (navegador). O aplicativo entra com token e não aparece aqui; por isso,
+     * do app, nenhuma sessão é "a atual" e "encerrar todas" derruba todas as do site.
+     */
+    private function sessoes(array $usuario, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        try {
+            $sessoes = (new Sessao())->listar((int) $usuario['id']);
+        } catch (PDOException $e) {
+            error_log('SICAPDA API: sessoes_usuario indisponível (rode a migration 004): ' . $e->getMessage());
+            Api::json(['disponivel' => false, 'sessoes' => []]);
+        }
+
+        Api::json(['disponivel' => true, 'sessoes' => array_map(
+            fn($s) => [
+                'id'            => $s['id'],
+                'dispositivo'   => $s['dispositivo'],
+                'celular'       => $s['icone'] === 'bi-phone',
+                'ip'            => $s['ip'],
+                'ultimo_acesso' => $s['ultimo_acesso'],
+            ],
+            $sessoes
+        )]);
+    }
+
+    private function encerrarSessao(array $usuario, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'POST');
+        $id = (int) $usuario['id'];
+        $corpo = Api::corpo();
+        $sessao = new Sessao();
+
+        try {
+            if (in_array($corpo['todas'] ?? null, [true, 1, '1'], true)) {
+                $n = $sessao->encerrarOutras($id);
+                Api::json(['mensagem' => $n === 1 ? '1 sessão encerrada.' : $n . ' sessões encerradas.', 'encerradas' => $n]);
+            }
+            $alvo = $corpo['id'] ?? 0;
+            if (!$sessao->encerrar($id, is_int($alvo) ? $alvo : (is_string($alvo) && ctype_digit($alvo) ? (int) $alvo : 0))) {
+                Api::erro(404, 'Sessão não encontrada (talvez já tenha sido encerrada).');
+            }
+        } catch (PDOException $e) {
+            error_log('SICAPDA API: falha ao encerrar sessão: ' . $e->getMessage());
+            Api::erro(500, 'Não foi possível encerrar a sessão. Tente novamente.');
+        }
+
+        Api::json(['mensagem' => 'Sessão encerrada.', 'encerradas' => 1]);
+    }
+
+    // ─── Sino e tempo real ───────────────────────────────────────────────────
+
+    /** Alertas do sino: os mesmos do site (previsão + catracas, conforme as preferências), com o destino de cada um. */
+    private function notificacoes(array $usuario, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        $alertas = Notificacoes::listar((int) $usuario['empresa_id'], (int) $usuario['id']);
+        Api::json(['total' => count($alertas), 'alertas' => $alertas]);
+    }
+
+    /** O que mudou na empresa desde o último acesso que o app já conhece (?ultimo=ID). Ver AoVivo. */
+    private function aoVivo(int $empresaId, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        $ultimo = $_GET['ultimo'] ?? null;
+        $ultimo = is_string($ultimo) && ctype_digit($ultimo) ? (int) $ultimo : null;
+
+        // Consulta feita a cada poucos segundos: libera o arquivo da sessão do PHP já.
+        session_write_close();
+        Api::json((new AoVivo($empresaId))->estado($ultimo));
+    }
+
+    // ─── Configurações: dispositivos IoT ─────────────────────────────────────
+
+    /** Qualquer usuário vê os dispositivos (token sempre mascarado); "podeEditar" = é o administrador. */
+    private function dispositivos(array $usuario, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'GET');
+        Api::json(['podeEditar' => $this->ehAdmin($usuario)] + (new Integracoes())->resumo((int) $usuario['empresa_id']));
+    }
+
+    private function gerirDispositivos(array $usuario, string $rota, string $metodo): never
+    {
+        $this->exigirMetodo($metodo, 'POST');
+        if (!$this->ehAdmin($usuario)) {
+            Api::erro(403, 'Somente o administrador da empresa pode gerenciar dispositivos.');
+        }
+
+        $empresaId = (int) $usuario['empresa_id'];
+        $corpo = Api::corpo();
+        $integracoes = new Integracoes();
+
+        try {
+            $resultado = match ($rota) {
+                '/dispositivos/criar'    => $integracoes->criar($empresaId, $corpo),
+                '/dispositivos/token'    => $integracoes->novoToken($empresaId, $corpo),
+                '/dispositivos/simular'  => $integracoes->simularLeitura($empresaId, $corpo),
+                '/dispositivos/pesagem'  => $integracoes->registrarPesagem($empresaId, $corpo),
+            };
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        }
+
+        Api::json($resultado);
+    }
+
+    private function exigirMetodo(string $metodo, string $esperado): void
+    {
+        if ($metodo !== $esperado) {
+            Api::erro(405, 'Método não permitido.');
+        }
     }
 
     // ─── Assistente ──────────────────────────────────────────────────────────

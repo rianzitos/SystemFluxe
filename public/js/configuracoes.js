@@ -641,3 +641,34 @@ function inicializarPesagem() {
         } finally { botao.disabled = false; }
     });
 }
+
+// ===================== TEMPO REAL =====================
+// A cada consulta do aoVivo.js (a cada poucos segundos) o status dos dispositivos e o desperdício
+// de hoje se atualizam aqui, sem recarregar a página — formulários e tokens revelados ficam intactos.
+
+document.addEventListener('aovivo:estado', (evento) => {
+    const { dispositivos = [], pesagens = [] } = evento.detail;
+
+    dispositivos.forEach((d) => {
+        const item = document.querySelector(`#listaDispositivos .item-dispositivo[data-id="${d.id}"]`);
+        if (!item) return;
+
+        const online = d.status === 'online';
+        const bolinha = item.querySelector('.item-dispositivo-status');
+        if (bolinha) bolinha.className = `item-dispositivo-status status-${d.status}`;
+
+        const texto = item.querySelector('.status-texto');
+        if (texto) {
+            texto.className = `status-texto status-texto-${d.status}`;
+            texto.textContent = online ? 'Online' : 'Offline';
+        }
+
+        const tempo = item.querySelector('.item-dispositivo-tempo');
+        if (tempo) tempo.textContent = d.ultimo_sinal;
+    });
+
+    pesagens.forEach((p) => {
+        const campo = document.querySelector(`[data-peso-refeicao="${p.tipo}"]`);
+        if (campo) campo.textContent = `${p.kg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`;
+    });
+});

@@ -42,4 +42,5 @@ $notificacoesNaoLidas = (int) ($notificacoesNaoLidas ?? 0);
                             </a>
                         </div>
                     </div>
+                    <script src="/js/aoVivo.js?v=<?= (int) @filemtime(__DIR__ . '/../../../public/js/aoVivo.js') ?>" defer></script>
                     <script src="/js/notificacoes.js?v=<?= (int) @filemtime(__DIR__ . '/../../../public/js/notificacoes.js') ?>" defer></script>

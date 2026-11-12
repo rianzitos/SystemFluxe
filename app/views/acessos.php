@@ -176,7 +176,7 @@ function icone(string $nome): string
             </header>
 
             <!-- Cards de resumo (3 colunas, igual à referência) -->
-            <section class="cards-resumo cards-resumo-3">
+            <section class="cards-resumo cards-resumo-3" data-ao-vivo="cards">
                 <?php foreach ($cardsResumo as $card): ?>
                     <div class="card">
                         <div class="card-icone card-icone-<?= htmlspecialchars($card['chave']) ?>">
@@ -228,7 +228,7 @@ function icone(string $nome): string
             </section>
 
             <!-- Insights do mês -->
-            <section class="painel-card insights-card">
+            <section class="painel-card insights-card" data-ao-vivo="insights">
                 <h2>Insights do Mês</h2>
                 <div class="grid-insights">
                     <?php foreach ($insights as $insight): ?>
@@ -249,14 +249,11 @@ function icone(string $nome): string
         </div>
     </div>
 
-    <!-- Dados do PHP -> JS (o acessos.js usa isso pra montar os gráficos) -->
-    <script>
-        window.DADOS_ACESSOS = {
-            pessoasDia: <?= json_encode($graficoPessoasDia, JSON_UNESCAPED_UNICODE) ?>,
-            producao: <?= json_encode($graficoProducao, JSON_UNESCAPED_UNICODE) ?>,
-            desperdicio: <?= json_encode($graficoDesperdicio, JSON_UNESCAPED_UNICODE) ?>
-        };
-    </script>
+    <!-- Dados do PHP -> JS (o acessos.js usa isso pra montar os gráficos; o aoVivo.js troca por dados novos sem recarregar) -->
+    <script type="application/json" id="dadosAcessos" data-ao-vivo-dados="acessos"><?= json_encode(
+        ['pessoasDia' => $graficoPessoasDia, 'producao' => $graficoProducao, 'desperdicio' => $graficoDesperdicio],
+        JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
+    ) ?></script>
     <script src="/js/chart.umd.min.js"></script>
     <script src="/js/acessos.js"></script>
 </body>

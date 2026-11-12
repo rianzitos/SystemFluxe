@@ -166,7 +166,7 @@ function icone(string $nome): string
             </header>
 
             <!-- Cards de resumo -->
-            <section class="cards-resumo">
+            <section class="cards-resumo" data-ao-vivo="cards">
                 <?php foreach ($cardsResumo as $card): ?>
                     <div class="card">
                         <div class="card-icone card-icone-<?= htmlspecialchars($card['chave']) ?>">
@@ -215,7 +215,7 @@ function icone(string $nome): string
 
             <!-- Previsão próximas horas + Alertas -->
             <section class="painel-inferior">
-                <div class="painel-card">
+                <div class="painel-card" data-ao-vivo="previsao">
                     <h2>Previsão · Próximas Horas</h2>
                     <?php if (!$previsaoProximasHoras): ?>
                         <p class="sem-dados">Sem movimento previsto para as próximas horas (fora do expediente ou sem histórico suficiente).</p>
@@ -233,7 +233,7 @@ function icone(string $nome): string
                     </ul>
                 </div>
 
-                <div class="painel-card">
+                <div class="painel-card" data-ao-vivo="alertas">
                     <h2>Alertas e Recomendações</h2>
                     <div class="lista-alertas">
                         <?php if (!$alertas): ?>
@@ -258,13 +258,11 @@ function icone(string $nome): string
         </div>
     </div>
 
-    <!-- Dados do PHP -> JS (o painel.js usa isso pra montar os gráficos) -->
-    <script>
-        window.DADOS_PAINEL = {
-            demanda: <?= json_encode($graficoDemanda, JSON_UNESCAPED_UNICODE) ?>,
-            distribuicao: <?= json_encode($graficoDistribuicao, JSON_UNESCAPED_UNICODE) ?>
-        };
-    </script>
+    <!-- Dados do PHP -> JS (o painel.js usa isso pra montar os gráficos; o aoVivo.js troca por dados novos sem recarregar) -->
+    <script type="application/json" id="dadosPainel" data-ao-vivo-dados="painel"><?= json_encode(
+        ['demanda' => $graficoDemanda, 'distribuicao' => $graficoDistribuicao],
+        JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP
+    ) ?></script>
     <script src="/js/chart.umd.min.js"></script>
     <script src="/js/painel.js"></script>
 </body>

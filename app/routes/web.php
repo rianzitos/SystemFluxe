@@ -172,6 +172,10 @@ if ($uri === '/') {
     (new ConfiguracaoController())->simularLeitura();
 // Endpoints JSON da tela de Configurações (sessão e CSRF validados no controller).
 
+} elseif ($uri === '/aovivo' && $metodo === 'GET') {
+    (new AoVivoController())->estado();
+// Consulta leve que as telas fazem a cada poucos segundos para se atualizar em tempo real (JSON, só com sessão ativa).
+
 } elseif ($uri === '/notificacoes' && $metodo === 'GET') {
     (new NotificacaoController())->listar();
 // Alertas do sino do cabeçalho (JSON, só com sessão ativa): é o que o painel do sino mostra ao abrir.

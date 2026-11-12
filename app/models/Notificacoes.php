@@ -7,13 +7,15 @@
  * (tela de Configurações → Notificações):
  *   - previsão de demanda: os alertas que o Previsao já calcula (desperdício, picos, feriados...);
  *   - catracas: acessos negados hoje e dispositivos IoT que pararam de responder.
- * Só a versão web usa isto. A API do aplicativo continua devolvendo os alertas de previsão como antes.
+ * O site usa a sessão para saber quem é o usuário; a API do aplicativo informa o $usuarioId (do token), então
+ * o sino e o painel do app seguem as mesmas preferências da conta.
  */
 class Notificacoes
 {
-    private static function preferencias(): array
+    /** Preferências de notificação do usuário ($usuarioId; sem ele, o usuário da sessão do site). */
+    private static function preferencias(?int $usuarioId = null): array
     {
-        return (new Preferencia())->obter((int) ($_SESSION['usuario_id'] ?? 0))['notificacoes'];
+        return (new Preferencia())->obter($usuarioId ?? (int) ($_SESSION['usuario_id'] ?? 0))['notificacoes'];
     }
 
     /** Alertas das catracas (mesmo formato dos de Previsao::alertas()). */
@@ -55,9 +57,9 @@ class Notificacoes
     }
 
     /** Lista final de alertas: os das catracas primeiro (mais urgentes), depois os de previsão (se ligados). */
-    public static function aplicar(array $alertasPrevisao, int $empresaId): array
+    public static function aplicar(array $alertasPrevisao, int $empresaId, ?int $usuarioId = null): array
     {
-        $pref = self::preferencias();
+        $pref = self::preferencias($usuarioId);
         return array_merge(self::dasCatracas($empresaId, $pref), $pref['previsao_demanda'] ? $alertasPrevisao : []);
     }
 
@@ -65,9 +67,9 @@ class Notificacoes
      * O que o painel do sino mostra: a mesma lista do painel, já com o destino de cada alerta
      * (o clique leva para a tela onde o assunto é tratado).
      */
-    public static function listar(int $empresaId): array
+    public static function listar(int $empresaId, ?int $usuarioId = null): array
     {
-        $alertas = self::aplicar((new Previsao($empresaId))->alertas(), $empresaId);
+        $alertas = self::aplicar((new Previsao($empresaId))->alertas(), $empresaId, $usuarioId);
 
         return array_map(fn($a) => [
             'tipo'      => $a['tipo'],
@@ -78,9 +80,9 @@ class Notificacoes
     }
 
     /** Número do sino, quando a tela só precisa da contagem dos alertas de previsão. */
-    public static function contar(int $totalPrevisao, int $empresaId): int
+    public static function contar(int $totalPrevisao, int $empresaId, ?int $usuarioId = null): int
     {
-        $pref = self::preferencias();
+        $pref = self::preferencias($usuarioId);
         return ($pref['previsao_demanda'] ? $totalPrevisao : 0) + count(self::dasCatracas($empresaId, $pref));
     }
 }

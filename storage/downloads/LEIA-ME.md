@@ -22,7 +22,7 @@ Exemplo de `app.json` (o `app-windows.json` é parecido, sem `min_sdk`):
 ```json
 {
   "arquivo": "SICAPDA.apk",
-  "versao": "1.1.0",
+  "versao": "1.2.0",
   "build": 2,
   "tamanho": 12345678,
   "sha256": "…",
@@ -42,8 +42,8 @@ rotas de download respondem 404.
 O GitHub compila tudo sozinho (não precisa de Android Studio nem de Visual Studio) e guarda o resultado numa
 **Release** do repositório `fluxe_app`.
 
-1. No `fluxe_app`, aumente `version:` no `pubspec.yaml` (ex.: `1.1.1+3`) e faça o merge na `main`.
-   O GitHub Actions compila e cria a Release `v1.1.1` com: `SICAPDA.apk`, `app.json`, `SICAPDA-Setup.exe`,
+1. No `fluxe_app`, aumente `version:` no `pubspec.yaml` (ex.: `1.2.1+4`) e faça o merge na `main`.
+   O GitHub Actions compila e cria a Release `v1.2.1` com: `SICAPDA.apk`, `app.json`, `SICAPDA-Setup.exe`,
    `app-windows.json` e `SICAPDA-web.zip`. (Para testar antes de mesclar, a Release **"Prévia de teste"**,
    `ci-preview`, é atualizada a cada push nos branches de trabalho.)
 2. Abra a Release (**github.com/rianzitos/fluxe_app/releases**) e baixe os arquivos.

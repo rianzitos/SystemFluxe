@@ -147,6 +147,10 @@
         }
     });
 
+    // Tempo real: quando o aoVivo.js percebe que algo mudou (acesso, pesagem, dispositivo...), os alertas
+    // e o número do sino são conferidos na hora, sem esperar o minuto do relógio abaixo.
+    document.addEventListener('aovivo:mudou', () => carregar(false));
+
     setInterval(() => {
         if (!document.hidden) carregar(false);
     }, INTERVALO_MS);
