@@ -1,4 +1,4 @@
-<?php
+    <?php
 
 /**
  * API JSON consumida pelo aplicativo Flutter (fluxe_app).
