@@ -9,7 +9,7 @@ navegador faria. O cabo USB serve só para gravar o programa nela e alimentá-la
                              ▲                            │                    │
                              └── {autorizado, entrada} ◄──┘                    ▼
                   abre a catraca (servo) ou pisca o LED vermelho     Painel · Pessoas · Relatórios
-                                                                     · Previsão de demanda
+                  e mostra no visor LCD o nome e ENTRADA/SAÍDA       · Previsão de demanda
 ```
 
 Tudo o que o painel, a tela de pessoas, os relatórios e a previsão de refeições mostram sai da
@@ -56,10 +56,13 @@ Passo a passo:
    nas catracas" do formulário. Clique nele para preencher o UID e salve. (O UID também aparece no Serial
    Monitor, `UID lido: 01 02 03 04`, e pode ser digitado junto: `01020304`.)
 4. **No Wokwi:** abra o projeto do circuito, troque o código pelo de `iot/esp32_catraca/esp32_catraca.ino`,
-   confira o `libraries.txt` (`MFRC522`, `ESP32Servo`, `ArduinoJson`), ponha o endereço em `URL_SERVIDOR` e o
-   token em `TOKEN_DISPOSITIVO`, e rode.
+   confira o `libraries.txt` (`MFRC522`, `ESP32Servo`, `ArduinoJson`, `LiquidCrystal I2C`), ponha o endereço em
+   `URL_SERVIDOR` e o token em `TOKEN_DISPOSITIVO`, e rode. **Se o seu projeto do Wokwi é anterior ao visor**,
+   substitua também o `diagram.json` e o `libraries.txt` pelos desta pasta (o circuito novo traz o LCD); sem
+   isso o Serial Monitor avisa `LCD nao encontrado` e a catraca funciona só sem o visor.
 5. **Passe o cartão** no leitor simulado, do mesmo jeito que já fazem. O Serial Monitor mostra a resposta
-   do servidor, o servo abre por 4 segundos e o LED verde acende.
+   do servidor, o servo abre por 4 segundos, o LED verde acende e o visor mostra o nome e `ENTRADA LIBERADA`
+   ou `SAIDA LIBERADA`.
 6. **Veja no sistema:** a pessoa aparece em **Pessoas** (presentes agora), o **Painel** e os **Relatórios**
    mostram o acesso, e o dispositivo fica **Online** em Configurações → Integrações. Passando de novo
    (depois de 10 segundos), vira a **saída**.
@@ -150,8 +153,45 @@ Endereços `http://` (sem o "s") funcionam no firmware, para um servidor na rede
 | Servo (a catraca) | GPIO 13 |
 | LED vermelho (fechada) | GPIO 26 |
 | LED verde (aberta) | GPIO 27 |
+| Visor LCD 16x2 com módulo I2C: SDA / SCL | GPIO 21 / **25** (VCC no 5 V, GND) |
+
+O SCL do visor **não** está no GPIO 22 (o "padrão" da ESP32) porque o 22 já é o RST do RC522; o `Wire`
+aceita qualquer par de pinos, então o SCL ficou no 25 e a fiação que já funcionava não mudou.
 
 Para mudar os pinos, edite os `#define` no topo do firmware.
+
+## Visor (LCD 16x2)
+
+O visor mostra, para quem está na fila, o resultado de cada cartão. O nome e o sentido vêm da resposta
+do servidor (`nome`, `direcao`, `motivo`), então **não há nada a mudar no PHP nem no banco**.
+
+| Situação | Linha 1 | Linha 2 |
+|---|---|---|
+| Esperando cartão | `SICAPDA` | `Passe o cartao` |
+| Cartão lido, aguardando o servidor | `Lendo cartao` | `Aguarde...` |
+| Entrada autorizada (catraca aberta) | primeiro nome, ex.: `Carlos` | `ENTRADA LIBERADA` |
+| Saída autorizada (catraca aberta) | primeiro nome, ex.: `Ana` | `SAIDA LIBERADA` |
+| Cartão não cadastrado (3 s) | `ACESSO NEGADO` | `Nao cadastrado` |
+| Cartão ou pessoa desativada (3 s) | `ACESSO NEGADO` | `Desativado` |
+| Servidor não respondeu, token recusado ou resposta inválida (3 s) | `SEM RESPOSTA` | `Tente de novo` |
+| Sem Wi-Fi (3 s, depois fica na tela de espera) | `SEM WI-FI` | `Acesso negado` → `Reconectando...` |
+
+Detalhes que valem saber:
+
+- **Sem acentos:** o LCD não tem letras acentuadas, então o firmware troca `José` por `Jose` e `Conceição`
+  por `Conceicao` (por isso também aparece `SAIDA`, sem acento). Nomes com mais de 16 letras são cortados.
+- **Só o primeiro nome**, como o servidor já devolve (o visor fica à vista da fila). O aviso de negado não
+  diz de quem é o cartão.
+- **A tela de acesso liberado fica enquanto a catraca está aberta** (4 s); a de negado/erro some sozinha
+  em 3 s (`MENSAGEM_NEGADO_MS`), sem travar a leitura do próximo cartão.
+- **O visor é opcional:** se não for encontrado, o Serial Monitor avisa (`LCD nao encontrado em 0x27`) e a
+  catraca funciona normalmente, só sem mostrar nada.
+- **Módulo real com endereço diferente:** muitos módulos I2C usam `0x3F` em vez de `0x27`. Se o visor
+  acender mas ficar em branco ou o aviso acima aparecer, troque `LCD_ENDERECO` no firmware (e confira
+  SDA/SCL, VCC e GND).
+- **Módulos de 5 V na bancada:** o módulo costuma ter resistores de pull-up ligados aos 5 V, e os pinos da
+  ESP32 são de 3,3 V. Se for um problema na sua montagem, alimente o módulo pelo 3,3 V ou use um conversor
+  de nível I2C. No Wokwi isso não existe.
 
 ## Endpoints
 
