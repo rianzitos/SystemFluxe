@@ -120,6 +120,10 @@ function icone(string $nome): string
                 </div>
 
                 <div class="cabecalho-acoes">
+                    <a class="btn-atalho" href="/producao" title="Registrar os quilos produzidos e desperdiçados">
+                        <i class="bi bi-egg-fried" aria-hidden="true"></i>
+                        <span>Registrar produção</span>
+                    </a>
                     <form method="get" action="/acessos" class="seletor-data seletor-mes">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round"><?= icone('calendar') ?></svg>
