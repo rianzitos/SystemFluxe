@@ -1,12 +1,15 @@
 <?php
 
 /**
- * Assistente virtual do SICAPDA.
+ * Assistente virtual do SICAPDA: motor local, sem IA.
  *
- * Não é uma IA generativa: lê a pergunta, identifica a intenção por palavras-
- * chave (previsão, desperdício, precisão, presença, ajuda...) e a data citada
- * ("amanhã", "sexta", "15/10"), consulta o banco e responde com cálculos do
- * motor de previsão (Previsao). Tudo restrito à empresa do usuário logado.
+ * Lê a pergunta, identifica a intenção por palavras-chave (previsão, desperdício,
+ * precisão, presença, ajuda...) e a data citada ("amanhã", "sexta", "15/10"),
+ * consulta o banco e responde com cálculos do motor de previsão (Previsao).
+ * Tudo restrito à empresa do usuário logado.
+ *
+ * Com a IA configurada (ANTHROPIC_API_KEY no config/.env) quem responde é o
+ * AssistenteIA; este motor fica como reserva quando a IA não está disponível.
  */
 class Assistente
 {
@@ -32,8 +35,23 @@ class Assistente
 
     public function boasVindas(): string
     {
+        if (AssistenteIA::ativa()) {
+            return 'Olá! Sou o assistente com IA do SICAPDA. Respondo sobre os dados da sua empresa (previsão de pessoas '
+                . 'e refeições, desperdício, acessos e dispositivos) e tiro dúvidas sobre como usar o sistema. Como posso ajudar?';
+        }
         return 'Olá! Sou o assistente inteligente do SICAPDA. Posso ajudá-lo a prever a quantidade de pessoas '
             . 'e alimentos necessários. Como posso ajudar?';
+    }
+
+    /** Botões de "Perguntas Rápidas" (site e app). Com a IA, inclui uma dúvida de uso do sistema. */
+    public static function perguntasRapidas(): array
+    {
+        $perguntas = ['Previsão para amanhã', 'Previsão para sexta', 'Previsão semanal'];
+        if (AssistenteIA::ativa()) {
+            $perguntas[] = 'Como está o desperdício?';
+            $perguntas[] = 'Como vincular um cartão?';
+        }
+        return $perguntas;
     }
 
     public function responder(string $mensagem): string

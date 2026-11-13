@@ -17,7 +17,7 @@
  *   GET  /api/relatorios       ?de&ate&busca&categoria&pagina
  *   GET  /api/relatorios/exportar  (CSV, mesmos filtros; ?formato=xlsx devolve a planilha do Excel)
  *   GET  /api/assistente
- *   POST /api/assistente       {mensagem}
+ *   POST /api/assistente       {mensagem, historico?}  historico = [{autor: 'usuario'|'bot', texto}] (resposta com IA quando configurada)
  *
  * Cadastro de pessoas e cartões (aba Cadastro de Pessoas no app; as mesmas regras do site, em CadastroPessoas):
  *   GET  /api/pessoas/cadastro         pessoas da empresa com os cartões de cada uma (qualquer usuário; "podeEditar" = é administrador)
@@ -106,7 +106,7 @@ class ApiController
                 case '/relatorios/exportar':
                     (new RelatorioController())->enviarExportacao($empresaId);
                 case '/assistente':
-                    $metodo === 'POST' ? $this->perguntar($empresaId) : $this->assistente($empresaId);
+                    $metodo === 'POST' ? $this->perguntar($usuario) : $this->assistente($empresaId);
                 case '/perfil':
                 case '/perfil/senha':
                 case '/perfil/foto':
@@ -623,18 +623,25 @@ class ApiController
             'boasVindas'       => (new Assistente($empresaId))->boasVindas(),
             'precisao'         => $previsao->precisao(),
             'eventos'          => $previsao->eventos(3),
-            'perguntasRapidas' => ['Previsão para amanhã', 'Previsão para sexta', 'Previsão semanal'],
+            'perguntasRapidas' => Assistente::perguntasRapidas(),
+            'ia'               => AssistenteIA::ativa(),
         ]);
     }
 
-    private function perguntar(int $empresaId): never
+    /** Mesma regra do site (AssistenteIA::responderOuLocal): IA quando configurada, senão o motor local. */
+    private function perguntar(array $usuario): never
     {
-        $mensagem = Api::corpo()['mensagem'] ?? '';
-        if (!is_string($mensagem)) {
-            $mensagem = '';
-        }
+        $corpo = Api::corpo();
+        $mensagem = is_string($corpo['mensagem'] ?? null) ? $corpo['mensagem'] : '';
+        $historico = is_array($corpo['historico'] ?? null) ? $corpo['historico'] : [];
+        @set_time_limit(120);
 
-        $resposta = (new Assistente($empresaId))->responder($mensagem);
-        Api::json(['resposta' => $resposta, 'hora' => date('H:i')]);
+        $r = AssistenteIA::responderOuLocal((int) $usuario['empresa_id'], [
+            'id'     => (int) $usuario['id'],
+            'nome'   => (string) ($usuario['nome'] ?? ''),
+            'perfil' => (string) ($usuario['perfil'] ?? ''),
+        ], $mensagem, $historico);
+
+        Api::json(['resposta' => $r['resposta'], 'ia' => $r['ia'], 'hora' => date('H:i')]);
     }
 }

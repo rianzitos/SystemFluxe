@@ -65,7 +65,7 @@ $tipoIcone = ['aviso' => 'bi-exclamation-circle-fill', 'info' => 'bi-info-circle
                         <div class="chat-avatar"><i class="bi bi-robot"></i></div>
                         <div>
                             <h2>Assistente Inteligente</h2>
-                            <p>Previsões e insights em tempo real</p>
+                            <p><?= $dados['ia'] ? 'Com IA · responde sobre os seus dados e o uso do SICAPDA' : 'Previsões e insights em tempo real' ?></p>
                         </div>
                     </div>
 
@@ -83,7 +83,7 @@ $tipoIcone = ['aviso' => 'bi-exclamation-circle-fill', 'info' => 'bi-info-circle
                         <label class="chat-campo">
                             <i class="bi bi-stars"></i>
                             <input type="text" id="chatEntrada" maxlength="300"
-                                placeholder="Pergunte sobre previsões, tendências ou recomendações…"
+                                placeholder="<?= $dados['ia'] ? 'Pergunte sobre previsões, desperdício, acessos ou como usar o sistema…' : 'Pergunte sobre previsões, tendências ou recomendações…' ?>"
                                 aria-label="Mensagem para o assistente">
                         </label>
                         <button type="submit" class="chat-enviar" id="chatEnviar" aria-label="Enviar">
