@@ -7,7 +7,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     inicializarAbas();
-    inicializarMenuMobile();
     inicializarTema();
     inicializarFormularios();
     inicializarNotificacoes();
@@ -49,16 +48,6 @@ function inicializarAbas() {
     abrirPelaUrl();
     // Os botões Integrações/IoT do cabeçalho apontam para esta mesma página: só o #hash muda.
     window.addEventListener('hashchange', abrirPelaUrl);
-}
-
-// ===================== MENU MOBILE (sidebar) =====================
-
-function inicializarMenuMobile() {
-    const botao = document.getElementById('btnMenuMobile');
-    const sidebar = document.getElementById('sidebar');
-    if (!botao || !sidebar) return;
-
-    botao.addEventListener('click', () => sidebar.classList.toggle('aberta'));
 }
 
 // ===================== TEMA (claro / escuro / sistema) =====================

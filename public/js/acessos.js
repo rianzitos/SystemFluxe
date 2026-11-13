@@ -8,7 +8,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     definirDataHoje();
     definirPeriodoAtual();
-    montarMenuMobile();
     montarGraficoPessoasDia();
     montarGraficoProducao();
     montarGraficoDesperdicio();
@@ -40,20 +39,6 @@ function definirPeriodoAtual() {
     const hoje = new Date();
     const texto = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     label.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
-}
-
-/** Abre/fecha a sidebar no mobile. */
-function montarMenuMobile() {
-    const botao = document.getElementById('btnMenuMobile');
-    const sidebar = document.getElementById('sidebar');
-    if (!botao || !sidebar) return;
-
-    botao.addEventListener('click', () => sidebar.classList.toggle('aberta'));
-
-    document.addEventListener('click', (evento) => {
-        const cliqueForaDoMenu = !sidebar.contains(evento.target) && !botao.contains(evento.target);
-        if (cliqueForaDoMenu) sidebar.classList.remove('aberta');
-    });
 }
 
 const graficos = {};

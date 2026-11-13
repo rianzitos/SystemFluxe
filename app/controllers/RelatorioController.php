@@ -58,22 +58,62 @@ class RelatorioController
         require __DIR__ . '/../views/relatorios.php';
     }
 
-    /** GET /relatorios/exportar — baixa os registros filtrados em CSV (Excel pt-BR). */
+    /** GET /relatorios/exportar?formato=xlsx|csv — baixa os registros filtrados (Excel ou CSV). */
     public function exportar(): void
     {
         AuthMiddleware::autenticado();
-        $this->enviarCsv(Pagina::empresaId());
+        $this->enviarExportacao(Pagina::empresaId());
     }
 
-    /** Gera o CSV dos filtros atuais ($_GET) para a empresa — usado pela web (sessão) e pela API (token). */
-    public function enviarCsv(int $empresaId): never
+    /**
+     * Exporta os filtros atuais ($_GET) da empresa — usado pela web (sessão) e pela API do app (token).
+     * ?formato=xlsx: planilha do Excel com colunas na largura certa e datas/horas de verdade (no CSV o Excel
+     * mostra "########" nas datas, porque o CSV não guarda largura de coluna). Sem o parâmetro: CSV, como
+     * sempre foi (o aplicativo 1.2 e outros sistemas que leem o CSV continuam funcionando).
+     */
+    public function enviarExportacao(int $empresaId): never
     {
         $f = $this->filtros();
         $registros = $this->acesso->registrosParaExportar(
             $empresaId, $f['de'], $f['ate'], $f['busca'], $f['categoria']
         );
+        $nomeBase = 'relatorio-acessos_' . $f['de'] . '_a_' . $f['ate'];
 
-        $nomeArquivo = 'relatorio-acessos_' . $f['de'] . '_a_' . $f['ate'] . '.csv';
+        if (($_GET['formato'] ?? '') === 'xlsx' && Xlsx::disponivel()) {
+            $this->enviarXlsx($registros, $nomeBase . '.xlsx');
+        }
+        $this->enviarCsv($registros, $nomeBase . '.csv');
+    }
+
+    private function enviarXlsx(array $registros, string $nomeArquivo): never
+    {
+        $planilha = (new Xlsx('Acessos'))->colunas([
+            ['Nome', 32], ['Função', 24], ['Categoria', 16], ['Data', 12],
+            ['Entrada', 10], ['Saída', 17], ['Duração (h:min)', 15], ['Situação', 14],
+        ]);
+
+        foreach ($registros as $r) {
+            // Saída no mesmo dia: só a hora. Turno que vira a noite: data e hora (ex.: 14/11/2026 02:10).
+            $saida = null;
+            if ($r['saida']) {
+                $saida = date('Y-m-d', strtotime($r['saida'])) === $r['dia'] ? Xlsx::hora($r['saida']) : Xlsx::dataHora($r['saida']);
+            }
+            $planilha->linha([
+                (string) $r['nome'],
+                (string) ($r['cargo'] ?? ''),
+                Acesso::CATEGORIAS[$r['categoria']] ?? (string) $r['categoria'],
+                Xlsx::data($r['dia']),
+                Xlsx::hora($r['entrada']),
+                $saida,
+                Xlsx::duracao($r['duracao_min']),
+                $r['saida'] ? 'Concluído' : ($r['em_andamento'] ? 'No local' : 'Sem saída'),
+            ]);
+        }
+        $planilha->enviar($nomeArquivo);
+    }
+
+    private function enviarCsv(array $registros, string $nomeArquivo): never
+    {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $nomeArquivo . '"');
         header('Cache-Control: no-store');

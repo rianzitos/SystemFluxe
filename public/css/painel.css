@@ -134,7 +134,9 @@ h2,
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 0 10px 26px;
+    padding: 0 10px;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .logo-sica {
@@ -257,6 +259,167 @@ h2,
 
 .sair:hover {
     color: var(--amarelo);
+}
+
+/* ---------- Recolher / abrir o menu (public/js/sidebar.js) ---------- */
+
+.sidebar {
+    z-index: 30;          /* as dicas do menu recolhido ficam por cima do conteúdo */
+}
+
+.menu-animado .sidebar {
+    transition: width 0.2s ease, padding 0.2s ease;
+}
+
+.sidebar-cabeca {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 26px;
+}
+
+.btn-recolher,
+.btn-fechar-menu {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #C6C6CB;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-recolher:hover,
+.btn-fechar-menu:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--amarelo);
+}
+
+.btn-recolher i {
+    transition: transform 0.2s ease;
+}
+
+.btn-fechar-menu {
+    display: none;
+}
+
+.btn-recolher:focus-visible,
+.btn-fechar-menu:focus-visible,
+.menu-item:focus-visible,
+.sidebar-usuario a:focus-visible {
+    outline: 2px solid var(--amarelo);
+    outline-offset: 2px;
+}
+
+.menu-item {
+    position: relative;
+    white-space: nowrap;
+}
+
+.menu-rotulo {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-usuario-perfil {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--raio-sm);
+}
+
+.sidebar-fundo {
+    display: none;
+}
+
+/* Menu recolhido (só no computador): uma faixa com os ícones; o nome aparece ao passar o mouse. */
+@media (min-width: 781px) {
+    .menu-recolhido .sidebar {
+        width: 78px;
+        padding: 28px 13px;
+    }
+
+    .menu-recolhido .sidebar-cabeca {
+        justify-content: center;
+    }
+
+    .menu-recolhido .logo {
+        display: none;
+    }
+
+    .menu-recolhido .btn-recolher i {
+        transform: rotate(180deg);
+    }
+
+    .menu-recolhido .menu-item {
+        justify-content: center;
+        padding: 11px 0;
+    }
+
+    /* Escondido só na tela: o leitor de tela continua lendo o nome do item */
+    .menu-recolhido .menu-rotulo,
+    .menu-recolhido .sidebar-usuario-info {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .menu-recolhido .sidebar-usuario {
+        flex-direction: column;
+        gap: 14px;
+        padding: 14px 0 0;
+    }
+
+    .menu-recolhido .sidebar-usuario-perfil {
+        flex: none;
+    }
+
+    .menu-recolhido .sair {
+        margin-left: 0;
+    }
+
+    .menu-recolhido .menu-item::after,
+    .menu-recolhido .sidebar-usuario-perfil::after {
+        content: attr(data-rotulo);
+        position: absolute;
+        left: calc(100% + 14px);
+        top: 50%;
+        transform: translate(-4px, -50%);
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: #26262B;
+        color: #FFFFFF;
+        font-size: 12.5px;
+        font-weight: 500;
+        white-space: nowrap;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.12s ease;
+    }
+
+    .menu-recolhido .menu-item:hover::after,
+    .menu-recolhido .menu-item:focus-visible::after,
+    .menu-recolhido .sidebar-usuario-perfil:hover::after,
+    .menu-recolhido .sidebar-usuario-perfil:focus-visible::after {
+        opacity: 1;
+        transform: translate(0, -50%);
+    }
 }
 
 /* ===================== CONTEÚDO ===================== */
@@ -1090,6 +1253,33 @@ html[data-tema="escuro"] .painel-notificacoes {
 
     .sidebar.aberta {
         transform: translateX(0);
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .sidebar {
+        width: 280px;
+        max-width: 86vw;
+        overflow-y: auto;
+    }
+
+    .btn-recolher {
+        display: none;
+    }
+
+    .btn-fechar-menu {
+        display: inline-flex;
+    }
+
+    .sidebar-fundo:not([hidden]) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 35;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    body.menu-gaveta-aberta {
+        overflow: hidden;
     }
 
     .conteudo {

@@ -15,16 +15,6 @@ AuthMiddleware::autenticado();
 
 $paginaAtual = 'config';
 
-// Itens do menu lateral (idêntico ao painel.php p/ manter a navegação consistente)
-$menu = [
-    ['chave' => 'painel', 'rota' => '/painel', 'label' => 'Painel', 'icone' => 'bi-pie-chart-fill'],
-    ['chave' => 'acessos', 'rota' => '/acessos', 'label' => 'Análise mensal', 'icone' => 'bi-calendar'],
-    ['chave' => 'pessoas', 'rota' => '/pessoas', 'label' => 'Pessoas', 'icone' => ' bi-people-fill'],
-    ['chave' => 'previsao', 'rota' => '/assistente', 'label' => 'Assistente Virtual', 'icone' => 'bi-chat-left'],
-    ['chave' => 'relatorios', 'rota' => '/relatorios', 'label' => 'Relatórios', 'icone' => 'bi-clipboard-data'],
-    ['chave' => 'config', 'rota' => '/configuracoes', 'label' => 'Configurações', 'icone' => 'bi-gear-fill'],
-];
-
 // Dados reais do usuário logado (lidos do banco, não só da sessão)
 $dadosUsuario = (new Usuario())->buscarPerfilCompleto((int) $_SESSION['usuario_id']);
 if (!$dadosUsuario) {
@@ -119,44 +109,7 @@ try {
     <div class="layout">
 
         <!-- ===================== SIDEBAR (idêntica ao painel.php) ===================== -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-topo">
-                <div class="logo">
-                    <span class="logo-sica">SICA<span class="logo-pda">PDA</span></span>
-                    <span class="logo-by">by <strong>FLUXE</strong></span>
-                </div>
-
-                <nav class="menu">
-                    <?php foreach ($menu as $item): ?>
-                        <a href="<?= htmlspecialchars($item['rota']) ?>"
-                            class="menu-item <?= $paginaAtual === $item['chave'] ? 'ativo' : '' ?>">
-                            <div class="menu-icone menu-icone-<?= htmlspecialchars($item['chave']) ?>">
-                                <i class="iconeMenu bi <?= htmlspecialchars($item['icone']) ?>"></i>
-                            </div>
-                            <span><?= htmlspecialchars($item['label']) ?></span>
-                        </a>
-                    <?php endforeach; ?>
-                </nav>
-            </div>
-
-            <div class="sidebar-usuario">
-                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
-                    <div class="avatar avatar-foto">
-                        <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
-                            alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">
-                    </div>
-                <?php else: ?>
-                    <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
-                <?php endif; ?>
-                <div class="sidebar-usuario-info">
-                    <strong><?= htmlspecialchars($nomeUsuario) ?></strong>
-                    <span><?= htmlspecialchars($perfilUsuario) ?> <i class="ponto-online"></i></span>
-                </div>
-                <a href="/logout" class="sair" title="Sair">
-                    <i class="icone bi bi-box-arrow-right"></i>
-                </a>
-            </div>
-        </aside>
+<?php require __DIR__ . '/partials/sidebar.php'; ?>
 
         <!-- ===================== CONTEÚDO ===================== -->
         <div class="conteudo">

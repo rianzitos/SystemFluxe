@@ -1,4 +1,4 @@
-    <?php
+<?php
 
 /**
  * API JSON consumida pelo aplicativo Flutter (fluxe_app).
@@ -15,7 +15,7 @@
  *   GET  /api/analise-mensal   ?mes=YYYY-MM
  *   GET  /api/pessoas                  quem está no local agora
  *   GET  /api/relatorios       ?de&ate&busca&categoria&pagina
- *   GET  /api/relatorios/exportar  (CSV, mesmos filtros)
+ *   GET  /api/relatorios/exportar  (CSV, mesmos filtros; ?formato=xlsx devolve a planilha do Excel)
  *   GET  /api/assistente
  *   POST /api/assistente       {mensagem}
  *
@@ -104,7 +104,7 @@ class ApiController
                 case '/relatorios':
                     $this->relatorios($usuario);
                 case '/relatorios/exportar':
-                    (new RelatorioController())->enviarCsv($empresaId);
+                    (new RelatorioController())->enviarExportacao($empresaId);
                 case '/assistente':
                     $metodo === 'POST' ? $this->perguntar($empresaId) : $this->assistente($empresaId);
                 case '/perfil':
