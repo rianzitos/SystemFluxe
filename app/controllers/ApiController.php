@@ -15,6 +15,8 @@
  *   GET  /api/analise-mensal   ?mes=YYYY-MM
  *   GET  /api/pessoas                  quem está no local agora
  *   GET  /api/relatorios       ?de&ate&busca&categoria&pagina
+ *   GET  /api/producao             ?data=Y-m-d  produção do dia por refeição + últimos 14 dias
+ *   POST /api/producao             {data, itens: [{tipo, produzido, desperdicado?}]}  registra a produção
  *   GET  /api/relatorios/exportar  (CSV, mesmos filtros; ?formato=xlsx devolve a planilha do Excel)
  *   GET  /api/assistente
  *   POST /api/assistente       {mensagem}
@@ -82,6 +84,8 @@ class ApiController
             switch ($rota) {
                 case '/me':
                     $this->me($usuario);
+                case '/producao':
+                    $this->producao($empresaId, $metodo);
                 case '/painel':
                     $this->painel($usuario);
                 case '/analise-mensal':
@@ -409,6 +413,28 @@ class ApiController
         header('Cache-Control: no-store');
         echo CsvPessoas::modelo();
         exit;
+    }
+
+    // ─── Produção de refeições ───────────────────────────────────────────────
+
+    /**
+     * GET  /api/producao?data=Y-m-d   o dia (refeições com previsto/produzido/desperdiçado, totais, sugestão e
+     *                                 os últimos 14 dias). Sem data: hoje.
+     * POST /api/producao              {data, itens: [{tipo, produzido, desperdicado?}]} grava e devolve o dia.
+     * Qualquer usuário da empresa registra, como no site (RegistroProducao).
+     */
+    private function producao(int $empresaId, string $metodo): never
+    {
+        $registro = new RegistroProducao();
+        try {
+            if ($metodo === 'POST') {
+                Api::json(['mensagem' => 'Produção salva.', 'dia' => $registro->salvar($empresaId, Api::corpo())]);
+            }
+            $this->exigirMetodo($metodo, 'GET');
+            Api::json(['dia' => $registro->dia($empresaId, (string) ($_GET['data'] ?? date('Y-m-d')))]);
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        }
     }
 
     // ─── Configurações: conta (perfil, senha e foto) ─────────────────────────
