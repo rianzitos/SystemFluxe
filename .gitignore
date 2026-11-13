@@ -1,2 +1,3 @@
 config/.env
 storage/api_secret.key
+storage/emails/

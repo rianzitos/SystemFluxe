@@ -1534,3 +1534,63 @@ main {
         padding: 1.5rem;
     }
 }
+/* ---------- Contato: envio por e-mail (public/js/contato.js) ---------- */
+
+/* Campo isca contra robôs: fora da tela, mas não display:none (alguns robôs pulam campos escondidos assim) */
+.campoIsca {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.formOpcional {
+    font-weight: normal;
+    opacity: 0.65;
+}
+
+.formGroup [aria-invalid] {
+    border-color: #d93025;
+    outline-color: #d93025;
+}
+
+.formStatus {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    border: 1px solid transparent;
+}
+
+.formStatus--info {
+    background-color: rgba(255, 196, 0, 0.12);
+    border-color: rgba(244, 180, 0, 0.45);
+    color: inherit;
+}
+
+.formStatus--sucesso {
+    background-color: rgba(30, 123, 69, 0.12);
+    border-color: rgba(30, 123, 69, 0.45);
+    color: #1e7b45;
+}
+
+.formStatus--erro {
+    background-color: rgba(217, 48, 37, 0.1);
+    border-color: rgba(217, 48, 37, 0.45);
+    color: #b42318;
+}
+
+:root[data-theme="dark"] .formStatus--sucesso {
+    color: #7ee2a8;
+}
+
+:root[data-theme="dark"] .formStatus--erro {
+    color: #ff9b94;
+}
+
+.formSubmit:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}

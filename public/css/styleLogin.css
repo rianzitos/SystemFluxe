@@ -558,6 +558,28 @@ footer span {
     border: 1px solid #b3f0c2;
 }
 
+/* ============================================
+   RECUPERAÇÃO DE SENHA (app/views/senha.php)
+   ============================================ */
+.texto-senha {
+    margin: 0 10% 1.2rem 10%;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #555;
+}
+
+.texto-senha a {
+    color: #b98200;
+    font-weight: bold;
+}
+
+/* Link com a aparência do botão principal */
+.butLink {
+    margin: 0 auto;
+    color: #171717;
+    text-decoration: none;
+}
+
 
 
 @keyframes piscar {

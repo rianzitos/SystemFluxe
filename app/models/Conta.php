@@ -101,6 +101,9 @@ class Conta
             self::falha($e, 'atualizar senha');
         }
 
+        // Aviso de segurança por e-mail (site e aplicativo passam por aqui).
+        Email::depoisDaResposta(fn() => EmailsAutomaticos::senhaAlterada($id, 'em Configurações → Segurança'));
+
         return ['mensagem' => 'Senha atualizada com sucesso!'];
     }
 

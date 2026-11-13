@@ -94,9 +94,13 @@ try:
     # ─── Preferências ────────────────────────────────────────────────────────
     pref = api('/preferencias', token=token)
     chaves = [n['chave'] for n in pref['notificacoes']]
-    assert chaves == ['previsao_demanda', 'acesso_negado', 'dispositivo_offline', 'resumo_diario'], chaves
-    assert all(n['ativo'] for n in pref['notificacoes'] if n['disponivel'])
-    assert not pref['notificacoes'][3]['ativo'] and not pref['notificacoes'][3]['disponivel']
+    assert chaves == ['previsao_demanda', 'acesso_negado', 'dispositivo_offline', 'email_desperdicio', 'resumo_diario'], chaves
+    assert all(n['disponivel'] for n in pref['notificacoes'])
+    # Todos ligados por padrão, menos o resumo diário por e-mail (a pessoa escolhe receber)
+    assert [n['ativo'] for n in pref['notificacoes']] == [True, True, True, True, False]
+    r = api('/preferencias/notificacao', corpo={'chave': 'resumo_diario', 'ativo': True}, token=token)
+    assert r['ativo'] is True
+    assert [n for n in api('/preferencias', token=token)['notificacoes'] if n['chave'] == 'resumo_diario'][0]['ativo']
     assert pref['sistema'] == {'periodo_padrao': 'mes', 'itens_pagina': 20}
     assert [p['valor'] for p in pref['opcoes']['periodos']] == ['mes', '7', '30', '90']
     assert pref['opcoes']['itensPagina'] == [10, 20, 50] and 'Brasília' in pref['opcoes']['fuso']

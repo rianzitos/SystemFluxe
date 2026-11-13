@@ -278,6 +278,10 @@ class AcessoController
             return ['sucesso' => false, 'mensagem' => 'Erro ao cadastrar. Tente novamente.'];
         }
 
+        // E-mail de boas-vindas com os próximos passos (enviado depois de responder ao navegador).
+        $nomeEmpresa = $nomeFantasia ?: $razaoSocial;
+        Email::depoisDaResposta(fn() => EmailsAutomaticos::boasVindas($admNome, $admEmail, $nomeEmpresa, $emailInst));
+
         return [
             'sucesso' => true,
             'mensagem' => 'Cadastro realizado com sucesso!',

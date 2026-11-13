@@ -142,6 +142,14 @@ class Sessao
         return $stmt->rowCount();
     }
 
+    /** Encerra todas as sessões do usuário no site (senha redefinida pelo link do e-mail). Devolve quantas foram. */
+    public function encerrarTodas(int $usuarioId): int
+    {
+        $stmt = $this->db->prepare('DELETE FROM sessoes_usuario WHERE usuario_id = ?');
+        $stmt->execute([$usuarioId]);
+        return $stmt->rowCount();
+    }
+
     // ─── Texto do navegador ──────────────────────────────────────────────────
 
     private static function ehCelular(?string $ua): bool

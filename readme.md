@@ -55,6 +55,7 @@ SystemFluxe/
 ├── public/                  # CSS, JS, imagens e o vídeo "Ver como funciona" (public/video/)
 │   └── aplicativo/          # Versão web do aplicativo (Flutter), que abre no navegador e instala como app
 ├── storage/downloads/       # Instaladores do aplicativo (Windows e Android) e manifestos, fora de public/
+├── bin/emails.php           # Tarefa agendada dos e-mails automáticos (alerta de desperdício e resumo diário)
 ├── iot/                     # Firmware da catraca (ESP32 + RFID) e o passo a passo da integração IoT
 └── ia/                      # API e modelos em Python para previsão de demanda
 ```
@@ -85,7 +86,7 @@ O SICAPDA tem um aplicativo feito em Flutter ([fluxe_app](https://github.com/ria
 - **Versão web (`public/aplicativo/`)** — é o resultado de `flutter build web` (veja "Versão web" no README do `fluxe_app`), servida como arquivos estáticos pelo Apache, na **mesma origem** da API (não precisa configurar CORS nem endereço de servidor: o app usa o próprio site). O `.htaccess` dessa pasta comprime o motor gráfico (7 MB → 2 MB), define `application/wasm` e usa `Cache-Control: no-cache` para uma versão nova aparecer sozinha. No servidor embutido do PHP (`php -S`), `app/routes/web.php` entrega o `index.html` da pasta, como o Apache faz.
 - **Publicar ou atualizar** — o GitHub Actions do `fluxe_app` compila tudo e publica a **Release** do GitHub (`SICAPDA.apk`, `SICAPDA-Setup.exe`, `SICAPDA-web.zip` e os `.json`). Copie o APK e o `app.json` (e o instalador do Windows + `app-windows.json`) para `storage/downloads/` e extraia o `SICAPDA-web.zip` em `public/aplicativo/` (mantendo o `.htaccess`). Passo a passo em [`storage/downloads/LEIA-ME.md`](storage/downloads/LEIA-ME.md).
 
-Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` e `API_SECRET`.
+Variáveis do `config/.env`: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS`, `API_SECRET` e as dos e-mails (`APP_URL`, `MAIL_*`, `CRON_SECRET`), todas explicadas em [`config/.env.example`](config/.env.example).
 
 ## Catraca IoT (ESP32 + RFID)
 
@@ -103,7 +104,7 @@ Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configur
 
 - **Perfil, senha e foto** — dados do usuário logado.
 - **Aparência** — tema claro/escuro/sistema, guardado no navegador (`localStorage`), por isso vale só para aquele navegador.
-- **Notificações** — liga/desliga, por usuário, os alertas de previsão de demanda, de acessos negados hoje e de dispositivo IoT sem sinal; o número do sino (em todas as telas, no site e no app) e a lista de alertas do painel seguem essas escolhas. O catálogo (rótulos e descrições) fica em `Preferencia::CATALOGO_NOTIFICACOES`, o mesmo para o site e o app. *Resumo diário por e-mail*: marcado "Em breve" (exige envio de e-mail e uma tarefa agendada no servidor).
+- **Notificações** — liga/desliga, por usuário, os alertas de previsão de demanda, de acessos negados hoje e de dispositivo IoT sem sinal; o número do sino (em todas as telas, no site e no app) e a lista de alertas do painel seguem essas escolhas. Também liga/desliga os e-mails automáticos *Desperdício alto por e-mail* (ligado por padrão) e *Resumo diário por e-mail* (desligado por padrão), veja [E-mails automáticos](#e-mails-automáticos). O catálogo (rótulos e descrições) fica em `Preferencia::CATALOGO_NOTIFICACOES`, o mesmo para o site e o app.
 - **Sistema** — período padrão e itens por página dos Relatórios, da conta: valem no site e no aplicativo (`/api/relatorios` usa as mesmas escolhas). O fuso é fixo (Brasília) porque as catracas e os relatórios precisam gravar e ler no mesmo horário.
 - **Integrações** — dispositivos IoT (acima).
 - **Segurança** — troca de senha e **sessões ativas** reais: lista onde a conta está aberta no site (navegador, IP, último acesso) e "Encerrar" derruba a sessão de verdade na próxima requisição. O aplicativo usa token e não aparece nessa lista, mas também mostra e encerra as sessões do site. *Autenticação em duas etapas*: marcada "Em breve" (o login do site e do aplicativo ainda não têm segundo passo).
@@ -122,6 +123,27 @@ Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configur
 O `/api/painel` também passou a devolver os alertas das catracas (conforme as preferências da conta), igual ao painel do site. Teste de integração: `python3 tests/api_app_http.py` (precisa do servidor rodando e do banco migrado; cria e apaga duas empresas temporárias).
 
 **Banco:** preferências e sessões usam duas tabelas novas (`preferencias_usuario` e `sessoes_usuario`, "Migration 004" no fim de `config/database.sql`), e o vínculo de cartões usa `cartoes_nao_cadastrados` ("Migration 005"). Em um banco que já existe, rode só esses blocos (é seguro rodar de novo). Enquanto eles não forem rodados, o sistema continua funcionando: preferências padrão, sem controle de sessões e sem a lista de "cartões lidos".
+
+## E-mails automáticos
+
+O próprio sistema envia e-mails, sem serviço pago nem biblioteca externa: `app/helpers/Email.php` + `Smtp.php` (SMTP com TLS, funciona com Gmail, o e-mail do cPanel ou qualquer provedor), com o visual da marca em `EmailModelo.php` (HTML + texto puro). O conteúdo de cada e-mail fica em `app/models/EmailsAutomaticos.php`.
+
+| E-mail | Quando sai | Para quem |
+|---|---|---|
+| **Nova mensagem pelo site** | Formulário *Contato* das páginas `/` e `/sicapda` (`POST /contato`) | Equipe (`MAIL_CONTATO`); "Responder" vai direto para quem escreveu |
+| **Recebemos a sua mensagem** | Junto com o de cima | Quem preencheu o formulário |
+| **Bem-vindo ao SICAPDA** | Cadastro de uma empresa (`/cadastro`) | Administrador (e o e-mail institucional, se for outro) |
+| **Redefinir a senha** | *Esqueceu a senha?* no login do site (`/senha/esqueci`) ou do app (`POST /api/senha/esqueci`) | A própria pessoa (link de uso único, vale 60 min) |
+| **A sua senha foi alterada** | Qualquer troca de senha (Configurações no site/app ou pelo link) | A própria pessoa (aviso de segurança) |
+| **Desperdício alto** | A balança envia uma pesagem e o desperdício do dia passa da meta (8% da produção) ou, sem produção informada, fica 30% acima da média diária dos últimos 30 dias. A tarefa agendada confere de novo ontem e hoje | Usuários da empresa com *Desperdício alto por e-mail* ligado (uma vez por empresa e por dia) |
+| **Resumo diário** | Às 8h (tarefa agendada): acessos, negados e refeitório de ontem, previsão de hoje, dispositivos sem sinal e alertas | Quem ligou *Resumo diário por e-mail* |
+
+- **Configurar** — preencha `APP_URL` e `MAIL_*` no `config/.env` (modelo comentado em [`config/.env.example`](config/.env.example)). No Gmail use uma *senha de app*, nunca a senha normal. Para testar sem enviar nada, `MAIL_DRIVER=log` grava cada e-mail em `storage/emails/*.eml`.
+- **Banco** — rode `config/migrations/007_emails.sql` (também no fim de `config/database.sql`): tabelas `contatos` (as mensagens ficam guardadas, nada se perde se o e-mail falhar), `senha_redefinicoes` (só o SHA-256 do token) e `emails_enviados` (impede o mesmo alerta de chegar duas vezes).
+- **Tarefa agendada** — de hora em hora, no cPanel → *Cron Jobs*: `/usr/local/bin/php /home/USUARIO/SystemFluxe/bin/emails.php` (troque pelo caminho do projeto). Ela reenvia contatos que falharam, confere o desperdício e manda o resumo diário. Se a hospedagem só permitir chamar uma URL: defina `CRON_SECRET` e agende `https://SEU-SITE/tarefas/emails?chave=CRON_SECRET`.
+- **Sem atrasar ninguém** — os envios acontecem depois da resposta (`Email::depoisDaResposta`), então o login, o formulário e a ESP32 da balança não esperam o SMTP. Se o servidor de e-mail cair, o sistema segue funcionando e o erro vai para o `error_log`.
+- **Segurança** — o formulário de contato tem campo isca contra robôs, só aceita envios do próprio site e limita 3 mensagens a cada 10 min por IP. A recuperação de senha responde igual exista ou não o e-mail, limita pedidos por conta e por IP, invalida os links anteriores e, ao trocar a senha, encerra as sessões abertas no site.
+- **Teste** — `python3 tests/emails_http.py` (com `MAIL_DRIVER=log` e `CRON_SECRET` no `.env` e o servidor rodando) cobre contato, boas-vindas, recuperação de senha (site e app), aviso de senha, alerta de desperdício pela balança e o resumo diário.
 
 ## Vídeo "Ver como funciona"
 
