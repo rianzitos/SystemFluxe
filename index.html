@@ -36,6 +36,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script defer src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
     <script defer src="/js/script.js"></script>
+    <script defer src="/js/contato.js"></script>
 </head>
 
 <body class="fundoIndex">
@@ -463,25 +464,42 @@
                         </div>
                     </div>
 
-                    <form class="formCard" method="POST" action="">
-                        <!-- Ajuste o "action" para o endpoint PHP que vai receber esse formulário -->
+                    <!-- Enviado para /contato (ContatoController): a equipe recebe por e-mail e quem escreveu ganha
+                         uma confirmação. public/js/contato.js envia sem recarregar a página. -->
+                    <form class="formCard" method="POST" action="/contato" data-contato novalidate>
+                        <input type="hidden" name="origem" value="fluxe">
+                        <!-- Campo isca contra robôs de spam: escondido para pessoas, não preencha -->
+                        <div class="campoIsca" aria-hidden="true">
+                            <label for="empresaSiteContato">Não preencha</label>
+                            <input type="text" id="empresaSiteContato" name="empresa_site" tabindex="-1" autocomplete="off">
+                        </div>
+
                         <div class="formGroup">
                             <label for="nomeContato">Nome</label>
                             <input class="inputsForm" type="text" id="nomeContato" name="nome" placeholder="Seu nome"
-                                required>
+                                autocomplete="name" maxlength="120" required>
                         </div>
 
                         <div class="formGroup">
                             <label for="emailContato">E-mail</label>
                             <input class="inputsForm" type="email" id="emailContato" name="email"
-                                placeholder="seuemail@empresa.com" required>
+                                placeholder="seuemail@empresa.com" autocomplete="email" maxlength="150" required>
+                        </div>
+
+                        <div class="formGroup">
+                            <label for="telefoneContato">Telefone ou WhatsApp <span class="formOpcional">(opcional)</span></label>
+                            <input class="inputsForm" type="tel" id="telefoneContato" name="telefone"
+                                placeholder="(19) 99999-9999" autocomplete="tel" maxlength="30">
                         </div>
 
                         <div class="formGroup">
                             <label for="mensagemContato">Mensagem</label>
                             <textarea id="mensagemContato" name="mensagem" rows="4" data-lenis-prevent
-                                placeholder="Conte um pouco sobre a sua instituição"></textarea>
+                                placeholder="Conte um pouco sobre a sua instituição" minlength="10" maxlength="5000"
+                                required></textarea>
                         </div>
+
+                        <p class="formStatus" role="status" aria-live="polite" hidden></p>
 
                         <button class="formSubmit" type="submit">Enviar mensagem</button>
                     </form>

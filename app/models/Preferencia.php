@@ -2,7 +2,8 @@
 
 /**
  * Preferências de cada usuário da tela de Configurações (tabela preferencias_usuario):
- *   - notificações: quais alertas aparecem no sino e no painel;
+ *   - notificações: quais alertas aparecem no sino e no painel e quais e-mails automáticos a pessoa recebe
+ *     (desperdício alto e resumo diário, veja EmailsAutomaticos);
  *   - sistema: período padrão e itens por página dos Relatórios (só na versão web).
  *
  * Quem nunca salvou nada recebe os padrões abaixo. Se a tabela ainda não existir no banco
@@ -12,7 +13,7 @@
 class Preferencia
 {
     /** Alertas que o usuário pode ligar/desligar. */
-    public const NOTIFICACOES = ['previsao_demanda', 'acesso_negado', 'dispositivo_offline'];
+    public const NOTIFICACOES = ['previsao_demanda', 'acesso_negado', 'dispositivo_offline', 'email_desperdicio', 'resumo_diario'];
     public const PERIODOS = ['mes', '7', '30', '90'];
     public const ITENS_PAGINA = [10, 20, 50];
 
@@ -30,10 +31,14 @@ class Preferencia
         ['chave' => 'previsao_demanda', 'label' => 'Alertas de previsão de demanda', 'descricao' => 'Desperdício acima da meta, picos de movimento e feriados que mudam a previsão', 'disponivel' => true],
         ['chave' => 'acesso_negado', 'label' => 'Tentativas de acesso não autorizado', 'descricao' => 'Avisa no sino e no painel quando uma catraca negar acessos hoje', 'disponivel' => true],
         ['chave' => 'dispositivo_offline', 'label' => 'Dispositivo IoT offline', 'descricao' => 'Avisa quando uma catraca ou leitor parar de responder', 'disponivel' => true],
-        ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com o resumo do dia anterior', 'disponivel' => false],
+        ['chave' => 'email_desperdicio', 'label' => 'Desperdício alto por e-mail', 'descricao' => 'Um e-mail no mesmo dia em que o desperdício passar da meta (8% da produção) ou ficar bem acima da média', 'disponivel' => true],
+        ['chave' => 'resumo_diario', 'label' => 'Resumo diário por e-mail', 'descricao' => 'Um e-mail às 08h com os acessos e o refeitório de ontem e a previsão do dia', 'disponivel' => true],
     ];
 
-    private const PADRAO_NOTIFICACOES = ['previsao_demanda' => true, 'acesso_negado' => true, 'dispositivo_offline' => true];
+    private const PADRAO_NOTIFICACOES = [
+        'previsao_demanda' => true, 'acesso_negado' => true, 'dispositivo_offline' => true,
+        'email_desperdicio' => true, 'resumo_diario' => false,
+    ];
     private const PADRAO_SISTEMA = ['periodo_padrao' => 'mes', 'itens_pagina' => 20];
 
     private PDO $db;

@@ -51,6 +51,8 @@
  *   POST /api/dispositivos/pesagem     {id, tipo, desperdicio_kg, data?}  total de desperdício da refeição
  *
  * As escritas respondem {sucesso, mensagem, ...}; erro de regra vem como {sucesso: false, mensagem} com 403, 404, 409 ou 422.
+ * Público (sem token): POST /api/login e POST /api/senha/esqueci {email} (envia o link de redefinição por e-mail).
+ *
  * Sem CSRF de propósito: a API autentica por Bearer token, nunca por cookie (veja Api::cors()).
  */
 class ApiController
@@ -68,6 +70,9 @@ class ApiController
 
         if ($rota === '/login') {
             $metodo === 'POST' ? $this->login() : Api::erro(405, 'Método não permitido.');
+        }
+        if ($rota === '/senha/esqueci') {
+            $metodo === 'POST' ? $this->esqueciSenha() : Api::erro(405, 'Método não permitido.');
         }
 
         $usuario = ApiAuthMiddleware::autenticar();
@@ -164,6 +169,24 @@ class ApiController
         $completo = (new Usuario())->buscarPorId((int) $usuario['id']);
 
         Api::json($token + ['usuario' => $this->usuarioParaJson($completo)]);
+    }
+
+    /**
+     * "Esqueci minha senha" do aplicativo (público, sem token): envia o mesmo e-mail do site, com o link
+     * para criar a senha nova no navegador. A resposta é igual exista ou não o e-mail.
+     */
+    private function esqueciSenha(): never
+    {
+        $email = Api::corpo()['email'] ?? '';
+        try {
+            $mensagem = (new RedefinicaoSenha())->solicitar(is_string($email) ? $email : '', (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        } catch (PDOException $e) {
+            error_log('SICAPDA API senha: ' . $e->getMessage() . ' (rode a migration 007)');
+            Api::erro(503, 'A recuperação de senha está indisponível no momento. Fale com o administrador da sua empresa.');
+        }
+        Api::json(['mensagem' => $mensagem]);
     }
 
     private function usuarioParaJson(array $u): array

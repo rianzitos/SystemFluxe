@@ -22,7 +22,12 @@ class Balanca
         if (!$dia || $dia->format('Y-m-d') !== $data || $data > date('Y-m-d') || $data < '2000-01-01') {
             throw new InvalidArgumentException('Informe uma data válida, sem ser no futuro.');
         }
-        (new Producao())->registrarDesperdicio((int) $dispositivo['empresa_id'], $tipo, (float) $kg, $data);
+        $empresaId = (int) $dispositivo['empresa_id'];
+        (new Producao())->registrarDesperdicio($empresaId, $tipo, (float) $kg, $data);
+
+        // Passou da meta? Avisa por e-mail quem ligou o alerta (uma vez por dia), depois de responder à balança.
+        Email::depoisDaResposta(fn() => EmailsAutomaticos::desperdicioAlto($empresaId, $data));
+
         return ['mensagem' => 'Total de desperdício registrado.', 'desperdicio_kg' => round($kg, 2), 'tipo' => $tipo, 'data' => $data];
     }
 

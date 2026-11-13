@@ -145,7 +145,7 @@ para que ela não reapareça quando a página for atualizada.if (!empty(...'flas
                             <span class="checkmark"></span>
                             Lembrar-me
                         </label>
-                        <a href="#" class="link-esqueceu">Esqueceu a senha?</a><!-- Link para recuperação de senha -->
+                        <a href="/senha/esqueci" class="link-esqueceu">Esqueceu a senha?</a><!-- Link para recuperação de senha -->
                     </div>
 
                     <div class="container-but">

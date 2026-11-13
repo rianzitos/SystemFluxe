@@ -96,6 +96,22 @@ if ($uri === '/') {
 // aciona a função para exibir a tela de cadastro.
 
 
+} elseif ($uri === '/contato' && $metodo === 'POST') {
+    (new ContatoController())->enviar();
+// Formulário "Contato" das páginas / e /sicapda: guarda a mensagem e envia por e-mail para a equipe
+// (com a confirmação para quem escreveu). Público, com proteção contra spam no controller.
+
+} elseif ($uri === '/senha/esqueci') {
+    (new SenhaController())->esqueci();
+} elseif ($uri === '/senha/redefinir') {
+    (new SenhaController())->redefinir();
+// "Esqueceu a senha?" do login: envia o link de uso único por e-mail e troca a senha (app/views/senha.php).
+
+} elseif ($uri === '/tarefas/emails') {
+    (new TarefaController())->emails();
+// Tarefa agendada dos e-mails automáticos chamada por URL (para hospedagens sem cron de linha de comando).
+// Exige ?chave= igual ao CRON_SECRET do config/.env. O ideal é o cron rodar bin/emails.php direto.
+
 } elseif ($uri === '/logout') {
     (new AcessoController())->logout();
 //  cria a rota de logout, acionando imediatamente a função que

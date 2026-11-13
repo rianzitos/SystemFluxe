@@ -284,7 +284,7 @@ try {
                     <!-- ---------- NOTIFICAÇÕES ---------- -->
                     <section class="config-painel" data-aba-painel="notificacoes">
                         <h2>Notificações</h2>
-                        <p class="config-painel-desc">Escolha quais eventos aparecem no sino e na lista de alertas do painel. Vale só para a sua conta.</p>
+                        <p class="config-painel-desc">Escolha quais eventos aparecem no sino e na lista de alertas do painel e quais e-mails automáticos você recebe em <strong><?= htmlspecialchars($emailUsuario) ?></strong>. Vale só para a sua conta.</p>
 
                         <div class="lista-toggles">
                             <?php foreach ($notificacoesConfig as $item): ?>
