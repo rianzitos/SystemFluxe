@@ -63,9 +63,16 @@ $ate = min($dados['total'], $dados['pagina'] * $dados['porPagina']);
                 </div>
 
                 <div class="cabecalho-acoes">
-                    <a class="btn-exportar" href="/relatorios/exportar?<?= htmlspecialchars($qs()) ?>">
-                        <?= Pagina::svg('download') ?> Exportar CSV
-                    </a>
+                    <!-- Excel (.xlsx): datas e horas de verdade e colunas na largura certa (o CSV aberto no Excel
+                         mostrava "########" nas datas). O CSV continua disponível para outros sistemas. -->
+                    <div class="grupo-exportar">
+                        <a class="btn-exportar" href="/relatorios/exportar?<?= htmlspecialchars($qs(['formato' => 'xlsx'])) ?>"
+                            title="Baixar os registros filtrados em uma planilha do Excel (.xlsx)">
+                            <?= Pagina::svg('download') ?> Exportar Excel
+                        </a>
+                        <a class="btn-exportar-csv" href="/relatorios/exportar?<?= htmlspecialchars($qs(['formato' => 'csv'])) ?>"
+                            title="Baixar em CSV (texto separado por ponto e vírgula), para importar em outros sistemas">CSV</a>
+                    </div>
 
                     <label class="seletor-data seletor-periodo" title="Período do relatório">
                         <?= Pagina::svg('calendar') ?>

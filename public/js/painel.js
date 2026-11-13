@@ -7,7 +7,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     definirPeriodoAtual();
-    montarMenuMobile();
     montarGraficoDemanda();
     montarGraficoDistribuicao();
 });
@@ -27,20 +26,6 @@ function definirPeriodoAtual() {
 
     const formatar = (data) => data.toLocaleDateString('pt-BR');
     label.textContent = `${formatar(primeiroDia)} - ${formatar(ultimoDia)}`;
-}
-
-/** Abre/fecha a sidebar no mobile. */
-function montarMenuMobile() {
-    const botao = document.getElementById('btnMenuMobile');
-    const sidebar = document.getElementById('sidebar');
-    if (!botao || !sidebar) return;
-
-    botao.addEventListener('click', () => sidebar.classList.toggle('aberta'));
-
-    document.addEventListener('click', (evento) => {
-        const cliqueForaDoMenu = !sidebar.contains(evento.target) && !botao.contains(evento.target);
-        if (cliqueForaDoMenu) sidebar.classList.remove('aberta');
-    });
 }
 
 /** Gráfico de linha: Previsto x Realizado. */

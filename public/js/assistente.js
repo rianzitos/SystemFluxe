@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
     if (!lista || !form || !entrada) return;
 
-    montarMenuMobile();
 
     const agora = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('horaBoasVindas').textContent = agora();
@@ -106,16 +105,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-/** Abre/fecha a sidebar no mobile. */
-function montarMenuMobile() {
-    const botao = document.getElementById('btnMenuMobile');
-    const sidebar = document.getElementById('sidebar');
-    if (!botao || !sidebar) return;
-
-    botao.addEventListener('click', () => sidebar.classList.toggle('aberta'));
-    document.addEventListener('click', (evento) => {
-        if (!sidebar.contains(evento.target) && !botao.contains(evento.target)) {
-            sidebar.classList.remove('aberta');
-        }
-    });
-}

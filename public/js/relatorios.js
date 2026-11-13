@@ -3,23 +3,8 @@
 // =========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    montarMenuMobile();
     montarFiltros();
 });
-
-/** Abre/fecha a sidebar no mobile. */
-function montarMenuMobile() {
-    const botao = document.getElementById('btnMenuMobile');
-    const sidebar = document.getElementById('sidebar');
-    if (!botao || !sidebar) return;
-
-    botao.addEventListener('click', () => sidebar.classList.toggle('aberta'));
-
-    document.addEventListener('click', (evento) => {
-        const fora = !sidebar.contains(evento.target) && !botao.contains(evento.target);
-        if (fora) sidebar.classList.remove('aberta');
-    });
-}
 
 /** yyyy-mm-dd no horário local (toISOString usaria UTC e poderia errar o dia). */
 function ymd(data) {

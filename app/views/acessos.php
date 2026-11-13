@@ -29,8 +29,6 @@ $graficoDesperdicio = $analise['graficoDesperdicio'];
 $insights = $analise['insights'];
 $notificacoesNaoLidas = Notificacoes::contar($painel->totalAlertas(), Pagina::empresaId());
 
-// Itens do menu lateral: rota, ícone (chave) e rótulo.
-$menu = Pagina::menu();
 
 // Badge do sino: quantidade de alertas ativos (calculados com dados reais)
 $notificacoesNaoLidas = $notificacoesNaoLidas ?? 0;
@@ -102,44 +100,7 @@ function icone(string $nome): string
     <div class="layout">
 
         <!-- ===================== SIDEBAR ===================== -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-topo">
-                <div class="logo">
-                    <span class="logo-sica">SICA<span class="logo-pda">PDA</span></span>
-                    <span class="logo-by">by <strong>FLUXE</strong></span>
-                </div>
-
-                <nav class="menu">
-                    <?php foreach ($menu as $item): ?>
-                        <a href="<?= htmlspecialchars($item['rota']) ?>"
-                            class="menu-item <?= $paginaAtual === $item['chave'] ? 'ativo' : '' ?>">
-                            <div class="menu-icone menu-icone-<?= htmlspecialchars($item['chave']) ?>">
-                                <i class="iconeMenu bi <?= htmlspecialchars($item['icone']) ?>"></i>
-                            </div>
-                            <span><?= htmlspecialchars($item['label']) ?></span>
-                        </a>
-                    <?php endforeach; ?>
-                </nav>
-            </div>
-
-            <div class="sidebar-usuario">
-                <?php if (!empty($fotoPerfil) && file_exists(__DIR__ . '/../../public/' . $fotoPerfil)): ?>
-                    <div class="avatar avatar-foto">
-                        <img src="/<?= htmlspecialchars($fotoPerfil) ?>"
-                            alt="Foto de <?= htmlspecialchars($nomeUsuario) ?>">
-                    </div>
-                <?php else: ?>
-                    <div class="avatar"><?= htmlspecialchars(mb_strtoupper(mb_substr($nomeUsuario, 0, 1))) ?></div>
-                <?php endif; ?>
-                <div class="sidebar-usuario-info">
-                    <strong><?= htmlspecialchars($nomeUsuario) ?></strong>
-                    <span><?= htmlspecialchars($perfilUsuario) ?> <i class="ponto-online"></i></span>
-                </div>
-                <a href="/logout" class="sair" title="Sair">
-                    <i class="icone bi bi-box-arrow-right"></i>
-                </a>
-            </div>
-        </aside>
+<?php require __DIR__ . '/partials/sidebar.php'; ?>
 
         <!-- ===================== CONTEÚDO ===================== -->
         <div class="conteudo">

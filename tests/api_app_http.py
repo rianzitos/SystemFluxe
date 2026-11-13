@@ -123,6 +123,18 @@ try:
     # a outra conta continua com os padrões
     assert api('/relatorios', token=token_outra)['porPagina'] == 20
 
+    # Exportação: ?formato=xlsx devolve a planilha do Excel (zip); sem formato, o CSV de sempre (app 1.2 e outros sistemas)
+    def baixar(consulta):
+        global contador
+        resp = sem_cookie.open(urllib.request.Request(base + '/api/relatorios/exportar' + consulta, headers={'Authorization': 'Bearer ' + token}))
+        contador += 1
+        return resp.headers['Content-Type'], resp.headers['Content-Disposition'], resp.read()
+    tipo, disp, corpo = baixar('?formato=xlsx')
+    assert tipo.startswith('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') and disp.endswith('.xlsx"'), (tipo, disp)
+    assert corpo[:2] == b'PK', corpo[:20]   # nada antes do arquivo (antes vinham 4 espaços do ApiController)
+    tipo, disp, corpo = baixar('')
+    assert tipo.startswith('text/csv') and disp.endswith('.csv"') and corpo.startswith(b'\xef\xbb\xbfNome;'), corpo[:20]
+
     # ─── Dispositivos IoT ────────────────────────────────────────────────────
     disp = api('/dispositivos', token=token)
     assert disp['podeEditar'] is True and len(disp['dispositivos']) == 2
