@@ -26,93 +26,70 @@ class AssistenteFerramentas
     }
 
     /**
-     * Definições no formato da API (lista fixa e na mesma ordem a cada pedido, para o cache de prompt valer).
-     * strict: a API garante que os argumentos seguem o esquema; mesmo assim tudo é validado em executar().
+     * Definições no formato "chat completions" (aceito pelo Gemini, Groq, OpenRouter, OpenAI...). Lista fixa e
+     * na mesma ordem a cada pedido. Esquemas só com type, properties, required e description, que todos os
+     * provedores aceitam; quem garante os valores é executar(), que valida tudo e devolve o erro para a IA corrigir.
+     * Ferramenta sem parâmetros não leva "parameters" (o Gemini recusa um objeto vazio).
      */
     public static function definicoes(): array
     {
-        $semParametros = ['type' => 'object', 'properties' => new stdClass(), 'required' => [], 'additionalProperties' => false];
-        $data = fn(string $desc) => ['type' => 'string', 'format' => 'date', 'description' => $desc];
+        $texto = fn(string $desc) => ['type' => 'string', 'description' => $desc];
+        $inteiro = fn(string $desc) => ['type' => 'integer', 'description' => $desc];
+        $ferramenta = function (string $nome, string $descricao, array $propriedades = []): array {
+            $f = ['name' => $nome, 'description' => $descricao];
+            if ($propriedades) {
+                $f['parameters'] = ['type' => 'object', 'properties' => $propriedades, 'required' => array_keys($propriedades)];
+            }
+            return ['type' => 'function', 'function' => $f];
+        };
 
         return [
-            [
-                'name' => 'consultar_previsao_dia',
-                'description' => 'Previsão de um dia da empresa: pessoas esperadas, refeições por tipo (café da manhã, almoço, jantar, ceia), '
-                    . 'quilos de comida a produzir, feriado e confiança. Para hoje também traz quantas pessoas já entraram. '
-                    . 'Para uma data passada devolve o que aconteceu de fato (pessoas que acessaram, produção e desperdício em kg).',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => ['data' => $data('Dia consultado, AAAA-MM-DD.')],
-                    'required' => ['data'],
-                    'additionalProperties' => false,
-                ],
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_previsao_proximos_dias',
-                'description' => 'Previsão dia a dia dos próximos dias a partir de amanhã (pessoas, refeições e kg), com totais. '
-                    . 'Use para "previsão semanal", "semana que vem", "próximos dias".',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => ['dias' => ['type' => 'integer', 'description' => 'Quantos dias a partir de amanhã, de 1 a 14. Semana = 7.']],
-                    'required' => ['dias'],
-                    'additionalProperties' => false,
-                ],
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_desperdicio',
-                'description' => 'Produção e desperdício de comida (kg) nos últimos N dias até ontem, percentual contra a meta (8%), '
-                    . 'produção por tipo de refeição, a série diária (até 31 dias) e o desperdício já registrado hoje.',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => ['dias' => ['type' => 'integer', 'description' => 'Tamanho do período em dias, de 1 a 90 (ex.: 7 = última semana, 30 = último mês).']],
-                    'required' => ['dias'],
-                    'additionalProperties' => false,
-                ],
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_acessos',
-                'description' => 'Acessos (entradas autorizadas nas catracas) em um período: pessoas distintas por dia, total de entradas, '
-                    . 'média por dia com movimento, dia de maior movimento, duração média das permanências e horário de pico de entrada.',
-                'input_schema' => [
-                    'type' => 'object',
-                    'properties' => [
-                        'data_inicio' => $data('Primeiro dia do período, AAAA-MM-DD.'),
-                        'data_fim'    => $data('Último dia do período (inclusive), AAAA-MM-DD. Período máximo de 92 dias.'),
-                    ],
-                    'required' => ['data_inicio', 'data_fim'],
-                    'additionalProperties' => false,
-                ],
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_presentes_agora',
-                'description' => 'Quantas pessoas estão no local neste momento, por categoria (Operador, Supervisor, Prestador de Serviço), '
-                    . 'e quantas pessoas ativas a empresa tem cadastradas. Não traz nomes.',
-                'input_schema' => $semParametros,
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_precisao',
-                'description' => 'Precisão das previsões de pessoas nos últimos 30 dias (a mesma do card "Precisão da IA").',
-                'input_schema' => $semParametros,
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_alertas',
-                'description' => 'Alertas e recomendações atuais: desperdício acima da meta, maior movimento previsto na semana, '
-                    . 'feriados e dias de baixa previsão nos próximos 10 dias.',
-                'input_schema' => $semParametros,
-                'strict' => true,
-            ],
-            [
-                'name' => 'consultar_dispositivos',
-                'description' => 'Dispositivos IoT da empresa (catracas, leitores e balanças): nome, tipo, local, Online/Offline e último sinal.',
-                'input_schema' => $semParametros,
-                'strict' => true,
-            ],
+            $ferramenta(
+                'consultar_previsao_dia',
+                'Previsão de um dia da empresa: pessoas esperadas, refeições por tipo (café da manhã, almoço, jantar, ceia), '
+                . 'quilos de comida a produzir, feriado e confiança. Para hoje também traz quantas pessoas já entraram. '
+                . 'Para uma data passada devolve o que aconteceu de fato (pessoas que acessaram, produção e desperdício em kg).',
+                ['data' => $texto('Dia consultado, no formato AAAA-MM-DD.')]
+            ),
+            $ferramenta(
+                'consultar_previsao_proximos_dias',
+                'Previsão dia a dia dos próximos dias a partir de amanhã (pessoas, refeições e kg), com totais. '
+                . 'Use para "previsão semanal", "semana que vem", "próximos dias".',
+                ['dias' => $inteiro('Quantos dias a partir de amanhã, de 1 a 14. Semana = 7.')]
+            ),
+            $ferramenta(
+                'consultar_desperdicio',
+                'Produção e desperdício de comida (kg) nos últimos N dias até ontem, percentual contra a meta (8%), '
+                . 'produção por tipo de refeição, a série diária (até 31 dias) e o desperdício já registrado hoje.',
+                ['dias' => $inteiro('Tamanho do período em dias, de 1 a 90 (ex.: 7 = última semana, 30 = último mês).')]
+            ),
+            $ferramenta(
+                'consultar_acessos',
+                'Acessos (entradas autorizadas nas catracas) em um período: pessoas distintas por dia, total de entradas, '
+                . 'média por dia com movimento, dia de maior movimento, duração média das permanências e horário de pico de entrada.',
+                [
+                    'data_inicio' => $texto('Primeiro dia do período, AAAA-MM-DD.'),
+                    'data_fim'    => $texto('Último dia do período (inclusive), AAAA-MM-DD. Período máximo de 92 dias.'),
+                ]
+            ),
+            $ferramenta(
+                'consultar_presentes_agora',
+                'Quantas pessoas estão no local neste momento, por categoria (Operador, Supervisor, Prestador de Serviço), '
+                . 'e quantas pessoas ativas a empresa tem cadastradas. Não traz nomes.'
+            ),
+            $ferramenta(
+                'consultar_precisao',
+                'Precisão das previsões de pessoas nos últimos 30 dias (a mesma do card "Precisão da IA").'
+            ),
+            $ferramenta(
+                'consultar_alertas',
+                'Alertas e recomendações atuais: desperdício acima da meta, maior movimento previsto na semana, '
+                . 'feriados e dias de baixa previsão nos próximos 10 dias.'
+            ),
+            $ferramenta(
+                'consultar_dispositivos',
+                'Dispositivos IoT da empresa (catracas, leitores e balanças): nome, tipo, local, Online/Offline e último sinal.'
+            ),
         ];
     }
 
