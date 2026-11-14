@@ -219,6 +219,10 @@ if ($uri === '/') {
     (new DemandaController())->exibir();
 // Assistente virtual: tela de chat com previsões calculadas em PHP.
 
+} elseif ($uri === '/assistente/diagnostico') {
+    (new DemandaController())->diagnosticar();
+// Teste passo a passo da IA do assistente (só administrador): mostra onde ela falha.
+
 } elseif ($uri === '/assistente/perguntar' && $metodo === 'POST') {
     (new DemandaController())->perguntar();
 // Endpoint JSON do chat (valida sessão e token CSRF dentro do controller).

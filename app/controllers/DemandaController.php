@@ -27,6 +27,33 @@ class DemandaController
     }
 
     /**
+     * GET /assistente/diagnostico — só administrador. Mostra a configuração da IA e, com ?testar=1, testa cada
+     * etapa (conexão, chave, pedido simples, pedido com ferramentas) e diz onde falha. Útil quando o chat
+     * responde "modo básico" em vez de usar a IA.
+     */
+    public function diagnosticar(): void
+    {
+        AuthMiddleware::requerPerfil('admin');
+
+        $usuario = [
+            'id'     => (int) ($_SESSION['usuario_id'] ?? 0),
+            'nome'   => (string) ($_SESSION['usuario_nome'] ?? ''),
+            'perfil' => 'admin',
+        ];
+        $empresaId = Pagina::empresaId();
+        $testar = ($_GET['testar'] ?? '') === '1';
+        session_write_close();
+        @set_time_limit(180);
+
+        $config = AssistenteDiagnostico::configuracao();
+        $etapas = $testar ? AssistenteDiagnostico::testar($empresaId, $usuario) : null;
+
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+        require __DIR__ . '/../views/assistente_diagnostico.php';
+    }
+
+    /**
      * POST /assistente/perguntar — recebe {mensagem, historico?} em JSON e responde em JSON.
      * historico: mensagens anteriores do chat ([{autor: 'usuario'|'bot', texto}]), para a IA entender
      * perguntas como "e para sexta?". Com a IA desligada ou fora do ar, responde o motor local.

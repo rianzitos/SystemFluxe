@@ -20,8 +20,6 @@ class AssistenteIA
     private const MAX_RODADAS = 6;
     /** A pergunta inteira (todas as rodadas e novas tentativas) precisa caber neste tempo. */
     private const PRAZO_SEGUNDOS = 75;
-    /** Teto da resposta; modelos com raciocínio (Gemini 2.5) gastam parte dele pensando. */
-    private const MAX_TOKENS = 8000;
 
     /** Histórico enviado pelo chat: últimas mensagens, cada uma cortada neste tamanho. */
     private const MAX_HISTORICO = 12;
@@ -76,11 +74,63 @@ class AssistenteIA
             try {
                 return ['resposta' => (new self($empresaId, $usuario))->responder($mensagem, $historico), 'ia' => true];
             } catch (Throwable $e) {
-                error_log('SICAPDA assistente IA: ' . $e->getMessage());
+                self::registrarFalha($e);
+                // Em vez de cair em silêncio no modo básico (que nem sempre entende a pergunta), avisa. Só o
+                // administrador vê o motivo técnico e o caminho para resolver.
+                $aviso = "\n\n⚠ A IA não respondeu agora, então usei o modo básico.";
+                if (($usuario['perfil'] ?? '') === 'admin') {
+                    $aviso .= "\nMotivo (só o administrador vê): " . self::explicarFalha($e)
+                        . "\nPara testar passo a passo, abra /assistente/diagnostico.";
+                }
+                return ['resposta' => (new Assistente($empresaId))->responder($mensagem) . $aviso, 'ia' => false, 'erro' => $e->getMessage()];
             }
         }
 
         return ['resposta' => (new Assistente($empresaId))->responder($mensagem), 'ia' => false];
+    }
+
+    /**
+     * Explica em português, para o administrador, por que a IA falhou e o que fazer.
+     * (A mensagem original do provedor vai junto, cortada.)
+     */
+    public static function explicarFalha(Throwable $e): string
+    {
+        $msg = trim(mb_substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 220));
+        if (!$e instanceof LlmException) {
+            return "resposta inesperada da IA ({$msg}).";
+        }
+
+        $status = $e->status();
+        $causa = match (true) {
+            str_contains($msg, 'IA não configurada') => 'a chave não foi lida: confira se IA_API_KEY está no config/.env do servidor (sem aspas nem espaços) e se a extensão cURL do PHP está ativa.',
+            $status === 0 && str_contains($msg, 'Tempo esgotado') => 'a IA demorou demais para responder. Tente de novo.',
+            $status === 0 => 'o servidor não conseguiu conectar ao serviço de IA (internet de saída bloqueada ou certificado SSL do servidor). Peça à hospedagem para liberar conexões HTTPS de saída (cURL) para generativelanguage.googleapis.com.',
+            $status === 400 && preg_match('/api key/i', $msg) => 'o Google disse que a chave é inválida. Crie outra em aistudio.google.com/apikey e confira se foi colada inteira.',
+            $status === 400 && preg_match('/tool|function|schema|parameter/i', $msg) => 'o provedor recusou as ferramentas que o assistente envia. Copie a mensagem abaixo e me mande.',
+            $status === 400 => 'o provedor recusou o pedido. Copie a mensagem abaixo e me mande.',
+            $status === 401, $status === 403 => 'a chave foi recusada ou não tem permissão (chave de outro projeto, API não liberada na sua região ou conta). Crie uma chave nova em aistudio.google.com/apikey.',
+            $status === 404 => 'o modelo informado em IA_MODEL não existe para essa chave. Use gemini-2.5-flash ou gemini-2.5-flash-lite.',
+            $status === 429 => 'a cota gratuita acabou (por minuto ou por dia). Aguarde um pouco, ou troque IA_MODEL para gemini-2.5-flash-lite, que costuma ter limite maior.',
+            $status >= 500 => 'o serviço de IA está instável no momento. Tente de novo em instantes.',
+            default => 'erro não classificado.',
+        };
+        return $causa . ($msg !== '' ? " [{$msg}]" : '');
+    }
+
+    /** Guarda a falha em storage/ia/erros.log (fora de public/ e do Git), além do error_log do servidor. */
+    private static function registrarFalha(Throwable $e): void
+    {
+        error_log('SICAPDA assistente IA: ' . $e->getMessage());
+
+        $pasta = __DIR__ . '/../../storage/ia';
+        if (!is_dir($pasta) && !@mkdir($pasta, 0700, true) && !is_dir($pasta)) {
+            return;
+        }
+        $arquivo = $pasta . '/erros.log';
+        if (is_file($arquivo) && filesize($arquivo) > 200000) {
+            @file_put_contents($arquivo, '');   // não deixa o arquivo crescer sem fim
+        }
+        @file_put_contents($arquivo, date('Y-m-d H:i:s') . ' ' . mb_substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 500) . "\n", FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -99,13 +149,11 @@ class AssistenteIA
         $tools = AssistenteFerramentas::definicoes();
 
         for ($rodada = 1; $rodada <= self::MAX_RODADAS; $rodada++) {
-            $pedido = [
-                'max_tokens' => self::MAX_TOKENS,
-                'messages'   => $mensagens,
-                'tools'      => $tools,
-                // Última rodada: responder com o que já consultou, sem chamar mais ferramentas.
-                'tool_choice' => $rodada === self::MAX_RODADAS ? 'none' : 'auto',
-            ];
+            // Só os campos essenciais: quanto menos o pedido leva, menos chance de um provedor recusar.
+            $pedido = ['messages' => $mensagens, 'tools' => $tools];
+            if ($rodada === self::MAX_RODADAS) {
+                $pedido['tool_choice'] = 'none'; // última rodada: responde com o que já consultou
+            }
 
             $r = Llm::conversar($pedido, $prazo);
             $escolha = $r['choices'][0] ?? null;
