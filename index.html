@@ -88,7 +88,7 @@
             document.documentElement.setAttribute('data-theme', tema);
         })();
     </script>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css?v=<?= (int) @filemtime(__DIR__ . '/public/css/style.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <!--links para conectar outras páginas-->
     <link
@@ -539,8 +539,9 @@
                          uma confirmação. public/js/contato.js envia sem recarregar a página. -->
                     <form class="formCard" method="POST" action="/contato" data-contato novalidate>
                         <input type="hidden" name="origem" value="fluxe">
-                        <!-- Campo isca contra robôs de spam: escondido para pessoas, não preencha -->
-                        <div class="campoIsca" aria-hidden="true">
+                        <!-- Campo isca contra robôs de spam: escondido para pessoas, não preencha. O style inline mantém
+                     o campo escondido mesmo se o navegador ainda estiver com um CSS antigo em cache. -->
+                        <div class="campoIsca" aria-hidden="true" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden">
                             <label for="empresaSiteContato">Não preencha</label>
                             <input type="text" id="empresaSiteContato" name="empresa_site" tabindex="-1" autocomplete="off">
                         </div>
