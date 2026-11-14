@@ -1,14 +1,16 @@
 <?php
 
 /**
- * Assistente virtual com IA (Claude, da Anthropic), restrito ao SICAPDA.
+ * Assistente virtual com IA, restrito ao SICAPDA.
  *
  * - O comportamento e tudo o que a IA sabe sobre o sistema ficam em app/conhecimento/assistente.md
  *   (texto em português: para mudar o que ela responde ou recusa, edite esse arquivo).
  * - Os dados da empresa chegam pelas ferramentas de AssistenteFerramentas (só leitura, sempre da empresa
  *   de quem está logado; a IA nunca escolhe a empresa).
- * - Sem ANTHROPIC_API_KEY no config/.env, com a IA fora do ar ou acima do limite de perguntas, quem
- *   responde é o motor local (Assistente, por palavras-chave), então o chat nunca fica mudo.
+ * - A IA é qualquer serviço no formato "chat completions" (Gemini, Groq, OpenRouter...), configurado em
+ *   IA_API_KEY / IA_MODEL / IA_BASE_URL no config/.env (veja Llm).
+ * - Sem IA_API_KEY, com a IA fora do ar ou acima do limite de perguntas, quem responde é o motor local
+ *   (Assistente, por palavras-chave), então o chat nunca fica mudo.
  *
  * Usado pela tela /assistente (DemandaController) e pela API do aplicativo (ApiController), com o mesmo código.
  */
@@ -18,7 +20,8 @@ class AssistenteIA
     private const MAX_RODADAS = 6;
     /** A pergunta inteira (todas as rodadas e novas tentativas) precisa caber neste tempo. */
     private const PRAZO_SEGUNDOS = 75;
-    private const MAX_TOKENS = 16000;
+    /** Teto da resposta; modelos com raciocínio (Gemini 2.5) gastam parte dele pensando. */
+    private const MAX_TOKENS = 8000;
 
     /** Histórico enviado pelo chat: últimas mensagens, cada uma cortada neste tamanho. */
     private const MAX_HISTORICO = 12;
@@ -49,7 +52,7 @@ class AssistenteIA
     /** A IA está configurada neste servidor. */
     public static function ativa(): bool
     {
-        return Claude::configurado() && is_readable(self::ARQUIVO_CONHECIMENTO);
+        return Llm::configurado() && is_readable(self::ARQUIVO_CONHECIMENTO);
     }
 
     /**
@@ -83,51 +86,59 @@ class AssistenteIA
     /**
      * Pergunta à IA (com as ferramentas) e devolve o texto final.
      *
-     * @throws ClaudeException|RuntimeException quando a IA não consegue responder (quem chama usa o motor local)
+     * @throws LlmException|RuntimeException quando a IA não consegue responder (quem chama usa o motor local)
      */
     public function responder(string $mensagem, array $historico = []): string
     {
         $mensagem = trim(mb_substr($mensagem, 0, self::MAX_PERGUNTA));
-        $mensagens = self::montarHistorico($historico);
+        $mensagens = [['role' => 'system', 'content' => $this->system()]];
+        array_push($mensagens, ...self::montarHistorico($historico));
         $mensagens[] = ['role' => 'user', 'content' => $mensagem];
 
         $prazo = microtime(true) + self::PRAZO_SEGUNDOS;
-        $system = $this->system();
         $tools = AssistenteFerramentas::definicoes();
 
         for ($rodada = 1; $rodada <= self::MAX_RODADAS; $rodada++) {
             $pedido = [
                 'max_tokens' => self::MAX_TOKENS,
-                'system'     => $system,
-                'tools'      => $tools,
                 'messages'   => $mensagens,
-            ];
-            if ($rodada === self::MAX_RODADAS) {
+                'tools'      => $tools,
                 // Última rodada: responder com o que já consultou, sem chamar mais ferramentas.
-                $pedido['tool_choice'] = ['type' => 'none'];
+                'tool_choice' => $rodada === self::MAX_RODADAS ? 'none' : 'auto',
+            ];
+
+            $r = Llm::conversar($pedido, $prazo);
+            $escolha = $r['choices'][0] ?? null;
+            $msg = is_array($escolha) ? ($escolha['message'] ?? null) : null;
+            if (!is_array($msg)) {
+                throw new RuntimeException('Resposta da IA sem mensagem.');
             }
+            $motivo = (string) ($escolha['finish_reason'] ?? '');
 
-            $r = Claude::mensagens($pedido, $prazo);
-            $parada = (string) ($r['dados']['stop_reason'] ?? '');
-            $conteudo = self::conteudoParaDevolver($r['conteudo']);
-
-            if ($parada === 'refusal') {
+            if ($motivo === 'content_filter') {
                 return 'Não posso ajudar com esse pedido. Posso responder sobre previsões de pessoas e refeições, '
                     . 'desperdício, acessos, cadastro de pessoas e cartões, dispositivos IoT e o uso do SICAPDA.';
             }
 
-            $chamadas = array_values(array_filter($conteudo, fn($b) => ($b->type ?? '') === 'tool_use'));
-            if ($parada === 'tool_use' && $chamadas) {
-                // Devolve a resposta inteira (inclusive os blocos de raciocínio) e os resultados de todas as
-                // ferramentas pedidas, numa única mensagem, como a API exige.
-                $mensagens[] = ['role' => 'assistant', 'content' => $conteudo];
-                $mensagens[] = ['role' => 'user', 'content' => array_map(fn($c) => $this->executar($c), $chamadas)];
+            $chamadas = is_array($msg['tool_calls'] ?? null) ? array_values($msg['tool_calls']) : [];
+            if ($chamadas) {
+                // Devolve o pedido da IA e o resultado de cada ferramenta, cada um com o id da chamada.
+                $chamadas = self::normalizarChamadas($chamadas, $rodada);
+                $resultados = array_map(fn($c) => $this->executar($c), $chamadas);
+                // Ao reenviar, argumentos que não são um objeto JSON viram "{}" (o erro já foi informado à IA no
+                // resultado da ferramenta); provedores como o Gemini recusam a conversa inteira se vier lixo.
+                foreach ($chamadas as &$c) {
+                    $c['function']['arguments'] = self::argumentosValidos($c['function']['arguments']);
+                }
+                unset($c);
+                $mensagens[] = ['role' => 'assistant', 'content' => $msg['content'] ?? null, 'tool_calls' => $chamadas];
+                array_push($mensagens, ...$resultados);
                 continue;
             }
 
-            $texto = self::textoFinal($conteudo);
+            $texto = self::textoFinal($msg['content'] ?? null);
             if ($texto === '') {
-                throw new RuntimeException("Resposta da IA sem texto (stop_reason={$parada}).");
+                throw new RuntimeException("Resposta da IA sem texto (finish_reason={$motivo}).");
             }
             return $texto;
         }
@@ -137,18 +148,10 @@ class AssistenteIA
 
     // ─── Prompt ──────────────────────────────────────────────────────────────
 
-    /**
-     * Dois blocos: o fixo (regras + conhecimento do sistema, com cache_control para a API reaproveitar o
-     * processamento entre perguntas) e o de contexto (data, hora, empresa, usuário), que muda a cada pergunta
-     * e por isso fica depois do ponto de cache.
-     */
-    private function system(): array
+    /** Regras e conhecimento do sistema (arquivo de texto) seguidos do contexto da conversa (data, empresa, usuário). */
+    private function system(): string
     {
-        $fixo = (string) file_get_contents(self::ARQUIVO_CONHECIMENTO);
-        return [
-            ['type' => 'text', 'text' => $fixo, 'cache_control' => ['type' => 'ephemeral']],
-            ['type' => 'text', 'text' => $this->contexto()],
-        ];
+        return rtrim((string) file_get_contents(self::ARQUIVO_CONHECIMENTO)) . "\n\n" . $this->contexto();
     }
 
     private function contexto(): string
@@ -189,23 +192,61 @@ class AssistenteIA
 
     // ─── Ferramentas ─────────────────────────────────────────────────────────
 
-    private function executar(object $chamada): array
+    /** Executa uma chamada de ferramenta pedida pela IA e devolve a mensagem "tool" com o resultado. */
+    private function executar(array $chamada): array
     {
-        $resultado = ['type' => 'tool_result', 'tool_use_id' => (string) $chamada->id];
-        $entrada = json_decode((string) json_encode($chamada->input ?? new stdClass()), true);
+        $nome = (string) $chamada['function']['name'];
+        $resultado = ['role' => 'tool', 'tool_call_id' => $chamada['id'], 'name' => $nome];
+
+        $argumentos = trim((string) ($chamada['function']['arguments'] ?? ''));
+        $entrada = $argumentos === '' ? [] : json_decode($argumentos, true);
 
         try {
-            $dados = $this->ferramentas->executar((string) $chamada->name, is_array($entrada) ? $entrada : []);
+            if (!is_array($entrada)) {
+                throw new InvalidArgumentException('Argumentos inválidos: envie um objeto JSON.');
+            }
+            $dados = $this->ferramentas->executar($nome, $entrada);
             $resultado['content'] = json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_INVALID_UTF8_SUBSTITUTE);
         } catch (InvalidArgumentException $e) {
-            $resultado['content'] = $e->getMessage();
-            $resultado['is_error'] = true;
+            $resultado['content'] = 'Erro: ' . $e->getMessage();
         } catch (Throwable $e) {
-            error_log('SICAPDA assistente IA, ferramenta ' . $chamada->name . ': ' . $e->getMessage());
-            $resultado['content'] = 'Não foi possível consultar este dado agora.';
-            $resultado['is_error'] = true;
+            error_log('SICAPDA assistente IA, ferramenta ' . $nome . ': ' . $e->getMessage());
+            $resultado['content'] = 'Erro: não foi possível consultar este dado agora.';
         }
         return $resultado;
+    }
+
+    private static function argumentosValidos(string $argumentos): string
+    {
+        return trim($argumentos) !== '' && is_array(json_decode($argumentos, true)) ? $argumentos : '{}';
+    }
+
+    /**
+     * Deixa as chamadas de ferramenta só com os campos do padrão (id, type, function) e garante um id em cada
+     * uma. O "extra_content" é mantido: o Gemini usa para reconhecer o raciocínio da rodada anterior.
+     */
+    private static function normalizarChamadas(array $chamadas, int $rodada): array
+    {
+        $saida = [];
+        foreach ($chamadas as $i => $c) {
+            if (!is_array($c) || !is_string($c['function']['name'] ?? null)) {
+                continue;
+            }
+            $args = $c['function']['arguments'] ?? '';
+            $n = [
+                'id' => is_string($c['id'] ?? null) && $c['id'] !== '' ? $c['id'] : "call_{$rodada}_{$i}",
+                'type' => 'function',
+                'function' => ['name' => $c['function']['name'], 'arguments' => is_string($args) ? $args : (string) json_encode($args)],
+            ];
+            if (isset($c['extra_content'])) {
+                $n['extra_content'] = $c['extra_content'];
+            }
+            $saida[] = $n;
+        }
+        if (!$saida) {
+            throw new RuntimeException('A IA pediu uma ferramenta sem nome.');
+        }
+        return $saida;
     }
 
     // ─── Mensagens ───────────────────────────────────────────────────────────
@@ -243,42 +284,20 @@ class AssistenteIA
         return $itens;
     }
 
-    /**
-     * O "content" da resposta pronto para voltar à API. Se o filtro de segurança tiver trocado de modelo no
-     * meio da resposta (bloco "fallback"), os blocos de raciocínio e de ferramenta anteriores à troca saem,
-     * como a API pede; o texto e o próprio bloco "fallback" ficam no lugar.
-     */
-    private static function conteudoParaDevolver(array $conteudo): array
+    /** Texto da resposta (string ou lista de partes), sem as marcações que o chat de texto puro não mostra. */
+    private static function textoFinal(mixed $conteudo): string
     {
-        $ultimoFallback = null;
-        foreach ($conteudo as $i => $bloco) {
-            if (($bloco->type ?? '') === 'fallback') {
-                $ultimoFallback = $i;
+        if (is_array($conteudo)) {
+            $partes = [];
+            foreach ($conteudo as $p) {
+                $t = is_array($p) ? ($p['text'] ?? '') : $p;
+                if (is_string($t) && trim($t) !== '') {
+                    $partes[] = trim($t);
+                }
             }
+            $conteudo = implode("\n\n", $partes);
         }
-        if ($ultimoFallback === null) {
-            return array_values($conteudo);
-        }
-        $saida = [];
-        foreach ($conteudo as $i => $bloco) {
-            if ($i < $ultimoFallback && !in_array($bloco->type ?? '', ['text', 'fallback'], true)) {
-                continue;
-            }
-            $saida[] = $bloco;
-        }
-        return $saida;
-    }
-
-    /** Junta os blocos de texto da resposta e limpa marcações que o chat (texto puro) não mostra. */
-    private static function textoFinal(array $conteudo): string
-    {
-        $partes = [];
-        foreach ($conteudo as $bloco) {
-            if (($bloco->type ?? '') === 'text' && trim((string) ($bloco->text ?? '')) !== '') {
-                $partes[] = trim((string) $bloco->text);
-            }
-        }
-        $texto = implode("\n\n", $partes);
+        $texto = is_string($conteudo) ? trim($conteudo) : '';
 
         $texto = str_replace(['**', '__'], '', $texto);
         $texto = preg_replace('/^#{1,6}\s+/m', '', $texto);           // títulos em Markdown

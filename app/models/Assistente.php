@@ -8,7 +8,7 @@
  * consulta o banco e responde com cálculos do motor de previsão (Previsao).
  * Tudo restrito à empresa do usuário logado.
  *
- * Com a IA configurada (ANTHROPIC_API_KEY no config/.env) quem responde é o
+ * Com a IA configurada (IA_API_KEY no config/.env) quem responde é o
  * AssistenteIA; este motor fica como reserva quando a IA não está disponível.
  */
 class Assistente
