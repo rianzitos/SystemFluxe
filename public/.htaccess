@@ -9,6 +9,17 @@
 
 RewriteEngine On
 
+# ─── Endereço único para o Google: https://fluxeteam.com.br ─────────────────────────────────────
+# www.fluxeteam.com.br e http:// são redirecionados (301) para https://fluxeteam.com.br, para o Google
+# juntar tudo num só endereço em vez de dividir a relevância entre versões "duplicadas" do site.
+# Só vale para o domínio de produção: localhost/XAMPP não são afetados.
+RewriteCond %{HTTP_HOST} ^www\.fluxeteam\.com\.br$ [NC]
+RewriteRule ^ https://fluxeteam.com.br%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^fluxeteam\.com\.br$ [NC]
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://fluxeteam.com.br%{REQUEST_URI} [R=301,L]
+
 # Repassa o cabeçalho Authorization (Bearer token da API do app) ao PHP; o Apache/CGI o remove por padrão.
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 

@@ -1,0 +1,14 @@
+{
+    "name": "Fluxe — SICAPDA",
+    "short_name": "Fluxe",
+    "description": "Fluxe: criadora do SICAPDA, Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar.",
+    "lang": "pt-BR",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#14141c",
+    "theme_color": "#14141c",
+    "icons": [
+        { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+    ]
+}

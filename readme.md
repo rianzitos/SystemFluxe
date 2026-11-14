@@ -165,6 +165,18 @@ O botão **Ver como funciona**, no início da página `/sicapda`, abre um modal 
 - **Trocar o vídeo** — substitua os dois arquivos mantendo os nomes (a página usa a data de modificação deles para renovar o cache). Se o novo vídeo tiver outra duração ou outras partes, ajuste os botões de capítulo (`data-tempo`, em segundos) e o texto "30 segundos" no `<dialog>`. Para exportar: `ffmpeg -i entrada.mov -c:v libx264 -crf 24 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart sicapda-como-funciona.mp4` (para um vídeo sem som, troque `-c:a aac -b:a 128k` por `-an`; a página funciona nos dois casos).
 - **Servidor** — Apache e Nginx entregam o MP4 com suporte a `Range`, que é o que permite pular na barra de progresso (e é exigido pelo Safari). O servidor embutido do PHP (`php -S`) não tem esse suporte, então `app/helpers/Midia.php` cobre isso só no desenvolvimento (bloco `cli-server` de `app/routes/web.php`); em produção ele nunca é chamado.
 
+## Aparecer no Google (SEO)
+
+As páginas públicas já estão preparadas para busca: `/` (Fluxe) e `/sicapda` (SICAPDA) têm título e descrição pensados para as buscas "Fluxe" e "SICAPDA", endereço canônico, prévia para redes sociais (`public/img/og-*.jpg`) e dados estruturados (empresa, site, sistema e perguntas frequentes). Também existem `public/robots.txt`, `public/sitemap.xml`, os ícones (`favicon.ico`, `apple-touch-icon.png`...) e redirecionamento de `www.` e `http://` para `https://fluxeteam.com.br` nos `.htaccess`.
+
+Para o Google descobrir o site mais rápido (é de graça e só precisa ser feito uma vez):
+
+1. Entre em <https://search.google.com/search-console> e adicione a propriedade do tipo **Domínio** com `fluxeteam.com.br`. A verificação é por um registro TXT no DNS (no cPanel: *Zone Editor*).
+2. Em **Sitemaps**, envie `sitemap.xml`.
+3. Em **Inspeção de URL**, cole `https://fluxeteam.com.br/` e `https://fluxeteam.com.br/sicapda` e clique em **Solicitar indexação**.
+
+A indexação leva de alguns dias a algumas semanas. Ajuda bastante ter links apontando para o site: coloque `https://fluxeteam.com.br` na bio do Instagram, no LinkedIn, no GitHub e crie um Perfil da Empresa no Google (<https://business.google.com>). Ao mudar o conteúdo das páginas, atualize a data `<lastmod>` do `sitemap.xml`; se as perguntas frequentes da `/sicapda` mudarem, atualize também o bloco `application/ld+json` do topo da página.
+
 ## Tecnologias utilizadas
 
 - **Back-end:** PHP (arquitetura MVC própria, sem framework), com controllers, models e middlewares de autenticação/autorização.

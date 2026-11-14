@@ -22,7 +22,149 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
-    <title>SICAPDA</title>
+    <!-- ─── SEO: o que o Google mostra no resultado da busca ("SICAPDA", "Fluxe") ─── -->
+    <title>SICAPDA | Controle de acesso e previsão de demanda alimentar | Fluxe</title>
+    <meta name="description"
+        content="SICAPDA, sistema da Fluxe de controle de acesso e previsão de demanda alimentar para refeitórios. Painel em tempo real, relatórios e app Android, Windows e web.">
+    <meta name="keywords"
+        content="SICAPDA, Fluxe, Fluxe Team, controle de acesso, previsão de demanda alimentar, refeitório, catraca, cartão de acesso, desperdício de alimentos">
+    <meta name="author" content="Fluxe">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://fluxeteam.com.br/sicapda">
+    <meta name="theme-color" content="#14141c">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Fluxe">
+    <meta property="og:title" content="SICAPDA | Sistema da Fluxe">
+    <meta property="og:description" content="Controle de acesso e previsão de demanda alimentar para refeitórios, com painel em tempo real, relatórios e aplicativo. Um sistema da Fluxe.">
+    <meta property="og:url" content="https://fluxeteam.com.br/sicapda">
+    <meta property="og:image" content="https://fluxeteam.com.br/img/og-sicapda.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Logotipo do SICAPDA by Fluxe">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="SICAPDA | Sistema da Fluxe">
+    <meta name="twitter:description" content="Controle de acesso e previsão de demanda alimentar para refeitórios, com painel em tempo real, relatórios e aplicativo. Um sistema da Fluxe.">
+    <meta name="twitter:image" content="https://fluxeteam.com.br/img/og-sicapda.jpg">
+    <!-- Dados estruturados: o sistema SICAPDA, a empresa Fluxe e as perguntas frequentes desta página
+         (as perguntas e respostas abaixo precisam ser as mesmas da seção "Perguntas frequentes"). -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "SoftwareApplication",
+                "@id": "https://fluxeteam.com.br/sicapda#sistema",
+                "name": "SICAPDA",
+                "alternateName": "Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar",
+                "url": "https://fluxeteam.com.br/sicapda",
+                "image": "https://fluxeteam.com.br/img/og-sicapda.jpg",
+                "description": "Sistema da Fluxe para controle de acesso por cartão e previsão de demanda alimentar em refeitórios, com painel em tempo real, relatórios, assistente virtual e aplicativo para Android, Windows e navegador.",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web, Android, Windows",
+                "inLanguage": "pt-BR",
+                "author": {
+                    "@id": "https://fluxeteam.com.br/#organizacao"
+                },
+                "publisher": {
+                    "@id": "https://fluxeteam.com.br/#organizacao"
+                }
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://fluxeteam.com.br/#organizacao",
+                "name": "Fluxe",
+                "alternateName": [
+                    "Fluxe Team",
+                    "FluxeTeam"
+                ],
+                "url": "https://fluxeteam.com.br/",
+                "logo": "https://fluxeteam.com.br/android-chrome-512x512.png",
+                "sameAs": [
+                    "https://www.instagram.com/fluxe.team_/"
+                ]
+            },
+            {
+                "@type": "FAQPage",
+                "@id": "https://fluxeteam.com.br/sicapda#perguntas",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "Como colocar o app do navegador na tela inicial",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "O aplicativo é gerado pela equipe da Fluxe. Ele só se comunica com o servidor do SICAPDA pela internet e guarda apenas o token de sessão, protegido pelo sistema do aparelho. A sua senha não fica salva."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Por que o Windows ou o Android avisam sobre “aplicativo desconhecido”?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Porque o aplicativo é instalado por este site, e não pela Microsoft Store ou pela Google Play, e o instalador ainda não tem assinatura digital paga. É um aviso padrão para qualquer programa novo. No Windows, clique em “Mais informações” e depois em “Executar assim mesmo”. No Android, permita a instalação para o navegador (ou gerenciador de arquivos) e, se quiser, desfaça a permissão depois."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "O arquivo não instala ou o app não abre. E agora?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "O aplicativo para Android funciona do Android 7.0 em diante. Se aparecer “App não instalado”, apague o SICAPDA que já estiver no celular e instale de novo (um app instalado com outra assinatura bloqueia a atualização). Se nada resolver, use o botão “Abrir no navegador”: é o mesmo aplicativo, com o mesmo login, e funciona em qualquer aparelho."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Preciso criar uma conta nova?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Não. Use o mesmo e-mail e senha do painel web. Os dados e as permissões são os mesmos."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Funciona sem internet?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Não. O aplicativo consulta o servidor em tempo real para mostrar acessos e previsões, então precisa de conexão (Wi-Fi, cabo ou dados móveis)."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "E no iPhone ou no Mac?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Abra o aplicativo no navegador (botão “Abrir no navegador”). No iPhone e no iPad, toque em Compartilhar e depois em “Adicionar à Tela de Início”: ele fica com o ícone do SICAPDA e abre em tela cheia, como um aplicativo. No Mac, o Safari, o Chrome e o Edge também permitem instalar."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Qual a diferença entre o aplicativo e o painel web?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Desde a versão 1.2, o aplicativo faz o mesmo que o painel web: painel, análise mensal, pessoas e cartões (inclusive importar planilha), assistente, relatórios e todas as configurações, com os dispositivos IoT. Os dois usam o mesmo login, os mesmos dados e as mesmas regras. Só o cadastro de uma empresa nova (a primeira conta de administrador) é feito pelo site, e quem lê os cartões e pesa as sobras continuam sendo as catracas e as balanças."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Dá para cadastrar uma catraca ou balança pelo celular?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "Sim, se a sua conta for de administrador da empresa. Toque no ícone de IoT no topo do app (ou em Configurações → Integrações), depois em “Adicionar dispositivo”. O token aparece uma única vez, com o botão de copiar, para você colar no firmware da ESP32. Ali também dá para gerar outro token, simular a leitura de um cartão e testar uma pesagem."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "Como atualizo para uma versão nova?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "No navegador não precisa fazer nada: abriu, está na versão mais recente. Para os instaladores, baixe o mais recente nesta página e abra por cima da versão atual: no Windows ele atualiza o programa sozinho; no Android, instale o novo arquivo. Se o Android recusar a atualização, desinstale a versão antiga e instale a nova: basta entrar de novo com a sua conta."
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+    </script>
     <!-- Aplica o tema salvo (o mesmo da página inicial da Fluxe) ou o do sistema antes da primeira pintura -->
     <script>
         (function () {
@@ -34,8 +176,6 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
             document.documentElement.setAttribute('data-theme', tema);
         })();
     </script>
-    <meta name="description"
-        content="SICAPDA: controle de acesso e previsão de demanda alimentar. Também em aplicativo para Android, Windows e navegador, com as mesmas funções e os mesmos dados da versão web, inclusive os dispositivos IoT.">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.css">
     <link rel="stylesheet" href="/css/styleSys.css">
     <link rel="stylesheet"
@@ -45,9 +185,12 @@ $h = fn($valor) => htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
     <link rel="stylesheet" href="/css/temaSys.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/temaSys.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
