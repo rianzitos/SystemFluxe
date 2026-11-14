@@ -8,19 +8,20 @@
  *
  * Configuração no config/.env (veja config/.env.example):
  *   ANTHROPIC_API_KEY  chave da API (console.anthropic.com). Vazia = assistente sem IA (motor local).
- *   ANTHROPIC_MODEL    modelo (padrão claude-opus-5-5).
- *   ANTHROPIC_EFFORT   esforço de raciocínio: low (padrão, respostas mais rápidas), medium ou high.
+ *   ANTHROPIC_MODEL    modelo (padrão claude-haiku-5-5, o mais barato; veja config/.env.example para os outros).
+ *   ANTHROPIC_EFFORT   esforço de raciocínio: low (mais rápido e barato), medium (padrão) ou high (segue melhor as regras).
  *   ANTHROPIC_BASE_URL endereço da API (padrão https://api.anthropic.com; troque só para testes ou proxy).
  */
 class Claude
 {
-    public const MODELO_PADRAO = 'claude-opus-5-5';
+    public const MODELO_PADRAO = 'claude-haiku-5-5';
     private const VERSAO_API = '2026-10-21';
     private const URL_PADRAO = 'https://api.anthropic.com';
 
     /**
      * Modelos que aceitam o "fallbacks" do servidor: se o filtro de segurança do modelo recusar uma pergunta
      * legítima por engano, a própria API refaz a pergunta com o modelo recomendado, na mesma chamada.
+     * O Haiku 5.5 não está na lista de propósito: nele o parâmetro não vale (uma lista de modelos dá erro 400).
      */
     private const MODELOS_COM_FALLBACK = ['claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5-5', 'claude-fable-5-2', 'claude-fable-5-1'];
     private const BETA_FALLBACK = 'server-side-fallback-2026-07-01';
@@ -54,7 +55,7 @@ class Claude
     /** Esforço de raciocínio (output_config.effort). "padrao" deixa a API decidir. */
     public static function esforco(): ?string
     {
-        $e = strtolower(Env::get('ANTHROPIC_EFFORT', 'low'));
+        $e = strtolower(Env::get('ANTHROPIC_EFFORT', 'medium'));
         return in_array($e, self::ESFORCOS, true) ? $e : null;
     }
 
