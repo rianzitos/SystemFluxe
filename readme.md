@@ -189,7 +189,7 @@ A indexação leva de alguns dias a algumas semanas. Ajuda bastante ter links ap
 | Nome            | Função                                      |
 |-----------------|---------------------------------------------|
 | Davi Gonçalves  | Project Owner (PO) / Full-Stack Developer  |
-| Rian Rafael     | Scrum Master / Back-End Developer          |
+| Rian Rafael     | Scrum Master / Full-Stack Developer          |
 | Rhyan Gabriel   | Front-End                                   |
 | Beatriz Moreira | Documentação                                |
 | Julia Ferreira  | Banco de Dados                              |
