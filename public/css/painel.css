@@ -894,7 +894,7 @@ html[data-tema="escuro"] .aviso-vivo {
 
 .cards-resumo {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
     margin-bottom: 22px;
 }
@@ -971,7 +971,7 @@ html[data-tema="escuro"] .aviso-vivo {
 
 .graficos {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     gap: 18px;
     margin-bottom: 22px;
 }
@@ -1044,6 +1044,21 @@ html[data-tema="escuro"] .aviso-vivo {
     position: relative;
     height: 260px;
     width: 100%;
+    min-width: 0;
+}
+
+/* Cards e gráficos dentro de grids podem encolher. Sem isso, o canvas do Chart.js (que cresce quando o menu
+   lateral é recolhido) segura a largura da coluna e, ao abrir o menu de novo, a página ganha rolagem lateral. */
+.cards-resumo > *,
+.graficos > *,
+.painel-inferior > *,
+.graficos-duplos > *,
+.grid-insights > * {
+    min-width: 0;
+}
+
+.grafico-canvas canvas {
+    max-width: 100%;
 }
 
 .grafico-canvas-rosca {
@@ -1082,7 +1097,7 @@ html[data-tema="escuro"] .aviso-vivo {
 
 .painel-inferior {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 18px;
 }
 
@@ -1247,15 +1262,15 @@ html[data-tema="escuro"] .painel-notificacoes {
 
 @media (max-width: 1100px) {
     .cards-resumo {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .graficos {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .painel-inferior {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -1309,7 +1324,7 @@ html[data-tema="escuro"] .painel-notificacoes {
     }
 
     .cards-resumo {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 /* Mensagem de lista vazia (sem histórico/alertas) */
