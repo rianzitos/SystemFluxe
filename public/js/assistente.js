@@ -1,7 +1,9 @@
 // =========================================================
 // ASSISTENTE VIRTUAL — chat
-// Envia a pergunta para POST /assistente/perguntar (o cálculo
-// acontece no PHP) e mostra a resposta no chat.
+// Envia a pergunta para POST /assistente/perguntar (a resposta vem
+// da IA, ou do motor local se ela não estiver configurada) e mostra
+// a resposta no chat. As trocas anteriores vão junto (historico) para
+// a IA entender perguntas como "e para sexta?".
 // =========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -17,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('horaBoasVindas').textContent = agora();
 
     let aguardando = false;
+
+    // Só perguntas que tiveram resposta, sem as mensagens de erro. O servidor usa as últimas 12.
+    const historico = [];
+    const MAX_HISTORICO = 12;
 
     /** Cria uma mensagem. O texto entra via textContent (nunca innerHTML) — sem risco de XSS. */
     function adicionar(autor, texto, hora) {
@@ -69,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
                 credentials: 'same-origin',
-                body: JSON.stringify({ mensagem: texto }),
+                body: JSON.stringify({ mensagem: texto, historico: historico.slice(-MAX_HISTORICO) }),
             });
 
             if (resp.status === 401) {
@@ -82,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (json && json.sucesso) {
                 adicionar('bot', json.resposta, json.hora);
+                historico.push({ autor: 'usuario', texto }, { autor: 'bot', texto: json.resposta });
             } else {
                 adicionar('bot', (json && json.mensagem) || 'Não consegui responder agora. Tente novamente.');
             }
