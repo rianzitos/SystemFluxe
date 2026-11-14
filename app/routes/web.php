@@ -132,6 +132,14 @@ if ($uri === '/') {
 // invasores através do AuthMiddleware e só exibe a tela protegida
 // (acessos.php) se o usuário estiver logado.
 
+} elseif ($uri === '/producao') {
+    (new ProducaoController())->exibir();
+} elseif ($uri === '/producao/dados' && $metodo === 'GET') {
+    (new ProducaoController())->dados();
+} elseif ($uri === '/producao/salvar' && $metodo === 'POST') {
+    (new ProducaoController())->salvar();
+// Produção de refeições: quilos produzidos e desperdiçados por refeição e dia (alimenta painel, análise e previsão).
+
 } elseif ($uri === '/pessoas/leituras' && $metodo === 'GET') {
     (new PessoaController())->leituras();
 } elseif ($uri === '/pessoas/modelo.csv') {

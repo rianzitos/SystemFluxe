@@ -1,0 +1,410 @@
+/* =========================================================
+   PRODUÇÃO — /producao (app/views/producao.php, public/js/producao.js)
+   Reaproveita variáveis e classes de painel.css (cards, painel-card, cabeçalho).
+   ========================================================= */
+
+.visualmente-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.producao-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.producao-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.producao-topo h2 {
+    margin: 0;
+}
+
+.producao-data {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-dia,
+.btn-hoje {
+    height: 38px;
+    min-width: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--branco);
+    color: var(--texto);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-hoje {
+    padding: 0 12px;
+}
+
+.btn-dia:hover:not(:disabled),
+.btn-hoje:hover {
+    border-color: var(--amarelo);
+}
+
+.btn-dia:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.campo-data input {
+    height: 38px;
+    padding: 0 10px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--branco);
+    color: var(--texto);
+    font: inherit;
+    font-size: 14px;
+    color-scheme: light;
+}
+
+html[data-tema="escuro"] .campo-data input {
+    color-scheme: dark;
+}
+
+.producao-dica {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: var(--raio-sm);
+    background: var(--info-bg);
+    color: var(--info);
+    font-size: 13px;
+}
+
+.producao-dica[hidden] {
+    display: none;
+}
+
+/* ---------- Tabela do dia ---------- */
+
+.tabela-producao {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tabela-producao th,
+.tabela-producao td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--borda);
+}
+
+.tabela-producao thead th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--texto-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.tabela-producao tbody th {
+    font-weight: 600;
+}
+
+.tabela-producao tfoot th,
+.tabela-producao tfoot td {
+    font-weight: 700;
+    border-bottom: none;
+}
+
+.col-previsto {
+    color: var(--texto-muted);
+    white-space: nowrap;
+}
+
+.campo-kg {
+    width: 100%;
+    max-width: 130px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--fundo);
+    color: var(--texto);
+    font: inherit;
+    font-size: 15px;
+    text-align: right;
+}
+
+.campo-kg:focus {
+    outline: 2px solid var(--amarelo);
+    outline-offset: 1px;
+    background: var(--branco);
+}
+
+.campo-kg[aria-invalid] {
+    border-color: #DC2626;
+    outline-color: #DC2626;
+}
+
+.acima-meta {
+    color: #DC2626;
+    font-weight: 600;
+}
+
+.dentro-meta {
+    color: var(--sucesso);
+    font-weight: 600;
+}
+
+.producao-status {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--raio-sm);
+    font-size: 13.5px;
+}
+
+.producao-status--info {
+    background: var(--amarelo-suave);
+    color: var(--texto);
+}
+
+.producao-status--sucesso {
+    background: var(--sucesso-bg);
+    color: var(--sucesso);
+}
+
+.producao-status--erro {
+    background: rgba(220, 38, 38, 0.1);
+    color: #DC2626;
+}
+
+.producao-acoes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.producao-nota {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--texto-muted);
+    line-height: 1.5;
+}
+
+.btn-salvar-producao {
+    height: 44px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    border: none;
+    border-radius: var(--raio-sm);
+    background: var(--amarelo);
+    color: var(--preto);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.35);
+}
+
+.btn-salvar-producao:hover:not(:disabled) {
+    background: #FFCA2C;
+}
+
+.btn-salvar-producao:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.btn-dia:focus-visible,
+.btn-hoje:focus-visible,
+.btn-salvar-producao:focus-visible,
+.item-historico:focus-visible {
+    outline: 3px solid var(--amarelo);
+    outline-offset: 2px;
+}
+
+/* ---------- Histórico ---------- */
+
+.producao-historico .producao-nota {
+    margin: -8px 0 12px;
+}
+
+.lista-historico {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.item-historico {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 82px 1fr 66px 50px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--raio-sm);
+    background: none;
+    color: var(--texto);
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.item-historico:hover {
+    background: var(--fundo);
+}
+
+.item-historico.ativo {
+    border-color: var(--amarelo);
+    background: var(--amarelo-suave);
+}
+
+.historico-data {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.historico-barra {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--borda);
+    overflow: hidden;
+}
+
+.historico-barra span {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: var(--amarelo);
+}
+
+.historico-kg,
+.historico-pct {
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 1100px) {
+    .producao-grade {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Celular: cada refeição vira um bloco com os campos lado a lado */
+@media (max-width: 640px) {
+    .tabela-producao thead {
+        display: none;
+    }
+
+    .tabela-producao tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--borda);
+    }
+
+    .tabela-producao tbody th,
+    .tabela-producao tbody td {
+        padding: 0;
+        border: none;
+    }
+
+    .tabela-producao tbody tr {
+        grid-template-areas: "nome nome" "prod desp" "prev pct";
+    }
+
+    .tabela-producao tbody th {
+        grid-area: nome;
+        font-size: 15px;
+    }
+
+    .tabela-producao tbody td:nth-child(2) { grid-area: prev; }
+    .tabela-producao tbody td:nth-child(3) { grid-area: prod; }
+    .tabela-producao tbody td:nth-child(4) { grid-area: desp; }
+    .tabela-producao tbody td:nth-child(5) { grid-area: pct; }
+
+    .tabela-producao tbody td::before,
+    .tabela-producao tfoot td::before {
+        content: attr(data-rotulo);
+        display: block;
+        margin-bottom: 4px;
+        font-size: 11.5px;
+        color: var(--texto-muted);
+    }
+
+    .campo-kg {
+        max-width: none;
+    }
+
+    .tabela-producao tfoot tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 4px 12px;
+        padding-top: 12px;
+    }
+
+    .tabela-producao tfoot th,
+    .tabela-producao tfoot td {
+        padding: 0;
+    }
+
+    .tabela-producao tfoot th {
+        grid-column: 1 / -1;
+    }
+
+    #totalPrevisto {
+        display: none;
+    }
+
+    .producao-acoes {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-salvar-producao {
+        justify-content: center;
+    }
+
+    .producao-data {
+        width: 100%;
+    }
+
+    .campo-data {
+        flex: 1;
+    }
+
+    .campo-data input {
+        width: 100%;
+    }
+}

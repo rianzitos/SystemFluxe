@@ -155,7 +155,10 @@ function icone(string $nome): string
             <!-- Gráficos -->
             <section class="graficos">
                 <div class="painel-grafico grafico-linha">
-                    <h2>Previsão de Demanda</h2>
+                    <div class="titulo-com-link">
+                        <h2>Previsão de Demanda</h2>
+                        <a href="/producao" class="link-card">Registrar produção <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                    </div>
                     <div class="legenda-grafico">
                         <span><i class="ponto ponto-previsto"></i> Previsto (em KG)</span>
                         <span><i class="ponto ponto-realizado"></i> Realizado (em KG)</span>

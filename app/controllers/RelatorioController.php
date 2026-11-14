@@ -58,7 +58,7 @@ class RelatorioController
         require __DIR__ . '/../views/relatorios.php';
     }
 
-    /** GET /relatorios/exportar?formato=xlsx|csv — baixa os registros filtrados (Excel ou CSV). */
+    /** GET /relatorios/exportar?formato=xlsx|csv — baixa os registros filtrados (Excel ou CSV, os dois legíveis no Excel). */
     public function exportar(): void
     {
         AuthMiddleware::autenticado();
@@ -127,7 +127,7 @@ class RelatorioController
                 self::neutralizarFormula($r['nome']),
                 self::neutralizarFormula($r['cargo']),
                 Acesso::CATEGORIAS[$r['categoria']] ?? $r['categoria'],
-                date('d/m/Y', strtotime($r['dia'])),
+                self::textoExcel(date('d/m/y', strtotime($r['dia']))),
                 $r['entrada'] ? date('H:i', strtotime($r['entrada'])) : '',
                 self::saidaParaCsv($r),
                 $r['duracao_min'] !== null ? Datas::duracao($r['duracao_min']) : '',
@@ -179,13 +179,24 @@ class RelatorioController
     }
 
     /** Saída no CSV: "H:i"; com a data se foi em outro dia que a entrada; "No local" se ainda está dentro. */
+    /** Saída no CSV: "07:20", ou "02:10 +1d" quando o turno vira a noite (como "14/11 02:10" o Excel virava data, com o ano errado). */
     private static function saidaParaCsv(array $r): string
     {
         if ($r['saida']) {
-            $mesmoDia = date('Y-m-d', strtotime($r['saida'])) === $r['dia'];
-            return date($mesmoDia ? 'H:i' : 'd/m H:i', strtotime($r['saida']));
+            $dias = (int) round((strtotime(date('Y-m-d', strtotime($r['saida']))) - strtotime($r['dia'])) / 86400);
+            return date('H:i', strtotime($r['saida'])) . ($dias > 0 ? ' +' . $dias . 'd' : '');
         }
         return $r['em_andamento'] ? 'No local' : '';
+    }
+
+    /**
+     * Data como texto do Excel: ="13/11/26". O CSV não guarda largura de coluna; escrita como 13/11/2026 o Excel a
+     * transforma em data e, na coluna estreita padrão, mostra "########". Como texto curto (8 caracteres) ela cabe e
+     * aparece igual em qualquer Excel. Valor fixo gerado aqui (só dígitos e barras), nunca vem do usuário.
+     */
+    private static function textoExcel(string $valor): string
+    {
+        return '="' . $valor . '"';
     }
 
     /**

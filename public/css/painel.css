@@ -989,6 +989,28 @@ html[data-tema="escuro"] .aviso-vivo {
     font-weight: 600;
 }
 
+.titulo-com-link {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.link-card {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto-muted);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.link-card:hover {
+    color: var(--texto);
+    text-decoration: underline;
+    text-decoration-color: var(--amarelo);
+    text-underline-offset: 3px;
+}
+
 .legenda-grafico {
     display: flex;
     gap: 16px;
