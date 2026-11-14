@@ -6,7 +6,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
-    <title>Fluxe</title>
+    <!-- ─── SEO: o que o Google mostra no resultado da busca ("Fluxe", "Fluxe Team", "SICAPDA") ─── -->
+    <title>Fluxe | Empresa de tecnologia criadora do SICAPDA</title>
+    <meta name="description"
+        content="Fluxe (Fluxe Team): empresa de tecnologia criadora do SICAPDA, sistema inteligente de controle de acesso e previsão de demanda alimentar para refeitórios.">
+    <meta name="keywords"
+        content="Fluxe, Fluxe Team, fluxeteam, SICAPDA, controle de acesso, previsão de demanda alimentar, gestão de refeitórios, desperdício de alimentos">
+    <meta name="author" content="Fluxe">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <link rel="canonical" href="https://fluxeteam.com.br/">
+    <meta name="theme-color" content="#14141c">
+    <!-- Prévia ao compartilhar o link (WhatsApp, Instagram, LinkedIn, Facebook, X) -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Fluxe">
+    <meta property="og:title" content="Fluxe | Empresa de tecnologia criadora do SICAPDA">
+    <meta property="og:description"
+        content="Tecnologia que resolve problemas reais. Conheça o SICAPDA, sistema inteligente de controle de acesso e previsão de demanda alimentar.">
+    <meta property="og:url" content="https://fluxeteam.com.br/">
+    <meta property="og:image" content="https://fluxeteam.com.br/img/og-fluxe.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Logotipo da Fluxe">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fluxe | Empresa de tecnologia criadora do SICAPDA">
+    <meta name="twitter:description"
+        content="Tecnologia que resolve problemas reais. Conheça o SICAPDA, sistema inteligente de controle de acesso e previsão de demanda alimentar.">
+    <meta name="twitter:image" content="https://fluxeteam.com.br/img/og-fluxe.jpg">
+    <!-- Dados estruturados: dizem ao Google que este é o site oficial da empresa Fluxe (nome, logo, redes)
+         e ajudam a aparecer o nome "Fluxe" e o logotipo no resultado da busca. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": "https://fluxeteam.com.br/#organizacao",
+                "name": "Fluxe",
+                "alternateName": ["Fluxe Team", "FluxeTeam", "Fluxe Tecnologia"],
+                "url": "https://fluxeteam.com.br/",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://fluxeteam.com.br/android-chrome-512x512.png",
+                    "width": 512,
+                    "height": 512
+                },
+                "image": "https://fluxeteam.com.br/img/og-fluxe.jpg",
+                "slogan": "Fluindo na sua empresa!",
+                "description": "Empresa de tecnologia que cria soluções para problemas reais, criadora do SICAPDA (Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar).",
+                "sameAs": ["https://www.instagram.com/fluxe.team_/"]
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://fluxeteam.com.br/#site",
+                "name": "Fluxe",
+                "alternateName": ["Fluxe Team", "fluxeteam.com.br"],
+                "url": "https://fluxeteam.com.br/",
+                "inLanguage": "pt-BR",
+                "publisher": { "@id": "https://fluxeteam.com.br/#organizacao" }
+            },
+            {
+                "@type": "SoftwareApplication",
+                "@id": "https://fluxeteam.com.br/sicapda#sistema",
+                "name": "SICAPDA",
+                "url": "https://fluxeteam.com.br/sicapda",
+                "applicationCategory": "BusinessApplication",
+                "operatingSystem": "Web, Android, Windows",
+                "author": { "@id": "https://fluxeteam.com.br/#organizacao" }
+            }
+        ]
+    }
+    </script>
     <!-- Aplica o tema salvo (ou o do sistema) antes da primeira pintura, evitando "piscar" de claro para escuro -->
     <script>
         (function () {
@@ -25,10 +95,12 @@
         href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&display=swap"
         rel="stylesheet">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"> <!--identidade da empresa-->
     <link rel="manifest" href="/site.webmanifest">
-    <link rel="shortcut icon" href="/img/logo_fluxe.png" type="image/png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <!-- "defer" mantém a ordem de execução, mas não trava a renderização enquanto os scripts baixam -->
     <script defer src="https://unpkg.com/scrollreveal@4.0.9/dist/scrollreveal.min.js"></script>
@@ -99,7 +171,7 @@
 
                         </div>
 
-                        <a id="butProject" href="/sicapda"> Conheça nosso projeto principal</a>
+                        <a id="butProject" href="/sicapda">Conheça o SICAPDA, nosso projeto principal</a>
                     </div>
                     <div class="quadrado-amarelo"></div>
                     <div class="imageBox"> <!-- Imagem principal -->

@@ -1,0 +1,21 @@
+# Robôs de busca (Google, Bing...): podem ler as páginas públicas da Fluxe e do SICAPDA.
+# As telas internas exigem login; bloqueá-las aqui evita que o Google gaste tempo com elas.
+User-agent: *
+Allow: /
+Disallow: /painel
+Disallow: /acessos
+Disallow: /producao
+Disallow: /pessoas
+Disallow: /assistente
+Disallow: /relatorios
+Disallow: /configuracoes
+Disallow: /notificacoes
+Disallow: /api/
+Disallow: /aovivo
+Disallow: /tarefas/
+Disallow: /senha/
+Disallow: /logout
+Disallow: /uploads/
+Disallow: /public/
+
+Sitemap: https://fluxeteam.com.br/sitemap.xml

@@ -11,6 +11,17 @@ Options -Indexes
 
 RewriteEngine On
 
+# ─── Endereço único para o Google: https://fluxeteam.com.br ─────────────────────────────────────
+# www.fluxeteam.com.br e http:// são redirecionados (301) para https://fluxeteam.com.br, para o Google
+# juntar tudo num só endereço em vez de dividir a relevância entre versões "duplicadas" do site.
+# Só vale para o domínio de produção: localhost/XAMPP não são afetados.
+RewriteCond %{HTTP_HOST} ^www\.fluxeteam\.com\.br$ [NC]
+RewriteRule ^ https://fluxeteam.com.br%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^fluxeteam\.com\.br$ [NC]
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://fluxeteam.com.br%{REQUEST_URI} [R=301,L]
+
 # /aplicativo → /aplicativo/ (sem isso o Apache redirecionaria para /public/aplicativo/).
 RewriteRule ^aplicativo$ /aplicativo/ [R=301,L]
 
