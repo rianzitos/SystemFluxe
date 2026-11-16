@@ -52,8 +52,22 @@
  *   POST /api/dispositivos/simular     {id, uid}  passa um cartão pela catraca (registra um acesso de verdade)
  *   POST /api/dispositivos/pesagem     {id, tipo, desperdicio_kg, data?}  total de desperdício da refeição
  *
+ * Verificação em duas etapas (mesmas regras do site, em DoisFatores):
+ *   GET  /api/duas-etapas              estado: ativa, método, códigos de recuperação que restam, pendente do cadastro
+ *   POST /api/duas-etapas/iniciar      {metodo: app|email}  app: chave + QR Code (linhas "0"/"1"); email: envia o código
+ *   POST /api/duas-etapas/ativar       {metodo, codigo, senha_atual}  devolve os 10 códigos de recuperação (única vez)
+ *   POST /api/duas-etapas/desativar    {senha_atual}
+ *   POST /api/duas-etapas/codigos      {senha_atual}  novos códigos de recuperação
+ *   POST /api/duas-etapas/dispensar    "Agora não" do convite do cadastro
+ *
  * As escritas respondem {sucesso, mensagem, ...}; erro de regra vem como {sucesso: false, mensagem} com 403, 404, 409 ou 422.
- * Público (sem token): POST /api/login e POST /api/senha/esqueci {email} (envia o link de redefinição por e-mail).
+ * Público (sem token): POST /api/login, POST /api/senha/esqueci {email} (envia o link de redefinição por e-mail) e a
+ * segunda etapa do login:
+ *   POST /api/login            {email, senha, duas_etapas: true}  se a conta usa a verificação, em vez do token vem
+ *                              {duas_etapas: true, desafio, metodo, destino, expira_em} (app sem "duas_etapas": 403 explicando)
+ *   POST /api/login/verificar  {desafio, codigo}  código do aplicativo, do e-mail ou de recuperação → token (como o login)
+ *   POST /api/login/reenviar   {desafio}  outro código por e-mail
+ *   Erros: 422 código errado (tente de novo), 410 recomeçar pelo e-mail e senha, 429 tentativas demais.
  *
  * Sem CSRF de propósito: a API autentica por Bearer token, nunca por cookie (veja Api::cors()).
  */
@@ -75,6 +89,9 @@ class ApiController
         }
         if ($rota === '/senha/esqueci') {
             $metodo === 'POST' ? $this->esqueciSenha() : Api::erro(405, 'Método não permitido.');
+        }
+        if ($rota === '/login/verificar' || $rota === '/login/reenviar') {
+            $metodo === 'POST' ? $this->segundaEtapa($rota) : Api::erro(405, 'Método não permitido.');
         }
 
         $usuario = ApiAuthMiddleware::autenticar();
@@ -124,6 +141,13 @@ class ApiController
                     $this->sessoes($usuario, $metodo);
                 case '/sessoes/encerrar':
                     $this->encerrarSessao($usuario, $metodo);
+                case '/duas-etapas':
+                case '/duas-etapas/iniciar':
+                case '/duas-etapas/ativar':
+                case '/duas-etapas/desativar':
+                case '/duas-etapas/codigos':
+                case '/duas-etapas/dispensar':
+                    $this->duasEtapas($usuario, $rota, $metodo);
                 case '/notificacoes':
                     $this->notificacoes($usuario, $metodo);
                 case '/aovivo':
@@ -169,10 +193,63 @@ class ApiController
             Api::erro(403, 'Usuário sem empresa vinculada.');
         }
 
-        $token = ApiAuthMiddleware::emitir((int) $usuario['id']);
-        $completo = (new Usuario())->buscarPorId((int) $usuario['id']);
+        // Verificação em duas etapas: a senha está certa, mas o token só sai depois do código (POST /api/login/verificar).
+        try {
+            $doisFatores = new DoisFatores();
+            if ($doisFatores->metodoExigido((int) $usuario['id']) !== null) {
+                if (($corpo['duas_etapas'] ?? false) !== true) {
+                    // Aplicativo antigo (antes da 1.3) não sabe pedir o código: explica em vez de falhar sem motivo.
+                    Api::erro(403, 'Sua conta usa a verificação em duas etapas. Atualize o aplicativo SICAPDA para entrar (ou entre pelo site).');
+                }
+                $d = $doisFatores->iniciarLogin((int) $usuario['id'], (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+                Api::json([
+                    'duas_etapas' => true,
+                    'desafio'     => $d['token'],
+                    'metodo'      => $d['metodo'],
+                    'destino'     => $d['destino'],
+                    'expira_em'   => $d['expira_em'],
+                    'mensagem'    => $d['metodo'] === 'email'
+                        ? 'Enviamos um código de 6 dígitos para ' . $d['destino'] . '.'
+                        : 'Digite o código de 6 dígitos do aplicativo autenticador.',
+                ]);
+            }
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        } catch (PDOException $e) {
+            error_log('SICAPDA API 2FA: ' . $e->getMessage());
+            Api::erro(500, 'Não foi possível entrar agora. Tente novamente em instantes.');
+        }
 
-        Api::json($token + ['usuario' => $this->usuarioParaJson($completo)]);
+        $this->entregarToken((int) $usuario['id']);
+    }
+
+    /** POST /api/login/verificar {desafio, codigo} e POST /api/login/reenviar {desafio}: a segunda etapa do login. */
+    private function segundaEtapa(string $rota): never
+    {
+        $corpo = Api::corpo();
+        $doisFatores = new DoisFatores();
+        try {
+            if ($rota === '/login/reenviar') {
+                Api::json($doisFatores->reenviarCodigo($corpo['desafio'] ?? ''));
+            }
+            $usuarioId = $doisFatores->verificarLogin($corpo['desafio'] ?? '', $corpo['codigo'] ?? '');
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        } catch (PDOException $e) {
+            error_log('SICAPDA API 2FA: ' . $e->getMessage());
+            Api::erro(500, 'Não foi possível conferir o código agora. Tente novamente.');
+        }
+        $this->entregarToken($usuarioId);
+    }
+
+    /** Login concluído: token assinado + o perfil (o mesmo formato do /api/me). */
+    private function entregarToken(int $usuarioId): never
+    {
+        $completo = (new Usuario())->buscarPorId($usuarioId);
+        if (!$completo || empty($completo['empresa_id'])) {
+            Api::erro(403, 'Usuário sem empresa vinculada.');
+        }
+        Api::json(ApiAuthMiddleware::emitir($usuarioId) + ['usuario' => $this->usuarioParaJson($completo)]);
     }
 
     /**
@@ -574,6 +651,48 @@ class ApiController
         }
 
         Api::json(['mensagem' => 'Sessão encerrada.', 'encerradas' => 1]);
+    }
+
+    // ─── Configurações: verificação em duas etapas ───────────────────────────
+
+    /** GET /api/duas-etapas (estado) e os POST de ativar/desativar (regras em DoisFatores, as mesmas do site). */
+    private function duasEtapas(array $usuario, string $rota, string $metodo): never
+    {
+        $id = (int) $usuario['id'];
+        $modelo = new DoisFatores();
+        if ($rota === '/duas-etapas') {
+            $this->exigirMetodo($metodo, 'GET');
+            Api::json($modelo->estado($id));
+        }
+
+        $this->exigirMetodo($metodo, 'POST');
+        $corpo = Api::corpo();
+        $escolhido = $corpo['metodo'] ?? '';
+        try {
+            $r = match ($rota) {
+                '/duas-etapas/iniciar'   => match ($escolhido) {
+                    'app'   => $modelo->prepararApp($id),
+                    'email' => $modelo->prepararEmail($id, (string) ($_SERVER['REMOTE_ADDR'] ?? '')),
+                    default => throw new CadastroException('Escolha como receber o código: aplicativo autenticador ou e-mail.'),
+                },
+                '/duas-etapas/ativar'    => $modelo->ativar($id, $escolhido, $corpo['codigo'] ?? '', $corpo['senha_atual'] ?? ''),
+                '/duas-etapas/desativar' => $modelo->desativar($id, $corpo['senha_atual'] ?? ''),
+                '/duas-etapas/codigos'   => $modelo->novosCodigos($id, $corpo['senha_atual'] ?? ''),
+                '/duas-etapas/dispensar' => $modelo->dispensar($id),
+            };
+        } catch (CadastroException $e) {
+            Api::erro($e->status(), $e->getMessage());
+        } catch (PDOException $e) {
+            if (DoisFatores::faltaMigration($e)) {
+                Api::erro(503, 'A verificação em duas etapas ainda não está disponível neste servidor.');
+            }
+            throw $e;
+        }
+
+        if (isset($r['qr'])) {
+            $r['qr'] = $r['qr']->linhas();   // o aplicativo desenha os quadradinhos (1 = escuro)
+        }
+        Api::json($r + ['estado' => $modelo->estado($id)]);
     }
 
     // ─── Sino e tempo real ───────────────────────────────────────────────────

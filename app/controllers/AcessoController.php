@@ -17,6 +17,9 @@ class AcessoController
             $this->redirecionar('/painel');
         }
 
+        // Voltar ao login abandona uma verificação em duas etapas que tinha ficado pela metade.
+        unset($_SESSION['dois_fatores']);
+
         require_once __DIR__ . '/../../app/views/login.php';
     }
 
@@ -47,6 +50,118 @@ class AcessoController
             return;
         }
 
+        // Verificação em duas etapas: a senha está certa, mas a sessão só abre depois do código.
+        try {
+            $doisFatores = new DoisFatores();
+            if ($doisFatores->metodoExigido((int) $usuario['id']) !== null) {
+                $desafio = $doisFatores->iniciarLogin((int) $usuario['id'], (string) ($_SERVER['REMOTE_ADDR'] ?? ''));
+                session_regenerate_id(true);
+                $_SESSION['dois_fatores'] = [
+                    'token'     => $desafio['token'],
+                    'metodo'    => $desafio['metodo'],
+                    'destino'   => $desafio['destino'],
+                    'expira_em' => $desafio['expira_em'],
+                ];
+                $this->redirecionar('/login/verificacao');
+            }
+        } catch (CadastroException $e) {
+            $this->voltarComErro('login', $e->getMessage());
+            return;
+        } catch (PDOException $e) {
+            error_log('SICAPDA 2FA: falha ao iniciar a verificação: ' . $e->getMessage());
+            $this->voltarComErro('login', 'Não foi possível entrar agora. Tente novamente em instantes.');
+            return;
+        }
+
+        $this->entrar($usuario);
+    }
+
+    // ─── VERIFICAÇÃO EM DUAS ETAPAS (segunda etapa do login) ──────────────────
+
+    /** Tela do código (app/views/verificacao.php). Sem login pela metade na sessão, volta ao login. */
+    public function exibirVerificacao(): void
+    {
+        $pendente = $this->verificacaoPendente();
+        $this->telaVerificacao($pendente);
+    }
+
+    public function processarVerificacao(): void
+    {
+        $pendente = $this->verificacaoPendente();
+        if (!CsrfMiddleware::valido()) {
+            $this->telaVerificacao($pendente, 'Sessão expirada. Tente novamente.');
+        }
+
+        try {
+            $usuarioId = (new DoisFatores())->verificarLogin($pendente['token'], $_POST['codigo'] ?? '');
+        } catch (CadastroException $e) {
+            if ($e->status() === 410) {
+                unset($_SESSION['dois_fatores']);
+                $this->voltarComErro('login', $e->getMessage());
+            }
+            $this->telaVerificacao($pendente, $e->getMessage());
+        } catch (PDOException $e) {
+            error_log('SICAPDA 2FA: falha ao conferir o código: ' . $e->getMessage());
+            $this->telaVerificacao($pendente, 'Não foi possível conferir o código agora. Tente novamente.');
+        }
+
+        $usuario = $this->usuario->buscarPorId($usuarioId);
+        unset($_SESSION['dois_fatores']);
+        if (!$usuario) {
+            $this->voltarComErro('login', 'Usuário não encontrado.');
+        }
+        $this->entrar($usuario);
+    }
+
+    /** "Reenviar código" (método por e-mail). */
+    public function reenviarCodigo(): void
+    {
+        $pendente = $this->verificacaoPendente();
+        if (!CsrfMiddleware::valido()) {
+            $this->telaVerificacao($pendente, 'Sessão expirada. Tente novamente.');
+        }
+
+        try {
+            $r = (new DoisFatores())->reenviarCodigo($pendente['token']);
+        } catch (CadastroException $e) {
+            if ($e->status() === 410) {
+                unset($_SESSION['dois_fatores']);
+                $this->voltarComErro('login', $e->getMessage());
+            }
+            $this->telaVerificacao($pendente, $e->getMessage());
+        }
+        $_SESSION['dois_fatores']['expira_em'] = time() + DoisFatores::MINUTOS_VALIDADE * 60;
+        $_SESSION['dois_fatores']['reenviado_em'] = time();
+        $this->telaVerificacao($_SESSION['dois_fatores'], null, $r['mensagem']);
+    }
+
+    /** O login pela metade guardado na sessão; se não houver (ou venceu), volta ao login. */
+    private function verificacaoPendente(): array
+    {
+        $pendente = $_SESSION['dois_fatores'] ?? null;
+        if (!is_array($pendente) || empty($pendente['token'])) {
+            $this->redirecionar('/login');
+        }
+        if ((int) ($pendente['expira_em'] ?? 0) <= time()) {
+            unset($_SESSION['dois_fatores']);
+            $this->voltarComErro('login', 'A verificação expirou. Entre de novo com e-mail e senha.');
+        }
+        return $pendente;
+    }
+
+    private function telaVerificacao(array $pendente, ?string $erro = null, ?string $aviso = null): never
+    {
+        header('Cache-Control: no-store');
+        $metodo = $pendente['metodo'];
+        $destino = $pendente['destino'] ?? '';
+        $reenviadoEm = (int) ($pendente['reenviado_em'] ?? 0);
+        require __DIR__ . '/../views/verificacao.php';
+        exit;
+    }
+
+    /** Abre a sessão (senha conferida e, se a conta usa, o código da verificação em duas etapas também). */
+    private function entrar(array $usuario): never
+    {
         session_regenerate_id(true);
 
         $_SESSION['usuario_id'] = $usuario['id'];
@@ -62,7 +177,13 @@ class AcessoController
             error_log('SICAPDA: não foi possível registrar a sessão: ' . $e->getMessage());
         }
 
-        $this->redirecionar('/painel');
+        // Escolheu a verificação em duas etapas no cadastro e ainda não configurou: leva direto para concluir.
+        try {
+            $pendente = (new DoisFatores())->estado((int) $usuario['id'])['pendente'];
+        } catch (Throwable $e) {
+            $pendente = null;
+        }
+        $this->redirecionar($pendente !== null ? '/configuracoes#seguranca' : '/painel');
     }
 
     // ─── CADASTRO ─────────────────────────────────────────────────────────────
@@ -111,8 +232,10 @@ class AcessoController
         // ─── Passo 2: Segurança ───
         $senha = $post['senha'] ?? '';
         $confirmaSenha = $post['confirmaSenha'] ?? '';
-        $fa2Habilitado = ($post['fa2'] ?? 'nao') === 'sim';
-        $fa2Metodo = $post['fa2metodo'] ?? null;
+        // Verificação em duas etapas escolhida aqui fica pendente: o primeiro login leva a Configurações → Segurança
+        // para configurar (ler o QR Code ou confirmar o e-mail). Só depois disso o login passa a pedir o código.
+        $fa2Metodo = ($post['fa2'] ?? 'nao') === 'sim' && isset(DoisFatores::METODOS[$post['fa2metodo'] ?? ''])
+            ? $post['fa2metodo'] : null;
 
         // ─── Passo 3: Empresa ───
         $razaoSocial = trim($post['razaoSocial'] ?? '');
@@ -259,8 +382,8 @@ class AcessoController
                 'cargo' => $admCargo,
                 'matricula' => $admMatricula,
                 'foto' => $fotoPath,
-                'dois_fatores_habilitado' => $fa2Habilitado,
-                'dois_fatores_metodo' => $fa2Habilitado ? $fa2Metodo : null,
+                'dois_fatores_habilitado' => false,
+                'dois_fatores_metodo' => $fa2Metodo,
             ], $empresaId, 'admin');
 
             if ($possuiRefeitorio) {

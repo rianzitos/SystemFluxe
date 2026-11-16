@@ -94,7 +94,17 @@ Abas:
 - Notificações: liga e desliga cada alerta do sino e os e-mails automáticos (por usuário).
 - Sistema: período padrão dos relatórios (Este mês, últimos 7, 30 ou 90 dias) e itens por página (10, 20 ou 50). Vale no site e no app. O fuso horário é fixo no horário de Brasília.
 - Integrações: dispositivos IoT (veja abaixo) e o desperdício de hoje por refeição.
-- Segurança: alterar senha e sessões ativas (onde a conta está aberta no site, com navegador, IP e último acesso; "Encerrar" derruba a sessão). A autenticação em duas etapas aparece como "Em breve" (ainda não existe).
+- Segurança: alterar senha, verificação em duas etapas e sessões ativas (onde a conta está aberta no site, com navegador, IP e último acesso; "Encerrar" derruba a sessão).
+
+## Verificação em duas etapas
+- O que é: além da senha, o login no site e no aplicativo pede um código de 6 dígitos. Cada pessoa liga para a própria conta em Configurações → Segurança (site ou app). Também pode ser escolhida no cadastro da empresa; aí o primeiro login leva direto a Segurança para concluir (dá para responder "Agora não").
+- Métodos: aplicativo autenticador (recomendado: Google Authenticator, Microsoft Authenticator, Authy ou outro; o código muda a cada 30 segundos e funciona sem internet no celular) ou código por e-mail (enviado a cada login, vale 10 minutos; "Reenviar código" uma vez por minuto).
+- Ativar pelo aplicativo: Configurar → escanear o QR Code com o celular (ou, no próprio celular, copiar a chave e colar no aplicativo em "Inserir uma chave de configuração") → digitar o código de 6 dígitos e a senha atual → Ativar. Por e-mail: Configurar → digitar o código que chegou e a senha atual → Ativar.
+- Códigos de recuperação: ao ativar aparecem 10 códigos (formato ABCDE-FGHIJ), mostrados uma única vez para copiar, baixar ou imprimir. Cada um entra uma vez no lugar do código, se a pessoa perder o celular ou o acesso ao e-mail ("Use um código de recuperação" na tela do código). "Gerar novos códigos" troca todos (os antigos deixam de valer).
+- Desativar: Configurações → Segurança → Desativar, confirmando com a senha atual. Gerar novos códigos também pede a senha.
+- Segurança: errar o código 5 vezes encerra a tentativa (entrar de novo com e-mail e senha); 10 erros em 15 minutos bloqueiam novos logins da conta por 15 minutos. O mesmo código do aplicativo não serve duas vezes. Ativar, desativar, gerar códigos e usar um código de recuperação mandam um aviso por e-mail.
+- Perdeu o celular e os códigos de recuperação: não há como entrar sozinho; o administrador do servidor precisa desligar a verificação da conta direto no banco de dados.
+- O código não bate: o horário do celular precisa estar automático (o código depende do relógio). Digitar o código que aparece no momento.
 
 ## Dispositivos IoT (catracas e balanças)
 - Tipos de dispositivo: Cartão RFID, Biometria, RFID + biometria e Balança de desperdício.

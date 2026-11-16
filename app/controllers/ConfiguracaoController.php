@@ -150,6 +150,52 @@ class ConfiguracaoController
         $this->responder(true, 'Sessão encerrada.');
     }
 
+    // ─── Verificação em duas etapas ───────────────────────────────────────────
+
+    /**
+     * POST /configuracoes/duas-etapas/{acao} (regras em DoisFatores, as mesmas do aplicativo):
+     *   iniciar    {metodo: app|email}            app: QR Code (SVG) e a chave; email: envia o código
+     *   ativar     {metodo, codigo, senha_atual}  liga e devolve os códigos de recuperação (aparecem só esta vez)
+     *   desativar  {senha_atual}
+     *   codigos    {senha_atual}                  novos códigos de recuperação
+     *   dispensar                                 "Agora não" do convite (escolhido no cadastro da empresa)
+     * Toda resposta traz o "estado" atualizado para a tela se redesenhar.
+     */
+    public function duasEtapas(string $acao): void
+    {
+        $id = $this->exigirSessao();
+        $modelo = new DoisFatores();
+        $metodo = (string) ($_POST['metodo'] ?? '');
+
+        try {
+            $r = $this->executar(fn() => match ($acao) {
+                'iniciar'   => match ($metodo) {
+                    'app'   => $modelo->prepararApp($id),
+                    'email' => $modelo->prepararEmail($id, (string) ($_SERVER['REMOTE_ADDR'] ?? '')),
+                    default => throw new CadastroException('Escolha como receber o código: aplicativo autenticador ou e-mail.'),
+                },
+                'ativar'    => $modelo->ativar($id, $metodo, $_POST['codigo'] ?? '', $_POST['senha_atual'] ?? ''),
+                'desativar' => $modelo->desativar($id, $_POST['senha_atual'] ?? ''),
+                'codigos'   => $modelo->novosCodigos($id, $_POST['senha_atual'] ?? ''),
+                'dispensar' => $modelo->dispensar($id),
+            });
+            $estado = $modelo->estado($id);
+        } catch (PDOException $e) {
+            if (DoisFatores::faltaMigration($e)) {
+                $this->responder(false, 'A verificação em duas etapas ainda não está disponível neste servidor.', 503);
+            }
+            error_log('SICAPDA 2FA (' . $acao . '): ' . $e->getMessage());
+            $this->responder(false, 'Não foi possível salvar. Tente novamente.', 500);
+        }
+
+        if (isset($r['qr'])) {
+            $r['qr'] = $r['qr']->svg(4, 'QR Code para o aplicativo autenticador');
+        }
+        $mensagem = $r['mensagem'];
+        unset($r['mensagem']);
+        $this->responder(true, $mensagem, 200, $r + ['estado' => $estado]);
+    }
+
     // ─── Dispositivos IoT (só administrador) ──────────────────────────────────
 
     /** Cadastra uma catraca/leitor/balança e devolve o token inteiro, que não será mostrado de novo. */

@@ -118,7 +118,27 @@ Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configur
 - **Notificações** — liga/desliga, por usuário, os alertas de previsão de demanda, de acessos negados hoje e de dispositivo IoT sem sinal; o número do sino (em todas as telas, no site e no app) e a lista de alertas do painel seguem essas escolhas. Também liga/desliga os e-mails automáticos *Desperdício alto por e-mail* (ligado por padrão) e *Resumo diário por e-mail* (desligado por padrão), veja [E-mails automáticos](#e-mails-automáticos). O catálogo (rótulos e descrições) fica em `Preferencia::CATALOGO_NOTIFICACOES`, o mesmo para o site e o app.
 - **Sistema** — período padrão e itens por página dos Relatórios, da conta: valem no site e no aplicativo (`/api/relatorios` usa as mesmas escolhas). O fuso é fixo (Brasília) porque as catracas e os relatórios precisam gravar e ler no mesmo horário.
 - **Integrações** — dispositivos IoT (acima).
-- **Segurança** — troca de senha e **sessões ativas** reais: lista onde a conta está aberta no site (navegador, IP, último acesso) e "Encerrar" derruba a sessão de verdade na próxima requisição. O aplicativo usa token e não aparece nessa lista, mas também mostra e encerra as sessões do site. *Autenticação em duas etapas*: marcada "Em breve" (o login do site e do aplicativo ainda não têm segundo passo).
+- **Segurança** — troca de senha, **verificação em duas etapas** (abaixo) e **sessões ativas** reais: lista onde a conta está aberta no site (navegador, IP, último acesso) e "Encerrar" derruba a sessão de verdade na próxima requisição. O aplicativo usa token e não aparece nessa lista, mas também mostra e encerra as sessões do site.
+
+### Verificação em duas etapas
+
+Além da senha, o login **no site e no aplicativo** pede um código de 6 dígitos. Cada pessoa liga para a própria conta em **Configurações → Segurança** (no site ou no app, com as mesmas regras):
+
+| Método | Como funciona |
+|---|---|
+| **Aplicativo autenticador** (recomendado) | Google Authenticator, Microsoft Authenticator, Authy ou qualquer app TOTP (RFC 6238). A tela mostra o **QR Code** e a chave para digitar; o código muda a cada 30 s e funciona sem internet no celular |
+| **Código por e-mail** | Um código novo a cada login, vale 10 minutos, com "Reenviar código" (1 por minuto, até 5). Só aparece se o envio de e-mails estiver configurado |
+
+- **Ativar** — escolher o método → escanear o QR Code (ou digitar a chave) / receber o código por e-mail → digitar o código **e a senha atual**. Só depois de conferir um código o login passa a pedir a segunda etapa, então ninguém fica trancado para fora por uma configuração pela metade.
+- **Códigos de recuperação** — ao ativar aparecem **10 códigos** (`ABCDE-FGHIJ`, uma única vez, com Copiar e Baixar `.txt`). Cada um entra uma vez no lugar do código se a pessoa perder o celular ou o e-mail. "Gerar novos códigos" e "Desativar" pedem a senha atual.
+- **Login no site** — senha certa → `/login/verificacao` (o código, com envio automático ao completar os 6 dígitos, "Reenviar código" e "Use um código de recuperação"). A sessão só abre depois do código; até lá o login pela metade fica em `$_SESSION['dois_fatores']`, que não dá acesso a nada.
+- **Login no app** — `POST /api/login` com `duas_etapas: true` devolve `{duas_etapas, desafio, metodo, destino}` em vez do token; `POST /api/login/verificar {desafio, codigo}` devolve o token. Um app antigo (sem `duas_etapas`) recebe 403 com "Atualize o aplicativo", em vez de um erro sem explicação.
+- **Cadastro da empresa** — "Deseja habilitar a verificação em duas etapas?" deixa o método escolhido **pendente** e o primeiro login leva direto a Segurança para concluir (com "Agora não"). A opção SMS saiu (não há provedor de SMS).
+- **Segurança** — 5 tentativas por código (depois, recomeça pelo e-mail e senha); 10 erros em 15 minutos bloqueiam novos logins da conta por 15 minutos; o mesmo código do aplicativo não entra duas vezes; o segredo do aplicativo fica **cifrado** no banco (AES-256-GCM, chave derivada do `API_SECRET`); do código por e-mail, do identificador do login e dos códigos de recuperação só ficam hashes. Ativar, desativar, gerar códigos e usar um código de recuperação mandam um **aviso por e-mail**.
+- **Código** — regras em `app/models/DoisFatores.php` (usado por `AcessoController`, `ConfiguracaoController` e `ApiController`); TOTP em `app/helpers/Totp.php`; o QR Code é gerado no próprio servidor, sem biblioteca, por `app/helpers/QrCode.php` (o site recebe um SVG e o app recebe as linhas para desenhar).
+- **Banco** — rode `config/migrations/008_dois_fatores.sql` (também no fim de `config/database.sql`; seguro rodar de novo). Enquanto não rodar, nada muda: o login pede só a senha e a tela avisa que a verificação não está disponível. Contas que marcaram "Sim" no cadastro antes desta versão ficam como pendentes (nada foi configurado).
+- **Perdeu o celular e os códigos?** Não há como entrar sozinho. No phpMyAdmin: `UPDATE usuarios SET dois_fatores_habilitado = 0, dois_fatores_metodo = NULL, dois_fatores_segredo = NULL, dois_fatores_ativado_em = NULL WHERE email = '...';` e a pessoa ativa de novo.
+- **Teste** — `python3 tests/dois_fatores_http.py` (com `MAIL_DRIVER=log` e o servidor rodando; leva ~1 min porque espera o código do aplicativo mudar).
 
 **A mesma tela no aplicativo (1.2).** Configurações do app tem as mesmas abas e as **mesmas regras**: elas ficam em models que o site (`ConfiguracaoController`, sessão + CSRF) e a API (`ApiController`, Bearer token) chamam — `Conta` (perfil, senha e foto; a foto do app chega em base64 e passa pela mesma checagem de conteúdo), `Integracoes` (criar dispositivo, novo token, simular leitura, testar pesagem e o resumo da aba) e `Preferencia`. Um erro de regra vira `CadastroException` com a mensagem e o código HTTP, que cada lado responde no seu formato. Rotas do app:
 
@@ -127,6 +147,8 @@ Tudo nela é real e fala com o banco (`ConfiguracaoController`, rotas `/configur
 | `POST` | `/api/perfil` · `/api/perfil/senha` · `/api/perfil/foto` | Perfil (`{nome, email, cargo, senha_atual?}`), senha e foto (`{imagem}` em base64) |
 | `GET` / `POST` | `/api/preferencias` · `/api/preferencias/notificacao` · `/api/preferencias/sistema` | Notificações e Sistema |
 | `GET` / `POST` | `/api/sessoes` · `/api/sessoes/encerrar` | Sessões do site (`{id}` ou `{todas: true}`) |
+| `GET` / `POST` | `/api/duas-etapas` · `/api/duas-etapas/iniciar` · `ativar` · `desativar` · `codigos` · `dispensar` | Verificação em duas etapas (desde o app 1.3; veja acima) |
+| `POST` | `/api/login/verificar` · `/api/login/reenviar` | Segunda etapa do login (públicas, sem token) |
 | `GET` | `/api/dispositivos` | Dispositivos (token mascarado, online/offline), tipos, refeições e desperdício de hoje (qualquer usuário; `podeEditar`) |
 | `POST` | `/api/dispositivos/criar` · `token` · `simular` · `pesagem` | Só o administrador (403 para os outros) |
 | `GET` | `/api/notificacoes` · `/api/aovivo?ultimo=ID` | Sino (com o `link` de cada alerta) e tempo real |
@@ -146,6 +168,8 @@ O próprio sistema envia e-mails, sem serviço pago nem biblioteca externa: `app
 | **Bem-vindo ao SICAPDA** | Cadastro de uma empresa (`/cadastro`) | Administrador (e o e-mail institucional, se for outro) |
 | **Redefinir a senha** | *Esqueceu a senha?* no login do site (`/senha/esqueci`) ou do app (`POST /api/senha/esqueci`) | A própria pessoa (link de uso único, vale 60 min) |
 | **A sua senha foi alterada** | Qualquer troca de senha (Configurações no site/app ou pelo link) | A própria pessoa (aviso de segurança) |
+| **Código de acesso** (`123456 é o seu código...`) | Login de quem usa a verificação em duas etapas por e-mail (e ao ativar esse método) | A própria pessoa (vale 10 min) |
+| **Verificação em duas etapas** ativada, desativada, novos códigos ou código de recuperação usado | Cada uma dessas mudanças, no site ou no app | A própria pessoa (aviso de segurança) |
 | **Desperdício alto** | A balança envia uma pesagem e o desperdício do dia passa da meta (8% da produção) ou, sem produção informada, fica 30% acima da média diária dos últimos 30 dias. A tarefa agendada confere de novo ontem e hoje | Usuários da empresa com *Desperdício alto por e-mail* ligado (uma vez por empresa e por dia) |
 | **Resumo diário** | Às 8h (tarefa agendada): acessos, negados e refeitório de ontem, previsão de hoje, dispositivos sem sinal e alertas | Quem ligou *Resumo diário por e-mail* |
 

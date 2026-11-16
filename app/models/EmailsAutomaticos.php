@@ -5,6 +5,7 @@
  *
  *   Contato        contatoEquipe(), contatoConfirmacao()  ← formulário das páginas públicas (Contato)
  *   Conta          boasVindas() no cadastro da empresa, redefinirSenha() e senhaAlterada()
+ *   Duas etapas    codigoVerificacao() no login e na ativação por e-mail, doisFatoresAviso() quando muda
  *   Alertas        desperdicioAlto()  ← quando o desperdício do dia passa da meta (balança ou tarefa agendada)
  *   Resumo         resumoDiario()     ← às 8h, para quem ligou "Resumo diário por e-mail"
  *
@@ -122,6 +123,69 @@ class EmailsAutomaticos
 
         $rodape = 'E-mail de segurança da sua conta no SICAPDA. Ele é enviado sempre que a senha muda.';
         Email::enviar($u['email'], 'A sua senha do SICAPDA foi alterada', $m->html($rodape), $m->texto($rodape));
+    }
+
+    // ─── Verificação em duas etapas ──────────────────────────────────────────
+
+    /** Código de 6 dígitos do login (finalidade "login") ou da ativação do método por e-mail ("ativacao"). */
+    public static function codigoVerificacao(string $nome, string $email, string $codigo, int $minutos, string $finalidade): bool
+    {
+        $login = $finalidade === 'login';
+        $m = (new EmailModelo(
+            $login ? 'O seu código de acesso' : 'Confirme o seu e-mail',
+            $codigo . ' — vale por ' . $minutos . ' minutos.'
+        ))
+            ->paragrafo('Olá, ' . self::primeiroNome($nome) . '!')
+            ->paragrafo($login
+                ? 'Para concluir a entrada no SICAPDA, digite este código na tela de verificação em duas etapas:'
+                : 'Para ativar a verificação em duas etapas por e-mail, digite este código em Configurações → Segurança:')
+            ->codigo($codigo)
+            ->destaque('info', 'O código vale por ' . $minutos . ' minutos e só pode ser usado uma vez.',
+                'Nunca passe este código para ninguém: a equipe da Fluxe nunca pede o seu código.')
+            ->paragrafo($login
+                ? 'Não foi você? Alguém sabe a sua senha: troque-a agora em ' . Env::urlSite() . '/senha/esqueci e avise o administrador da sua empresa.'
+                : 'Se não foi você que pediu, ignore este e-mail: nada muda na sua conta.', true);
+
+        $rodape = 'E-mail de segurança da sua conta no SICAPDA. Nunca pedimos a sua senha por e-mail.';
+        $assunto = $login ? $codigo . ' é o seu código de acesso ao SICAPDA' : $codigo . ' é o código para ativar a verificação em duas etapas';
+        return Email::enviar($email, $assunto, $m->html($rodape), $m->texto($rodape));
+    }
+
+    /**
+     * Aviso de segurança quando a verificação em duas etapas muda.
+     * $evento: ativada | desativada | novos_codigos | recuperacao_usada ($restantes = códigos que ainda valem).
+     */
+    public static function doisFatoresAviso(int $usuarioId, string $evento, int $restantes = 0): void
+    {
+        $u = (new Usuario())->buscarPorId($usuarioId);
+        if (!$u) {
+            return;
+        }
+        $quando = date('d/m/Y \à\s H:i');
+        [$titulo, $previa, $texto] = match ($evento) {
+            'ativada' => ['Verificação em duas etapas ativada', 'Sua conta ficou mais protegida.',
+                'A verificação em duas etapas foi ativada na sua conta do SICAPDA (' . $u['email'] . ') em ' . $quando . '. A partir de agora, além da senha, o login no site e no aplicativo pede um código.'],
+            'desativada' => ['Verificação em duas etapas desativada', 'O login voltou a pedir só e-mail e senha.',
+                'A verificação em duas etapas foi desativada na sua conta do SICAPDA (' . $u['email'] . ') em ' . $quando . '. O login voltou a pedir só e-mail e senha.'],
+            'novos_codigos' => ['Novos códigos de recuperação', 'Os códigos anteriores não valem mais.',
+                'Foram gerados novos códigos de recuperação para a sua conta do SICAPDA em ' . $quando . '. Os anteriores não valem mais.'],
+            default => ['Um código de recuperação foi usado', 'Restam ' . $restantes . ' códigos de recuperação.',
+                'Alguém entrou na sua conta do SICAPDA (' . $u['email'] . ') em ' . $quando . ' usando um código de recuperação no lugar do código da verificação em duas etapas. Restam ' . $restantes . ' códigos.'],
+        };
+
+        $m = (new EmailModelo($titulo, $previa))
+            ->paragrafo('Olá, ' . self::primeiroNome($u['nome']) . '!')
+            ->paragrafo($texto);
+        if ($evento === 'recuperacao_usada' && $restantes <= 3) {
+            $m->destaque('aviso', 'Restam poucos códigos de recuperação.',
+                'Gere novos em Configurações → Segurança (os que sobraram deixam de valer).');
+        }
+        $m->destaque('aviso', 'Não foi você?',
+                'Troque a sua senha agora pelo link abaixo e avise o administrador da sua empresa.')
+            ->botao('Trocar a senha', Env::urlSite() . '/senha/esqueci');
+
+        $rodape = 'E-mail de segurança da sua conta no SICAPDA. Ele é enviado sempre que a verificação em duas etapas muda.';
+        Email::enviar($u['email'], $titulo . ' — SICAPDA', $m->html($rodape), $m->texto($rodape));
     }
 
     // ─── Desperdício alto ────────────────────────────────────────────────────

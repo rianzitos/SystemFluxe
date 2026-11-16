@@ -112,6 +112,18 @@ class EmailModelo
         return $this;
     }
 
+    /** Código de verificação em destaque, grande e fácil de copiar ("482 913"). */
+    public function codigo(string $codigo): static
+    {
+        $visivel = trim(chunk_split($codigo, 3, ' '));
+        $this->html[] = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;"><tr>'
+            . '<td align="center" style="background:#F6F6F6;border:1px solid #E5E5E5;border-radius:10px;padding:18px 12px;">'
+            . '<div style="font-family:\'Courier New\',Courier,monospace;font-size:34px;font-weight:bold;letter-spacing:6px;color:' . self::PRETO . ';">'
+            . self::e($visivel) . '</div></td></tr></table>';
+        $this->texto[] = 'Código: ' . $visivel;
+        return $this;
+    }
+
     public function botao(string $rotulo, string $url): static
     {
         $this->html[] = '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;"><tr>'
