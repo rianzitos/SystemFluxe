@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarNotificacoes();
     inicializarDispositivos();
     inicializarSessoes();
+    inicializarDuasEtapas();
 });
 
 // ===================== ABAS =====================
@@ -556,6 +557,277 @@ async function copiarToken() {
         return;
     }
     feedbackBotao(botao, 'Copiado!');
+}
+
+// ===================== VERIFICAÇÃO EM DUAS ETAPAS =====================
+// Regras no servidor (DoisFatores, as mesmas do aplicativo). Cada resposta traz o "estado" atualizado e a tela se
+// redesenha a partir dele: desativada (escolher o método) → configurando (QR Code ou código por e-mail) → ativada.
+
+function inicializarDuasEtapas() {
+    const bloco = document.getElementById('bloco2fa');
+    if (!bloco || !document.getElementById('dfaInativa')) return; // indisponível neste servidor
+
+    let estado = {};
+    try {
+        estado = JSON.parse(bloco.dataset.estado || '{}');
+    } catch (erro) {
+        estado = {};
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const msg = $('msg2fa');
+    const partes = { inativa: $('dfaInativa'), app: $('dfaConfigApp'), email: $('dfaConfigEmail'), ativa: $('dfaAtiva') };
+    const formSenha = $('dfaFormSenha');
+    const metodosTexto = { app: 'pelo aplicativo autenticador', email: 'por e-mail' };
+    let acaoSenha = null;
+
+    function mostrarParte(qual) {
+        Object.entries(partes).forEach(([nome, el]) => { el.hidden = nome !== qual; });
+        $('dfaPendente').hidden = !(estado.pendente && !estado.ativa && qual === 'inativa');
+    }
+
+    function limparFormularios() {
+        bloco.querySelectorAll('form').forEach((f) => {
+            f.reset();
+            mostrarMensagem(f.querySelector('.campo-erro'), '');
+        });
+        formSenha.hidden = true;
+        acaoSenha = null;
+    }
+
+    function renderizar(novo) {
+        if (novo) estado = novo;
+        const status = $('dfaStatus');
+        status.textContent = estado.ativa ? 'Ativada' : 'Desativada';
+        status.classList.toggle('dfa-status-ativa', !!estado.ativa);
+        $('dfaEscudo').classList.toggle('dfa-escudo-ativa', !!estado.ativa);
+
+        $('dfaEmail').textContent = estado.email || '';
+        const semEmail = !estado.email_disponivel;
+        $('dfaEmailIndisponivel').hidden = !semEmail;
+        bloco.querySelector('.dfa-metodos [data-dfa-iniciar="email"]').disabled = semEmail;
+        $('dfaPendenteMetodo').textContent = metodosTexto[estado.pendente] || '';
+
+        if (estado.ativa) {
+            $('dfaMetodo').textContent = estado.metodo_rotulo;
+            $('dfaAtivadaEm').textContent = estado.ativada_em;
+            const n = estado.codigos_restantes;
+            $('dfaRestantes').textContent = n === 1 ? '1 restante' : `${n} restantes`;
+            $('dfaPoucosCodigos').hidden = n > 3;
+            mostrarParte('ativa');
+        } else {
+            mostrarParte('inativa');
+        }
+    }
+
+    async function postar(acao, dados) {
+        const formData = new FormData();
+        Object.entries(dados || {}).forEach(([k, v]) => formData.append(k, v));
+        return enviar(`/configuracoes/duas-etapas/${acao}`, formData);
+    }
+
+    // ----- Passo 1: escolher o método (ou reenviar o código por e-mail) -----
+    bloco.querySelectorAll('[data-dfa-iniciar]').forEach((botao) => {
+        botao.addEventListener('click', async () => {
+            const metodo = botao.dataset.dfaIniciar;
+            const reenvio = botao.classList.contains('dfa-reenviar');
+            const erroForm = reenvio ? partes.email.querySelector('.campo-erro') : msg;
+            mostrarMensagem(msg, '');
+            mostrarMensagem(erroForm, '');
+            botao.disabled = true;
+            const r = await postar('iniciar', { metodo });
+            botao.disabled = false;
+
+            if (!r.sucesso) {
+                mostrarMensagem(erroForm, r.mensagem, false);
+                return;
+            }
+            if (metodo === 'app') {
+                $('dfaQr').innerHTML = r.qr; // SVG gerado pelo servidor (só retângulos), sem texto de ninguém
+                $('dfaChave').textContent = r.chave;
+                const abrir = $('dfaAbrirApp');
+                abrir.href = r.uri;
+                // otpauth:// só abre algo no celular (onde está o aplicativo autenticador)
+                abrir.hidden = !window.matchMedia('(pointer: coarse)').matches;
+                mostrarParte('app');
+                $('dfaCodigoApp').focus();
+            } else {
+                $('dfaEnviado').textContent = r.mensagem;
+                mostrarParte('email');
+                if (reenvio) mostrarMensagem(erroForm, 'Código novo enviado. O anterior não vale mais.', true);
+                $('dfaCodigoEmail').focus();
+            }
+            bloco.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Só dígitos no campo do código
+    bloco.querySelectorAll('.dfa-codigo').forEach((campo) => {
+        campo.addEventListener('input', () => {
+            const digitos = campo.value.replace(/\D/g, '').slice(0, 6);
+            if (campo.value !== digitos) campo.value = digitos;
+        });
+    });
+
+    // ----- Passo 2: código + senha → ativa e mostra os códigos de recuperação -----
+    bloco.querySelectorAll('.dfa-form').forEach((form) => {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const erro = form.querySelector('.campo-erro');
+            const botao = form.querySelector('button[type="submit"]');
+            const codigo = form.querySelector('[name="codigo"]').value;
+            if (!/^\d{6}$/.test(codigo)) {
+                mostrarMensagem(erro, 'Digite o código de 6 dígitos.', false);
+                return;
+            }
+            mostrarMensagem(erro, '');
+            botao.disabled = true;
+            const r = await postar('ativar', {
+                metodo: form.dataset.metodo,
+                codigo,
+                senha_atual: form.querySelector('[name="senha_atual"]').value,
+            });
+            botao.disabled = false;
+
+            if (!r.sucesso) {
+                mostrarMensagem(erro, r.mensagem, false);
+                return;
+            }
+            limparFormularios();
+            $('dfaQr').replaceChildren();
+            renderizar(r.estado);
+            mostrarCodigos(r.codigos);
+            mostrarMensagem(msg, r.mensagem, true);
+        });
+    });
+
+    bloco.querySelectorAll('[data-dfa-cancelar]').forEach((botao) => {
+        botao.addEventListener('click', () => {
+            limparFormularios();
+            $('dfaQr').replaceChildren();
+            renderizar();
+        });
+    });
+
+    // ----- Ativada: gerar novos códigos ou desativar (as duas pedem a senha) -----
+    bloco.querySelectorAll('[data-dfa-senha]').forEach((botao) => {
+        botao.addEventListener('click', () => {
+            acaoSenha = botao.dataset.dfaSenha;
+            const desativar = acaoSenha === 'desativar';
+            $('dfaSenhaRotulo').textContent = desativar
+                ? 'Para desativar, confirme com a sua senha atual'
+                : 'Para gerar novos códigos (os atuais deixam de valer), confirme com a sua senha atual';
+            const confirmar = $('dfaSenhaBotao');
+            confirmar.textContent = desativar ? 'Desativar verificação' : 'Gerar novos códigos';
+            confirmar.classList.toggle('btn-perigo', desativar);
+            mostrarMensagem(formSenha.querySelector('.campo-erro'), '');
+            formSenha.hidden = false;
+            $('dfaSenhaConfirmar').value = '';
+            $('dfaSenhaConfirmar').focus();
+        });
+    });
+
+    formSenha.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!acaoSenha) return;
+        const erro = formSenha.querySelector('.campo-erro');
+        const botao = $('dfaSenhaBotao');
+        mostrarMensagem(erro, '');
+        botao.disabled = true;
+        const r = await postar(acaoSenha, { senha_atual: $('dfaSenhaConfirmar').value });
+        botao.disabled = false;
+
+        if (!r.sucesso) {
+            mostrarMensagem(erro, r.mensagem, false);
+            return;
+        }
+        const acao = acaoSenha;
+        limparFormularios();
+        renderizar(r.estado);
+        if (acao === 'codigos') {
+            mostrarCodigos(r.codigos);
+        } else {
+            esconderCodigos();
+        }
+        mostrarMensagem(msg, r.mensagem, true);
+    });
+
+    $('btnDfaDispensar').addEventListener('click', async () => {
+        const r = await postar('dispensar');
+        if (r.sucesso) renderizar(r.estado);
+        mostrarMensagem(msg, r.mensagem, r.sucesso);
+    });
+
+    // ----- Códigos de recuperação (aparecem uma única vez) -----
+    let codigosAtuais = [];
+
+    function mostrarCodigos(codigos) {
+        codigosAtuais = codigos || [];
+        const lista = $('dfaCodigosLista');
+        lista.replaceChildren(...codigosAtuais.map((c) => elemento('li', c)));
+        $('dfaCodigos').hidden = codigosAtuais.length === 0;
+        $('dfaCodigos').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function esconderCodigos() {
+        codigosAtuais = [];
+        $('dfaCodigosLista').replaceChildren();
+        $('dfaCodigos').hidden = true;
+    }
+
+    function textoCodigos() {
+        return [
+            'SICAPDA — códigos de recuperação da verificação em duas etapas',
+            `Conta: ${document.getElementById('perfilEmailTopo')?.textContent || ''}`,
+            `Gerados em: ${new Date().toLocaleString('pt-BR')}`,
+            '',
+            'Cada código vale uma vez. Use no lugar do código de 6 dígitos se perder o celular ou o acesso ao e-mail.',
+            '',
+            ...codigosAtuais.map((c, i) => `${String(i + 1).padStart(2, ' ')}. ${c}`),
+            '',
+        ].join('\n');
+    }
+
+    $('btnDfaCopiarCodigos').addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(textoCodigos());
+            feedbackBotao($('btnDfaCopiarCodigos'), 'Copiado!');
+        } catch (erro) {
+            const faixa = document.createRange();
+            faixa.selectNodeContents($('dfaCodigosLista'));
+            const selecao = window.getSelection();
+            selecao.removeAllRanges();
+            selecao.addRange(faixa);
+        }
+    });
+
+    $('btnDfaBaixarCodigos').addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([textoCodigos()], { type: 'text/plain;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'sicapda-codigos-de-recuperacao.txt';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    $('btnDfaGuardei').addEventListener('click', esconderCodigos);
+
+    $('btnDfaCopiarChave').addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText($('dfaChave').textContent.replace(/\s+/g, ''));
+            feedbackBotao($('btnDfaCopiarChave'), 'Copiada!');
+        } catch (erro) {
+            const faixa = document.createRange();
+            faixa.selectNodeContents($('dfaChave'));
+            const selecao = window.getSelection();
+            selecao.removeAllRanges();
+            selecao.addRange(faixa);
+        }
+    });
+
+    renderizar();
 }
 
 // ===================== SESSÕES ATIVAS =====================

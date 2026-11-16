@@ -84,6 +84,17 @@ if ($uri === '/') {
 // login. Apenas acessar a página (GET ou outro método) aciona a função
 // para exibir a tela de login.
 
+} elseif ($uri === '/login/verificacao') {
+    if ($metodo === 'POST') {
+        (new AcessoController())->processarVerificacao();
+    } else {
+        (new AcessoController())->exibirVerificacao();
+    }
+} elseif ($uri === '/login/verificacao/reenviar' && $metodo === 'POST') {
+    (new AcessoController())->reenviarCodigo();
+// Verificação em duas etapas: depois da senha certa, a tela pede o código (do aplicativo autenticador, do e-mail
+// ou um de recuperação). A sessão só abre depois do código; o login pela metade fica em $_SESSION['dois_fatores'].
+
 } elseif ($uri === '/cadastro') {
     if ($metodo === 'POST') {
         (new AcessoController())->processarCadastro();
@@ -186,6 +197,8 @@ if ($uri === '/') {
     (new ConfiguracaoController())->salvarSistema();
 } elseif ($uri === '/configuracoes/sessoes/encerrar' && $metodo === 'POST') {
     (new ConfiguracaoController())->encerrarSessao();
+} elseif (preg_match('#^/configuracoes/duas-etapas/(iniciar|ativar|desativar|codigos|dispensar)$#', $uri, $acao2fa) && $metodo === 'POST') {
+    (new ConfiguracaoController())->duasEtapas($acao2fa[1]);
 } elseif ($uri === '/configuracoes/dispositivos' && $metodo === 'POST') {
     (new ConfiguracaoController())->criarDispositivo();
 } elseif ($uri === '/configuracoes/dispositivos/token' && $metodo === 'POST') {

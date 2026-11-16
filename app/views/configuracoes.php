@@ -62,6 +62,10 @@ $balancas = array_filter($dispositivosIot, fn($d) => $d['tipo'] === 'balanca');
 $catracas = array_filter($dispositivosIot, fn($d) => $d['tipo'] !== 'balanca');
 $pesagensHoje = $empresaId > 0 ? Balanca::hoje($empresaId) : [];
 
+// Verificação em duas etapas (DoisFatores): ativa ou não, método, códigos de recuperação que restam.
+// "disponivel" false = a migration 008 ainda não rodou neste banco.
+$estado2fa = (new DoisFatores())->estado($usuarioId);
+
 // Sessões ativas do site (tabela sessoes_usuario). null = a tabela ainda não existe neste banco.
 try {
     $sessoesAtivas = (new Sessao())->listar($usuarioId);
@@ -456,17 +460,157 @@ try {
                             </form>
                         </div>
 
-                        <div class="config-bloco">
-                            <div class="item-toggle item-toggle-bloco">
+                        <!-- Verificação em duas etapas: o JS (configuracoes.js) troca as partes conforme o "estado" que o servidor devolve -->
+                        <div class="config-bloco dfa" id="bloco2fa" data-estado="<?= htmlspecialchars(json_encode($estado2fa, JSON_UNESCAPED_UNICODE), ENT_QUOTES) ?>">
+                            <div class="dfa-topo">
+                                <div class="dfa-escudo" id="dfaEscudo"><i class="bi bi-shield-lock"></i></div>
                                 <div>
-                                    <strong>Autenticação em duas etapas <span class="tag-breve">Em breve</span></strong>
-                                    <p>Vai exigir um código adicional ao entrar na conta. Ainda não está ativa: por enquanto o login pede só e-mail e senha.</p>
+                                    <h3>Verificação em duas etapas
+                                        <span class="dfa-status" id="dfaStatus"><?= $estado2fa['ativa'] ? 'Ativada' : 'Desativada' ?></span>
+                                    </h3>
+                                    <p class="config-bloco-desc">Além da senha, o login no site e no aplicativo pede um código de 6 dígitos. Mesmo que alguém descubra a sua senha, sem o código não entra.</p>
                                 </div>
-                                <label class="switch switch-desativado">
-                                    <input type="checkbox" id="toggle2FA" disabled>
-                                    <span class="switch-trilho"></span>
-                                </label>
                             </div>
+
+                            <?php if (!$estado2fa['disponivel']): ?>
+                                <p class="config-nota">A verificação em duas etapas ainda não está disponível neste servidor.</p>
+                            <?php else: ?>
+
+                            <!-- Escolhido no cadastro da empresa e ainda não configurado -->
+                            <div class="dfa-convite" id="dfaPendente" hidden>
+                                <i class="bi bi-stars"></i>
+                                <div>
+                                    <strong>Falta só um passo</strong>
+                                    <p>No cadastro você pediu a verificação em duas etapas <span id="dfaPendenteMetodo"></span>. Conclua abaixo: leva 1 minuto.</p>
+                                </div>
+                                <button type="button" class="btn-texto dfa-agora-nao" id="btnDfaDispensar">Agora não</button>
+                            </div>
+
+                            <!-- Desativada: escolher o método -->
+                            <div class="dfa-metodos" id="dfaInativa" hidden>
+                                <div class="dfa-metodo" data-metodo="app">
+                                    <i class="bi bi-phone"></i>
+                                    <div>
+                                        <strong>Aplicativo autenticador <span class="tag-atual">Recomendado</span></strong>
+                                        <p>Google Authenticator, Microsoft Authenticator, Authy ou outro. O código aparece no celular, mesmo sem internet.</p>
+                                    </div>
+                                    <button type="button" class="btn-primario" data-dfa-iniciar="app"><i class="bi bi-qr-code"></i> Configurar</button>
+                                </div>
+                                <div class="dfa-metodo" data-metodo="email">
+                                    <i class="bi bi-envelope"></i>
+                                    <div>
+                                        <strong>Código por e-mail</strong>
+                                        <p>A cada login enviamos um código para <b id="dfaEmail"><?= htmlspecialchars($estado2fa['email']) ?></b>.</p>
+                                        <p class="dfa-indisponivel" id="dfaEmailIndisponivel" hidden>O envio de e-mails não está configurado neste servidor.</p>
+                                    </div>
+                                    <button type="button" class="btn-secundario" data-dfa-iniciar="email"><i class="bi bi-send"></i> Configurar</button>
+                                </div>
+                            </div>
+
+                            <!-- Configurar o aplicativo: QR Code + código + senha -->
+                            <div class="dfa-config" id="dfaConfigApp" hidden>
+                                <ol class="dfa-passos">
+                                    <li>
+                                        <strong>Abra o aplicativo autenticador</strong> no celular (se não tiver, instale o Google Authenticator ou o Microsoft Authenticator na loja do celular).
+                                    </li>
+                                    <li>
+                                        <strong>Escaneie o QR Code</strong> (no aplicativo: "+" ou "Adicionar conta").
+                                        <div class="dfa-qr-linha">
+                                            <div class="dfa-qr" id="dfaQr"></div>
+                                            <div class="dfa-chave">
+                                                <span>Não consegue escanear? Digite esta chave no aplicativo:</span>
+                                                <code id="dfaChave"></code>
+                                                <small>Só tem letras de A a Z e números de 2 a 7 (não existe zero nem um: o "O" é letra).</small>
+                                                <div class="dfa-chave-acoes">
+                                                    <button type="button" class="btn-secundario" id="btnDfaCopiarChave"><i class="bi bi-clipboard"></i> Copiar chave</button>
+                                                    <a class="btn-secundario dfa-abrir-app" id="dfaAbrirApp" href="#"><i class="bi bi-box-arrow-up-right"></i> Abrir no aplicativo</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li><strong>Digite o código de 6 dígitos</strong> que aparecer no aplicativo e confirme com a sua senha.</li>
+                                </ol>
+                                <form class="config-form dfa-form" data-metodo="app" autocomplete="off">
+                                    <div class="campo">
+                                        <label for="dfaCodigoApp">Código do aplicativo</label>
+                                        <input type="text" id="dfaCodigoApp" name="codigo" class="dfa-codigo" inputmode="numeric"
+                                            autocomplete="one-time-code" maxlength="7" placeholder="000000" required>
+                                    </div>
+                                    <div class="campo">
+                                        <label for="dfaSenhaApp">Senha atual</label>
+                                        <input type="password" id="dfaSenhaApp" name="senha_atual" autocomplete="current-password" required>
+                                    </div>
+                                    <p class="campo-erro" hidden></p>
+                                    <div class="config-form-acoes">
+                                        <button type="button" class="btn-secundario" data-dfa-cancelar>Cancelar</button>
+                                        <button type="submit" class="btn-primario"><i class="bi bi-shield-check"></i> Ativar</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Configurar por e-mail: código enviado + senha -->
+                            <div class="dfa-config" id="dfaConfigEmail" hidden>
+                                <p class="dfa-enviado" id="dfaEnviado"></p>
+                                <form class="config-form dfa-form" data-metodo="email" autocomplete="off">
+                                    <div class="campo">
+                                        <label for="dfaCodigoEmail">Código recebido por e-mail</label>
+                                        <input type="text" id="dfaCodigoEmail" name="codigo" class="dfa-codigo" inputmode="numeric"
+                                            autocomplete="one-time-code" maxlength="7" placeholder="000000" required>
+                                    </div>
+                                    <div class="campo">
+                                        <label for="dfaSenhaEmail">Senha atual</label>
+                                        <input type="password" id="dfaSenhaEmail" name="senha_atual" autocomplete="current-password" required>
+                                    </div>
+                                    <p class="campo-erro" hidden></p>
+                                    <div class="config-form-acoes">
+                                        <button type="button" class="btn-texto dfa-reenviar" data-dfa-iniciar="email">Reenviar código</button>
+                                        <button type="button" class="btn-secundario" data-dfa-cancelar>Cancelar</button>
+                                        <button type="submit" class="btn-primario"><i class="bi bi-shield-check"></i> Ativar</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Ativada -->
+                            <div class="dfa-ativa" id="dfaAtiva" hidden>
+                                <div class="dfa-resumo">
+                                    <div><span>Método</span><strong id="dfaMetodo"></strong></div>
+                                    <div><span>Ativada em</span><strong id="dfaAtivadaEm"></strong></div>
+                                    <div><span>Códigos de recuperação</span><strong id="dfaRestantes"></strong></div>
+                                </div>
+                                <p class="dfa-alerta-codigos" id="dfaPoucosCodigos" hidden><i class="bi bi-exclamation-triangle"></i>
+                                    Restam poucos códigos de recuperação. Gere novos para não ficar sem saída se perder o celular.</p>
+                                <div class="dfa-acoes">
+                                    <button type="button" class="btn-secundario" data-dfa-senha="codigos"><i class="bi bi-arrow-repeat"></i> Gerar novos códigos de recuperação</button>
+                                    <button type="button" class="btn-texto" data-dfa-senha="desativar">Desativar</button>
+                                </div>
+                                <form class="config-form dfa-form-senha" id="dfaFormSenha" autocomplete="off" hidden>
+                                    <div class="campo campo-largo">
+                                        <label for="dfaSenhaConfirmar" id="dfaSenhaRotulo">Confirme com a sua senha atual</label>
+                                        <input type="password" id="dfaSenhaConfirmar" name="senha_atual" autocomplete="current-password" required>
+                                    </div>
+                                    <p class="campo-erro" hidden></p>
+                                    <div class="config-form-acoes">
+                                        <button type="button" class="btn-secundario" data-dfa-cancelar>Cancelar</button>
+                                        <button type="submit" class="btn-primario" id="dfaSenhaBotao">Confirmar</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Códigos de recuperação: aparecem uma única vez -->
+                            <div class="dfa-codigos" id="dfaCodigos" role="status" hidden>
+                                <strong><i class="bi bi-key"></i> Guarde os seus códigos de recuperação</strong>
+                                <p>Se perder o celular (ou o acesso ao e-mail), entre com um destes códigos no lugar do código de 6 dígitos.
+                                    Cada um vale <b>uma vez</b>. Por segurança, eles <b>não serão mostrados de novo</b>: copie, baixe ou imprima agora.</p>
+                                <ol class="dfa-codigos-lista" id="dfaCodigosLista"></ol>
+                                <div class="dfa-chave-acoes">
+                                    <button type="button" class="btn-secundario" id="btnDfaCopiarCodigos"><i class="bi bi-clipboard"></i> Copiar</button>
+                                    <button type="button" class="btn-secundario" id="btnDfaBaixarCodigos"><i class="bi bi-download"></i> Baixar .txt</button>
+                                    <button type="button" class="btn-primario" id="btnDfaGuardei"><i class="bi bi-check-lg"></i> Já guardei</button>
+                                </div>
+                            </div>
+
+                            <p class="campo-erro dfa-msg" id="msg2fa" hidden></p>
+                            <?php endif; ?>
                         </div>
 
                         <div class="config-bloco">

@@ -292,14 +292,14 @@ unset($_SESSION['flash_erro']);
                   <label for="fa2metodo">Método de verificação</label>
                   <div class="input-wrap">
                     <select id="fa2metodo" name="fa2metodo">
-                      <option value="app">Aplicativo autenticador</option>
-                      <option value="sms">SMS</option>
-                      <option value="email">E-mail</option>
+                      <option value="app">Aplicativo autenticador (Google Authenticator, Microsoft Authenticator...)</option>
+                      <option value="email">Código por e-mail</option>
                     </select>
                     <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="m6 9 6 6 6-6" />
                     </svg>
                   </div>
+                  <p class="hint">No primeiro acesso você conclui a configuração em Configurações → Segurança (leva 1 minuto). A partir daí o login pede, além da senha, um código de 6 dígitos.</p>
                 </div>
               </div>
             </div>

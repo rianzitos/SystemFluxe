@@ -580,6 +580,128 @@ footer span {
     text-decoration: none;
 }
 
+/* ============================================
+   VERIFICAÇÃO EM DUAS ETAPAS (app/views/verificacao.php)
+   ============================================ */
+.verificacao-icone {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #FFF4CC;
+    color: #b98200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    margin-bottom: 0.8rem;
+}
+
+.form-header .verificacao-sub {
+    margin: 0.6rem 10% 0 10%;
+    text-align: center;
+    line-height: 1.5;
+    font-size: 0.88rem;
+    color: #666;
+}
+
+/* Campo do código: grande, centralizado e com os dígitos espaçados */
+.form input.input-codigo {
+    height: auto;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.9rem;
+    font-weight: bold;
+    letter-spacing: 0.45em;
+    text-indent: 0.45em;   /* compensa o espaço depois do último dígito: o texto fica no centro de verdade */
+    color: #171717;
+}
+
+.form input.input-codigo::placeholder {
+    color: #D4D4D4;
+}
+
+.verificacao-dica {
+    margin: -3% 0 5% 0;
+    font-size: 0.78rem;
+    color: #888;
+}
+
+.verificacao-reenviar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin: 0.4rem 10% 0.6rem 10%;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.link-botao {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: #b98200;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.link-botao:disabled {
+    color: #999;
+    cursor: default;
+    text-decoration: none;
+}
+
+.verificacao-recuperacao {
+    margin: 0.8rem 10% 0.4rem 10%;
+    border-top: 1px solid #EEE;
+    padding-top: 0.9rem;
+}
+
+.verificacao-recuperacao summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+    list-style-position: inside;
+}
+
+.verificacao-recuperacao summary i {
+    color: #b98200;
+    margin-right: 4px;
+}
+
+.verificacao-recuperacao[open] summary {
+    margin-bottom: 0.9rem;
+}
+
+.verificacao-recuperacao .texto-senha,
+.verificacao-recuperacao .inputs {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.verificacao-recuperacao .butEnviar {
+    width: 100%;
+}
+
+.butSecundario {
+    background-color: #171717;
+    color: #FFFFFF;
+}
+
+.butSecundario:hover {
+    background-color: #2B2B2B;
+}
+
+.butEnviar:disabled {
+    opacity: 0.7;
+    cursor: default;
+    transform: none;
+}
+
 
 
 @keyframes piscar {
