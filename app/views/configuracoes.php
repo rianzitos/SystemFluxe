@@ -390,7 +390,7 @@ try {
 
                             <div class="config-bloco simulador" id="blocoBalanca" <?= $balancas ? '' : 'hidden' ?>>
                                 <h3>Testar pesagem</h3>
-                                <p class="config-bloco-desc">Registra o total real de desperdício de hoje, como no botão Encerrar turno do Wokwi. <strong>Substitui o total da refeição para toda a empresa</strong>, inclusive se houver mais de uma balança. Não soma pesagens individuais nem altera o status de conexão.</p>
+                                <p class="config-bloco-desc">Registra o total de desperdício de hoje de uma refeição. <strong>Substitui o total da refeição para toda a empresa</strong> e não altera o status de conexão. A balança soma cada pesagem a este total (ela o recebe a cada minuto).</p>
                                 <form class="config-form" id="formPesagem">
                                     <div class="campo"><label for="pesagemDispositivo">Balança</label><select id="pesagemDispositivo" name="id" required>
                                         <?php foreach ($balancas as $d): ?><option value="<?= (int) $d['id'] ?>"><?= htmlspecialchars($d['nome']) ?></option><?php endforeach; ?>
@@ -402,7 +402,7 @@ try {
                                     <p class="campo-erro" id="msgPesagem" role="status" hidden></p>
                                     <div class="config-form-acoes"><button type="submit" class="btn-secundario"><i class="bi bi-check-lg"></i> Registrar total</button></div>
                                 </form>
-                                <p class="config-nota">No Wokwi: use o token de uma balança, escolha a refeição no firmware, faça a tara com o recipiente vazio e pressione Encerrar turno após pesar.</p>
+                                <p class="config-nota">Na balança: escolha a refeição no botão amarelo, aperte TARA com o prato vazio, coloque o desperdício e aperte ENVIAR.</p>
                             </div>
                             <form class="config-form form-dispositivo" id="formDispositivo" autocomplete="off" hidden>
                                 <div class="campo">

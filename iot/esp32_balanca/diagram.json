@@ -44,7 +44,7 @@
       "id": "btnFim",
       "top": 227,
       "left": 144,
-      "attrs": { "color": "red" }
+      "attrs": { "color": "red", "label": "ENVIAR" }
     }
   ],
   "connections": [

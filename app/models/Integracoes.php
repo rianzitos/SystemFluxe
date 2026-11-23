@@ -118,7 +118,7 @@ class Integracoes
 
     /**
      * "Testar pesagem": registra o total de desperdício de uma refeição (Balanca::registrar). Substitui o total da
-     * refeição no dia para a empresa toda, como o botão "Encerrar turno" da balança.
+     * refeição no dia para a empresa toda (a balança soma as próximas pesagens a esse total).
      */
     public function registrarPesagem(int $empresaId, array $dados): array
     {

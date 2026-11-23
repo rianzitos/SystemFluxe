@@ -7,7 +7,8 @@
  *
  * Rotas (todas POST, sob /api/iot):
  *   POST /api/iot/acesso   {uid, direcao?}  → o cartão foi lido: libera ou nega e grava em logs_acesso
- *   POST /api/iot/ping                      → "estou vivo" (a ESP32 manda de tempos em tempos)
+ *   POST /api/iot/ping                      → "estou vivo" (a ESP32 manda de tempos em tempos); para a balança,
+ *                                             devolve também os totais de desperdício de hoje
  *   POST /api/iot/desperdicio {desperdicio_kg, tipo} → a balança fechou o turno: grava o desperdício do dia
  * Resposta de /acesso (HTTP 200 sempre que o dispositivo é válido; quem decide abrir a catraca é o
  * campo "autorizado"):
@@ -65,7 +66,13 @@ class IotController
     private function ping(array $dispositivo): never
     {
         (new Dispositivo())->registrarPing((int) $dispositivo['id']);
-        Api::json(['hora' => date('Y-m-d H:i:s'), 'epoch' => time()]);
+        $resposta = ['hora' => date('Y-m-d H:i:s'), 'epoch' => time()];
+        if (($dispositivo['tipo'] ?? '') === 'balanca') {
+            // A balança soma cada pesagem ao total que o sistema já tem (alguém pode ter corrigido no site).
+            $resposta['data'] = date('Y-m-d');
+            $resposta['desperdicio'] = Balanca::totaisHoje((int) $dispositivo['empresa_id']);
+        }
+        Api::json($resposta);
     }
 
     private function acesso(array $dispositivo): never

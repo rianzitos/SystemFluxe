@@ -44,7 +44,10 @@ try:
     call('/api/iot/desperdicio',401,data=payload)
     call('/api/iot/desperdicio',403,data=payload,token=user['rfid']['token'])
     call('/api/iot/acesso',403,data={'uid':'1234'},token=token)
-    assert call('/api/iot/ping',data={},token=token)['epoch'] > 1700000000
+    ping = call('/api/iot/ping',data={},token=token)
+    assert ping['epoch'] > 1700000000 and len(ping['data']) == 10
+    assert ping['desperdicio'] == {'cafe':0, 'almoco':0, 'jantar':0, 'ceia':0}
+    assert 'desperdicio' not in call('/api/iot/ping',data={},token=user['rfid']['token'])
     for invalid in [None, True, [], -1, 100001, 'NaN', 'abc']:
         call('/api/iot/desperdicio',422,data=dict(payload,desperdicio_kg=invalid),token=token)
     for data in [{'tipo':'invalido'}, {'tipo':[]}, {'data':'2026-02-30'}, {'data':'2999-01-01'}]:
@@ -55,6 +58,8 @@ try:
     call('/api/iot/desperdicio',data=dict(payload,desperdicio_kg=9),token=other['balance']['token'])
     # Reenvio atrasado mantém a data original.
     call('/api/iot/desperdicio',data=dict(payload,data='2020-01-02',desperdicio_kg=8),token=token)
+    # O ping da balança traz o total de hoje (a balança soma as próximas pesagens a ele).
+    assert call('/api/iot/ping',data={},token=token)['desperdicio']['almoco'] == 2.5
     totals=json.loads(subprocess.check_output(['php',fixture,'totals',user['company']]))
     assert len(totals)==2 and totals[0]['data']=='2020-01-02'
     assert float(totals[0]['quantidade_desperdicada_kg'])==8 and float(totals[1]['quantidade_desperdicada_kg'])==2.5
