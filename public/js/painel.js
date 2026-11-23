@@ -48,6 +48,12 @@ function montarGraficoDemanda() {
     const dados = lerDados()?.demanda;
     if (!dados) return;
 
+    // "Realizado" usa a mesma cor da bolinha da legenda: preto no tema claro e o
+    // branco do texto (--texto, #F4F4F6) no escuro, onde o preto some no fundo.
+    const escuro = document.documentElement.getAttribute('data-tema') === 'escuro';
+    const corRealizado = escuro ? '#F4F4F6' : '#0D0D0D';
+    const fundoRealizado = escuro ? 'rgba(244, 244, 246, 0.06)' : 'rgba(13, 13, 13, 0.06)';
+
     graficoDemanda = new Chart(canvas, {
         type: 'line',
         data: {
@@ -66,12 +72,12 @@ function montarGraficoDemanda() {
                 {
                     label: 'Realizado',
                     data: dados.realizado,
-                    borderColor: '#0D0D0D',
-                    backgroundColor: 'rgba(13, 13, 13, 0.06)',
+                    borderColor: corRealizado,
+                    backgroundColor: fundoRealizado,
                     fill: true,
                     tension: 0.35,
                     pointRadius: 3,
-                    pointBackgroundColor: '#0D0D0D',
+                    pointBackgroundColor: corRealizado,
                 },
             ],
         },
