@@ -20,6 +20,8 @@
  *   GET  /api/relatorios/exportar  (CSV, mesmos filtros; ?formato=xlsx devolve a planilha do Excel)
  *   GET  /api/assistente
  *   POST /api/assistente       {mensagem, historico?}  historico = [{autor: 'usuario'|'bot', texto}] (resposta com IA quando configurada)
+ *   GET  /api/assistente/diagnostico   configuração da IA neste servidor (só administrador; a mesma de /assistente/diagnostico)
+ *   POST /api/assistente/diagnostico   testa a IA passo a passo (3 a 5 chamadas reais) e diz onde falha (só administrador)
  *
  * Cadastro de pessoas e cartões (aba Cadastro de Pessoas no app; as mesmas regras do site, em CadastroPessoas):
  *   GET  /api/pessoas/cadastro         pessoas da empresa com os cartões de cada uma (qualquer usuário; "podeEditar" = é administrador)
@@ -128,6 +130,8 @@ class ApiController
                     (new RelatorioController())->enviarExportacao($empresaId);
                 case '/assistente':
                     $metodo === 'POST' ? $this->perguntar($usuario) : $this->assistente($empresaId);
+                case '/assistente/diagnostico':
+                    $this->diagnosticoIA($usuario, $metodo);
                 case '/perfil':
                 case '/perfil/senha':
                 case '/perfil/foto':
@@ -788,5 +792,43 @@ class ApiController
         ], $mensagem, $historico);
 
         Api::json(['resposta' => $r['resposta'], 'ia' => $r['ia'], 'hora' => date('H:i')]);
+    }
+
+    /**
+     * Diagnóstico da IA (o mesmo de /assistente/diagnostico do site), só para o administrador.
+     * GET: a configuração lida do servidor. POST: também testa cada etapa (conexão, chave, ferramentas, recusa
+     * de assunto fora do sistema) e devolve onde falhou. Nunca mostra a chave inteira.
+     */
+    private function diagnosticoIA(array $usuario, string $metodo): never
+    {
+        if (!in_array($metodo, ['GET', 'POST'], true)) {
+            Api::erro(405, 'Método não permitido.');
+        }
+        if (!$this->ehAdmin($usuario)) {
+            Api::erro(403, 'Somente o administrador da empresa pode ver o diagnóstico da IA.');
+        }
+
+        $configuracao = array_map(
+            fn($l) => ['rotulo' => $l[0], 'valor' => $l[1], 'estado' => $l[2]],
+            AssistenteDiagnostico::configuracao()
+        );
+        if ($metodo === 'GET') {
+            Api::json(['configuracao' => $configuracao, 'ia' => AssistenteIA::ativa()]);
+        }
+
+        session_write_close();
+        @set_time_limit(180);
+        $etapas = AssistenteDiagnostico::testar((int) $usuario['empresa_id'], [
+            'id'     => (int) $usuario['id'],
+            'nome'   => (string) ($usuario['nome'] ?? ''),
+            'perfil' => 'admin',
+        ]);
+
+        Api::json([
+            'configuracao' => $configuracao,
+            'ia'           => AssistenteIA::ativa(),
+            'etapas'       => $etapas,
+            'tudoCerto'    => $etapas !== [] && !array_filter($etapas, fn($e) => !$e['ok']),
+        ]);
     }
 }

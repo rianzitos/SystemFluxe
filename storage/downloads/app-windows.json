@@ -1,8 +1,8 @@
 {
   "arquivo": "SICAPDA-Setup.exe",
-  "versao": "1.3.0",
-  "build": 4,
-  "tamanho": 12635142,
-  "sha256": "f97ce6f9cc4e39d13d2cbabe1723f448036654a37ac0031bf6f6f484c4ea715f",
-  "atualizado_em": "2026-11-16T22:53:08Z"
+  "versao": "1.4.0",
+  "build": 5,
+  "tamanho": 12693111,
+  "sha256": "cc794a5094ab4486eb9b15626e0ad69eb8f1cbccab0c2ed406691a8f41213de4",
+  "atualizado_em": "2026-11-23T21:25:29Z"
 }
