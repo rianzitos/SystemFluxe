@@ -1223,8 +1223,8 @@ html[data-tema="escuro"] .aviso-vivo {
 
 /* A linha/ponto "Realizado" do gráfico usa --preto, que é quase invisível
    sobre o fundo escuro. A bolinha da legenda é resolvida aqui; a linha do
-   gráfico em si (desenhada pelo Chart.js no painel.js) precisa da mesma
-   troca de cor lá no JS — ainda vou te pedir esse arquivo pra ajustar. */
+   gráfico em si (desenhada pelo Chart.js) recebe a mesma troca de cor em
+   montarGraficoDemanda(), no painel.js. */
 html[data-tema="escuro"] .ponto-realizado {
     background: var(--texto);
 }
