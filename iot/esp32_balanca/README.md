@@ -1,172 +1,279 @@
-# Balança de desperdício — SICAPDA
+# Balança de desperdício — SICAPDA (firmware v6)
 
-ESP32 + HX711 + LCD1602 I2C e botão de seleção de refeição, seguindo o circuito em `diagram.json` e o firmware `esp32_acesso.ino`. A balança mede o **total de desperdício da refeição**, não a produção de alimentos. Esse total alimenta `producao_refeicoes`, a análise mensal e as consultas do assistente. A previsão em kg também depende dos dados de produção e acessos existentes.
+ESP32 + HX711 + **uma célula de carga tipo barra de 10 kg** + LCD 16x2 I2C + 3 botões + 2 LEDs. A balança mede o
+**desperdício de cada refeição** (café, almoço, jantar e ceia) e manda o total do dia para o SICAPDA, que alimenta
+`producao_refeicoes`, o painel, a análise mensal, os alertas e o assistente.
 
-## Publicar no site existente
-
-1. Faça um backup do banco e execute `config/migrations/006_balanca.sql` no banco do SICAPDA (phpMyAdmin → SQL). A alteração apenas acrescenta `balanca` aos tipos de dispositivo; pode ser repetida. Importar novamente `database.sql` não altera o ENUM de uma tabela existente.
-2. Publique os arquivos PHP e JS alterados, incluindo `app/models/Balanca.php`. Não envie o `.env` local, chaves, testes ou ferramentas do ambiente para a pasta pública.
-3. Entre como administrador em **Configurações → Integrações → Adicionar dispositivo**. Escolha **Balança de desperdício**, nomeie e copie o token revelado. Cada aparelho tem seu próprio token.
-4. A lista mantém o status Online/Offline e a ação Novo token. O painel **Desperdício de hoje** mostra os quatro totais; atualize a página após uma medição física. **Testar pesagem** grava um total real, sem marcar um aparelho desconectado como Online.
-
-## Wokwi
-
-1. Crie um projeto ESP32. Copie o conteúdo de `esp32_acesso.ino` para o sketch principal, `diagram.json` para o circuito e as três bibliotecas de `libraries.txt`. O nome no gerenciador é **HX711 Arduino Library**, de Bogdan Necula (bogde), e não apenas HX711.
-2. Ajuste `URL_SERVIDOR` e `TOKEN_DISPOSITIVO` e troque `MODO_SIMULADOR` para `true` (a célula simulada já nasce calibrada em 420 unidades/kg e 50 kg; na balança física deixe `false`). A refeição é escolhida no botão amarelo **REFEIÇÃO** e aparece no LCD; não existe mais `TIPO_REFEICAO` fixo no código. O token deve ser de uma balança deste mesmo site. Nunca publique um token real no Git.
-3. Inicie a simulação e aguarde `Ping: HTTP 200`. O ping sincroniza a data com o servidor, no fuso de São Paulo. O Wokwi na nuvem precisa de um endereço acessível; não alcança o localhost desta máquina.
-4. Com a célula em **0 kg** (ou apenas o recipiente), pressione o botão azul **TARA**. Ajuste o peso da célula para **2,5 kg** e confira aproximadamente `2.500 kg` no Serial.
-5. Use o botão amarelo **REFEIÇÃO** para selecionar Café, Almoço, Jantar ou Ceia. Confira a primeira linha do LCD antes de pressionar o botão vermelho **ENCERRAR TURNO**. Confirme a mensagem de gravação e o total **2,50 kg** em Integrações. Mantenha pressionado para verificar que não há envios contínuos.
-6. Teste zero, outra refeição e interrupção de rede. Uma medição não confirmada fica na memória NVS do ESP32 com peso, refeição e data originais; reiniciar o aparelho não a transforma em uma pesagem do dia seguinte. Uma nova sessão do simulador pode apagar a memória simulada. Não faça novas medições até resolver a pendência.
-
-A célula de 50 kg do Wokwi produz 21000 unidades para 50 kg: fator **420 unidades/kg**, sem dividir por mil. Esse valor vale **só no simulador**. Em hardware real é obrigatório calibrar com peso conhecido (veja [Balança física](#balança-física-4-células-de-50-kg--hx711)). A tara é manual após cada inicialização para evitar zerar uma carga que já esteja no recipiente.
-
-## Balança física (4 células de 50 kg + HX711)
-
-### Por que funciona no Wokwi e fica errada na bancada
-
-O HX711 do Wokwi não reproduz uma célula real: devolve exatamente **420 unidades por kg**, com zero perfeito, sem ruído, sem deriva e com sinal sempre positivo. Na bancada nada disso vale:
-
-| No Wokwi | Na balança física |
+| Arquivo | O que é |
 |---|---|
-| Fator fixo de 420 unidades/kg | O fator depende das suas células e da ligação. Para 4 células de 50 kg costuma ficar na casa de **10 mil a 25 mil unidades/kg** (estimativa: o valor real sai da calibração). Com 420, 1 kg aparece como dezenas de kg → pesos irreais, rejeitados pelo limite de capacidade |
-| Sinal sempre positivo | O sinal depende de como as células foram ligadas e montadas. Se o valor bruto **cai** ao colocar peso, o resultado sai negativo. O fator calibrado herda esse sinal e corrige a leitura |
-| Sem ruído nem deriva | Offset de milhares de unidades, ruído de dezenas a centenas de unidades e deriva térmica nos primeiros minutos. Antes, qualquer −0,01 kg após a tara era rejeitado |
-| Uma célula de 50 kg | Quatro células em ponte (capacidade 200 kg); todas precisam variar no mesmo sentido |
+| `esp32_acesso.ino` | Firmware (roda na ESP32; não vai para a hospedagem) |
+| `diagram.json`, `libraries.txt` | Circuito e bibliotecas do simulador Wokwi |
+| `platformio.ini` | Para compilar com PlatformIO (`pio run -d iot/esp32_balanca`) |
 
-O firmware v5 trata isso: calibração com peso conhecido pelo Serial (fator com sinal, salvo na memória da ESP32), média aparada que descarta picos, faixa de ±0,05 kg em torno do zero e capacidade de 200 kg. Em balança física ele **recusa pesar enquanto não houver calibração**, para não enviar valores absurdos ao site. `MODO_SIMULADOR = true` volta ao comportamento do Wokwi (420 unidades/kg, limite de 50 kg).
+## Uso no dia a dia
 
-### Ligação das 4 células
+```
+ ┌────────────────┐   AMARELO  REFEIÇÃO  troca: Almoço → Jantar → Ceia → Café
+ │Almoco Tot  2.35│   AZUL     TARA      zera com o prato vazio (segure 4 s = calibrar)
+ │Peso:   0.845 kg│   VERMELHO ENVIAR    pesa, soma ao total da refeição e manda ao site
+ └────────────────┘
+  linha 1: refeição selecionada e total de HOJE dessa refeição ("!" = total esperando internet)
+  linha 2: peso ao vivo (nunca negativo) ou a mensagem do momento
+```
 
-Cada célula de 50 kg é uma meia-ponte de 3 fios. Em geral o **vermelho é o ponto central** e preto/branco são as pontas. Quatro meias-pontes formam uma ponte completa assim:
+1. Escolha a refeição no **amarelo**.
+2. Com o prato (ou o recipiente que vai ficar em cima) **vazio**, aperte **TARA**. Espere `Tara feita`.
+3. Coloque o desperdício. O peso aparece em degraus de 5 g.
+4. Aperte **ENVIAR**. A balança espera o peso parar (`Estabilizando...`), **soma** a pesagem ao total da refeição de
+   hoje e manda o total ao site: `Enviado +0.85kg`. Sem internet aparece `Na fila +0.85kg`, a linha de cima ganha um
+   `!`, o LED vermelho acende e a balança reenvia sozinha quando a rede voltar (mesmo se for desligada).
+5. Passou de 10 kg? Esvazie no lixo, faça **TARA** e pese o resto: as pesagens se somam no total da refeição.
 
-| Emendas entre células | Ligações ao HX711 |
+| LED | Aceso quer dizer |
 |---|---|
-| preto 1 ↔ preto 2 | vermelho 1 → **E+** |
-| branco 2 ↔ branco 3 | vermelho 2 → **A+** |
-| preto 3 ↔ preto 4 | vermelho 3 → **E−** |
-| branco 4 ↔ branco 1 | vermelho 4 → **A−** |
+| Verde | Conectado ao Wi-Fi (pisca enquanto envia) |
+| Vermelho | Atenção: total esperando envio, sensor sem sinal ou balança ainda não calibrada |
 
-Além disso: HX711 VCC → 3V3, GND → GND, DT → GPIO16, SCK → GPIO17. Mantenha o HX711 em **3,3 V**: a 5 V o DT chegaria a 5 V no GPIO16, que não tolera isso.
+## Peças
 
-Confirme com um multímetro (sem o HX711 energizado):
+- ESP32 DevKit (30 ou 38 pinos) e cabo USB de dados
+- Módulo HX711 (o verde comum) e **célula de carga tipo barra de 10 kg** (4 fios: vermelho, preto, branco, verde)
+- LCD 1602 com módulo I2C (endereço 0x27; alguns vêm com 0x3F)
+- 3 botões (azul, vermelho, amarelo), 2 LEDs (verde, vermelho) e 2 resistores de 220 Ω
+- Base rígida (madeira grossa ou MDF de 15 mm ou mais), prato/bandeja rígido, 2 espaçadores e parafusos da célula
 
-1. **Cada célula, antes de ligar:** o fio comum às duas menores resistências (cerca de 1 kΩ cada; a maior, entre as pontas, cerca de 2 kΩ) é o centro. Se não for o vermelho, use o fio central no papel do vermelho.
-2. **Ponte montada:** E+↔E− e A+↔A− devem medir o mesmo valor (cerca de 2 kΩ), e cada par vizinho (E+↔A+, A+↔E−, E−↔A−, A−↔E+) cerca de 75% desse valor. Valores diferentes indicam emenda ruim ou fio trocado.
+## Arquitetura mecânica (o que mais influencia a precisão)
 
-### Montagem mecânica e elétrica
+A célula de carga é uma barra de alumínio com **extensômetros** colados no meio (a parte coberta de cola branca, perto
+dos furos grandes). O peso só é medido se a barra puder **dobrar um pouquinho no meio**. Por isso ela fica **elevada**,
+presa em balanço entre a base e o prato, como um "Z":
 
-- As **4 células devem ficar na mesma orientação**: uma ponta presa à base e a outra segurando a plataforma, todas flexionando no mesmo sentido. Uma célula invertida *subtrai* da soma e deixa a leitura incoerente ou negativa.
-- Use espaçadores (arruelas) para a célula flexionar livremente e a plataforma **não encostar na base**. Plataforma rígida, nivelada, apoiada só nas 4 células.
-- Fios finos das células não prendem bem no protoboard: **solde ou use borneira** nas emendas. Fios curtos, longe da antena Wi-Fi e do cabo USB.
-- Capacitores de 100 nF e 10–100 µF entre VCC e GND do HX711, perto do módulo, e uma fonte USB estável.
-- Deixe a balança ligada **5 a 10 minutos** antes de calibrar ou fazer a tara (deriva térmica).
+```
+  VISTA DE LADO
 
-### Calibração passo a passo
+                    ┌──────────── prato / bandeja (centrado sobre o MEIO da barra) ────────────┐
+  ══════════════════╧═══════════════════════════════════════════════════════════════════════╧══
+                                                          ┌────┐  ← espaçador de cima
+          ┌───────────────────────────────────────────────┴────┴──┐
+          │ (o)(o)          [ ( )  ( ) ]  ← extensômetros  (o)(o) │  ← célula de 10 kg, seta ↓
+          └──┬────┬───────────────────────────────────────────────┘
+             └────┘  ← espaçador de baixo                    ▲
+  ═══════════╧════╧══════════════════════════════════════════│════════  base fixa, plana e rígida
+          PONTA FIXA                                    PONTA LIVRE
+     (parafusada na base)                         (parafusada no prato)
+                    ◄────── vão livre: nada pode encostar no meio da barra ──────►
+```
 
-Abra o monitor Serial a 115200 baud com final de linha "Nova linha" (sem Enter o comando executa após 0,4 s de pausa). Digite `?` para ver os comandos.
+Regras da montagem:
+
+1. **Uma ponta na base, a outra no prato.** A ponta fixa é parafusada na base com um espaçador; a ponta livre é
+   parafusada no prato com outro espaçador. Nunca prenda as duas pontas na mesma peça (a barra não dobra e não mede).
+2. **Espaçadores de 5 a 10 mm** (bloco de madeira, arruelas empilhadas ou peça impressa) dos dois lados. Assim a
+   barra fica no ar: o meio não encosta na base e o prato não encosta na barra. É o "sensor elevado".
+3. **Seta da barra para baixo**, no sentido do peso. Ao contrário o sinal inverte (a calibração até corrige com um
+   fator negativo, mas o certo é a seta para baixo).
+4. **Prato centrado sobre o meio da barra**, não pendurado na ponta. A barra tolera bem o peso mais para frente ou para
+   trás, mas erra quando o peso fica muito para os lados (torção). Use um prato de 20 a 25 cm e o recipiente no centro.
+5. **Base rígida e pesada**, apoiada numa mesa nivelada (de preferência com pés de borracha). Base fina que entorta
+   rouba parte do peso.
+6. **Parafusos certos e curtos**: use os furos roscados de cada ponta (geralmente M4 ou M5; confira na sua barra) e
+   aperte bem. Parafuso comprido que passa do furo e encosta na base ou no prato trava a célula.
+7. **Nada encostando no prato**: fios, parede, a borda da base, o recipiente vizinho. O cabo da célula fica preso na
+   base com folga, sem puxar.
+8. **Não aperte a cola branca** e não passe de ~15 kg (150% da capacidade): a barra deforma para sempre. Nada de
+   apoiar a mão com força ou deixar cair coisas pesadas no prato.
+
+Na foto de referência (célula presa numa madeira e uma placa branca na outra ponta) a ideia é exatamente essa. Para
+pesar comida, prefira um prato maior **centrado sobre a barra** e uma base mais grossa.
+
+## Ligação elétrica
+
+| Célula de carga | HX711 |
+|---|---|
+| Vermelho | E+ |
+| Preto | E− |
+| Branco | A− |
+| Verde | A+ |
+
+Se o número **cair** quando você coloca peso, não tem problema: a calibração gera um fator negativo e o peso sai
+positivo. Se preferir, troque o branco com o verde.
+
+| De | Para a ESP32 |
+|---|---|
+| HX711 VCC / GND | **3V3** / GND (não ligue o HX711 em 5 V: o DT chegaria a 5 V no GPIO16) |
+| HX711 DT / SCK | GPIO16 / GPIO17 |
+| LCD SDA / SCL | GPIO21 / GPIO22 |
+| LCD VCC / GND | VIN (5 V do USB) / GND |
+| Botão TARA (azul) | GPIO32 e GND |
+| Botão ENVIAR (vermelho) | GPIO33 e GND |
+| Botão REFEIÇÃO (amarelo) | GPIO25 e GND |
+| LED verde / vermelho | GPIO27 / GPIO26 → resistor de 220 Ω → LED → GND |
+
+Para a leitura não ficar pulando:
+
+- **Solde** os 4 fios da célula no HX711 (ou use borne). Os fios finos não prendem bem no protoboard: é a causa mais
+  comum de valor oscilando, "andando" ou negativo.
+- Fios da célula e do HX711 **curtos e trançados**, longe da antena da ESP32 (a ponta com a trilha em zigue-zague).
+- O módulo verde vem com o pino **RATE no GND (10 leituras/s)**, o modo com menos ruído. O diagnóstico (`d`) mostra a
+  taxa: perto de 80/s indica RATE em alto.
+- Use uma fonte/porta USB boa. Opcional: capacitor de 100 nF + 10 µF entre VCC e GND do HX711.
+- O módulo do LCD tem resistores que puxam SDA/SCL para o VCC dele (5 V). Na prática funciona com a ESP32, mas o
+  correto é um conversor de nível I2C ou tirar esses resistores do módulo.
+
+## Como o firmware funciona
+
+```
+ HX711 ──10 leituras/s──► tarefa "sensor": mediana de 3 ─► média móvel de 16 leituras ─► média + ruído ──┐
+                          (derruba picos)    (recomeça na hora quando entra carga nova)                 │
+ botões ──a cada 5 ms───► tarefa "botoes": debounce, clique e "segurou 4 s" ─► fila de eventos ──┐       │
+                                                                                                 ▼       ▼
+                                  loop(): − tara ─► ÷ fator ─► zero automático ─► degraus de 5 g sem piscar (nunca < 0)
+                                     ├─► LCD: refeição + total de hoje / peso
+                                     ├─► memória da ESP32 (NVS): fator, tara, refeição, totais do dia e fila de envio
+                                     └─► Wi-Fi/HTTPS ─► SICAPDA: POST /api/iot/desperdicio e /api/iot/ping
+```
+
+O sensor é lido numa tarefa separada, então a média continua certa mesmo enquanto a ESP32 conversa com o site, e os
+botões nunca perdem um clique. O que cada parte resolve:
+
+| Problema na bancada | O que o firmware v6 faz |
+|---|---|
+| Valor pulando | Mediana de 3 descarta picos isolados; média de 16 leituras; o LCD só troca o último dígito quando o peso muda de verdade (histerese) |
+| Valor negativo | O LCD **nunca mostra negativo**: abaixo de zero aparece `0.000 kg`. O **zero automático** corrige sozinho a deriva de temperatura (até 4 g, com a balança parada perto do zero). Se ficar abaixo de −10 g, o LCD alterna com `Aperte TARA`, e o ENVIAR responde `Prato vazio` |
+| Tara errada | O TARA espera o peso parar e usa 16 leituras novas. A tara fica **salva**: ao religar, a balança já começa zerada (na primeira vez ela faz a tara sozinha) |
+| Calibração difícil | **Segure TARA 4 s** e siga o LCD, ou use `c <kg>` no Serial. O fator fica salvo, com o sinal certo |
+| Valor errado enviado | O ENVIAR usa só leituras de **depois do clique** e espera o peso parar. Recusa prato vazio e mais de 10 kg |
+| Internet caiu | Os totais ficam numa fila na memória da ESP32 e são reenviados sozinhos, com a data e a refeição originais |
+| Mais de 10 kg de desperdício | Pese em partes: cada ENVIAR **soma** ao total da refeição |
+
+### Soma das pesagens e o site
+
+O site guarda **um total por empresa + dia + refeição** e cada envio substitui o anterior. A balança soma as pesagens e
+manda o **total já somado**, então reenviar nunca duplica. A cada minuto o ping traz os totais de hoje que estão no
+site: se alguém corrigir o desperdício em **Produção** ou em **Testar pesagem**, a próxima pesagem soma a partir do
+valor corrigido (espere ~1 minuto depois da correção). No Serial, `u` desfaz a última pesagem e `z` zera o total de hoje
+da refeição selecionada. Para o total ser sempre "a última pesagem", mude `SOMAR_PESAGENS` para `false`.
+
+## Primeira vez: configurar e calibrar
+
+1. No sketch, preencha `WIFI_SSID`, `WIFI_SENHA`, `URL_SERVIDOR` e `TOKEN_DISPOSITIVO` (o token de uma **Balança de
+   desperdício** criada em Configurações → Integrações). Deixe `MODO_SIMULADOR = false`. Grave na ESP32 com a Arduino
+   IDE (placa "ESP32 Dev Module") ou com PlatformIO, com as bibliotecas de `libraries.txt`.
+2. Ligue com o prato **vazio** e abra o Monitor Serial a **115200** baud. Na primeira vez ela faz a tara sozinha.
+3. Deixe ligada **5 a 10 minutos** (o HX711 e a célula esquentam e o zero se acomoda) e aperte **TARA**.
+4. Separe um **peso conhecido** de 1 kg ou mais (melhor 2 a 5 kg): pacote de arroz ou feijão, garrafa d'água, haltere.
+   Confira o peso dele numa balança de cozinha ou de mercado. Escreva o valor em `PESO_CALIBRACAO_KG` (padrão 1.000).
+5. **Segure TARA por 4 s**. O LCD mostra `CALIBRACAO` / `Esvazie + TARA`. Com o prato vazio, aperte **TARA**.
+6. O LCD pede `Ponha 1.000 kg`. Coloque o peso **no meio do prato**, tire a mão e aperte **ENVIAR**. Aparece
+   `Calibrado!`. (O amarelo cancela.)
+7. Retire o peso, aperte TARA e confira com **outro** peso conhecido. Mova o mesmo peso pelo prato: a leitura deve
+   variar no máximo alguns gramas. Se variar muito, reveja a montagem (prato encostando, base torta, parafuso longo).
+
+Pelo Serial dá para calibrar com qualquer peso: `t` com o prato vazio, coloque o peso e digite `c 2.345` (o valor em kg).
+Para uma célula de 10 kg o fator costuma ficar perto de **±215 mil unidades/kg**; **negativo é normal**. A calibração e
+a tara ficam salvas: só repita se trocar a célula, a montagem ou o HX711.
+
+## Comandos do Serial (115200 baud, "Nova linha")
 
 | Comando | O que faz |
 |---|---|
-| `t` | Tara (o mesmo que o botão azul), com a plataforma vazia |
-| `c <kg>` | Calibra: tara feita, peso conhecido sobre a plataforma. Ex.: `c 5.000` |
-| `d` | Diagnóstico: bruto, ruído (máx−mín), offset, fator e peso, com alertas |
-| `r` | Liga/desliga o bruto ao vivo, para testar cada canto |
-| `f <fator>` | Define o fator manualmente (aceita negativo) |
+| `?` | Lista os comandos |
+| `t` | Tara (igual ao botão azul) |
+| `c <kg>` | Calibra com um peso conhecido sobre o prato (tara feita antes, vazia). Ex.: `c 2.000` |
+| `f <fator>` | Define o fator na mão (aceita negativo) |
+| `d` | Diagnóstico: leituras por segundo, ruído em gramas, tara, fator, zero automático, Wi-Fi, hora, fila e totais |
+| `r` | Liga/desliga o valor bruto ao vivo (aperte o prato com o dedo: o número deve mudar sempre no mesmo sentido) |
+| `l` | Liga/desliga o peso ao vivo (a cada 2 s) |
+| `e` / `m` | Pesa e envia / troca a refeição (iguais aos botões) |
+| `u` / `z` | Desfaz a última pesagem de hoje / zera o total de hoje da refeição selecionada |
 
-1. Plataforma vazia: `t`, depois `d`. O ruído deve ficar abaixo de ~1000 unidades; bruto parado em ±8388607, 0 ou −1 indica entrada aberta ou fio solto.
-2. Digite `r` e **aperte cada canto com a mão**: todos devem variar no **mesmo sentido** (todos sobem ou todos descem). Se um canto vai ao contrário, essa célula está invertida (montagem ou preto/branco trocados). Digite `r` de novo para sair.
-3. Plataforma vazia: `t`. Coloque um **peso conhecido e centralizado**, de preferência 5 kg ou mais (pacotes de arroz/açúcar, galões de água, halteres). Digite `c 5.000` (use o valor real). Deve aparecer `Calibrado! Fator = ... Salvo na memoria`. **Fator negativo é normal.**
-4. Retire o peso, faça `t` e confira com **outro peso conhecido**: o erro deve ser de 1–2%. Mova o mesmo peso pelos quatro cantos e pelo centro: a leitura deve se manter. Se variar muito, as células não estão equilibradas ou a plataforma está tocando a base.
-5. Pronto: use TARA → desperdício → ENCERRAR TURNO como antes. O fator fica salvo; a tara continua manual a cada inicialização.
-
-### Problemas comuns
+## Problemas comuns
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
-| 1 kg aparece como dezenas de kg | Fator 420 do Wokwi, ou calibração com peso errado | Calibrar com `c <kg>` |
-| Peso negativo ao colocar peso | Sinal invertido, ou tara feita com peso na plataforma | Calibrar (o fator negativo corrige); refazer a tara vazia |
-| O valor muda ao mover o peso pela plataforma | Célula invertida/mal montada, plataforma tocando a base | Teste de cantos com `r`; refazer a montagem |
-| Bruto parado em ±8388607, 0 ou −1 | Entrada aberta ou em curto, fio solto | Conferir E+, E−, A+, A− e as emendas |
-| Ruído alto no `d`, leitura pulando | Mau contato no protoboard, fios longos, alimentação | Soldar, encurtar fios, capacitores |
-| Deriva lenta após a tara | Aquecimento, temperatura | Esperar e refazer a tara |
-| `Peso negativo` ao encerrar o turno | Tara com peso ou deriva | Refazer a tara com o recipiente vazio |
+| Número pulando muito, `Peso instavel`, `Instavel: tente` | Fios da célula no protoboard, fios longos, prato encostando, mesa balançando | Solde os fios, encurte, rode `d` e veja o ruído em gramas (o bom é menos de 5 g) |
+| `0.000 kg` alternando com `Aperte TARA` | A leitura ficou abaixo do zero: tara feita com algo em cima que foi tirado | Prato vazio e TARA |
+| Peso certo, mas "anda" alguns gramas depois de ligar | Aquecimento (deriva térmica) | Espere 5 a 10 min; o zero automático corrige o resto |
+| O peso muda quando o objeto muda de lugar no prato | Montagem: prato não centrado, prato ou parafuso encostando, base entortando | Reveja a [arquitetura mecânica](#arquitetura-mecânica-o-que-mais-influencia-a-precisão) |
+| Lê bem pouco ou não muda com peso | Barra sem vão livre (as duas pontas presas na mesma peça, meio encostando) | Espaçadores dos dois lados; ponta fixa na base e ponta livre no prato |
+| 1 kg aparece como outro valor | Calibração com peso errado, ou fator de outra montagem | Calibre de novo com um peso conferido |
+| `Sensor sem sinal` | HX711 sem resposta | Confira DT=GPIO16, SCK=GPIO17, VCC em 3V3 e GND |
+| `Sensor: ligacao` / bruto parado em ±8388607 | Fio da célula solto ou em curto | Confira E+, E−, A+, A− e as soldas |
+| `Calibre: TARA 4s` | Nunca calibrada | [Primeira vez](#primeira-vez-configurar-e-calibrar) |
+| `Sem hora: rede?` ao enviar | A ESP32 ainda não sabe a data (precisa da internet uma vez depois de ligar) | Confira o Wi-Fi; o relógio vem do ping do site ou da internet (NTP) |
+| `!` na linha de cima e LED vermelho | Totais esperando envio | Confira Wi-Fi, `URL_SERVIDOR` e o token; o Serial explica o código HTTP (401 = token) |
+| `Acima capacidade` / `SOBRECARGA!` | Mais de 10 kg | Divida em mais pesagens (elas se somam) |
+| LCD apagado ou só quadrados | Endereço I2C ou contraste | O Serial avisa se não achou o LCD em 0x27 (tente 0x3F em `LCD_ENDERECO`); gire o potenciômetro azul atrás do LCD |
 
-O firmware herdado usa `setInsecure()` para HTTPS no simulador. **Antes de instalar em hardware real**, substitua por `setCACert()` com a CA válida do servidor e sincronize o relógio antes da conexão TLS. Não utilize a configuração de teste como autenticação TLS de produção.
+## Ajustes no código
+
+| Constante | Padrão | Para que serve |
+|---|---|---|
+| `CAPACIDADE_KG` | 10 | Capacidade da célula (limite de envio e conferência do fator) |
+| `PESO_CALIBRACAO_KG` | 1.000 | Peso conhecido da calibração pelos botões |
+| `DIVISAO_KG` | 0.005 | Degrau do LCD (5 g). Use 0.010 se o último dígito ainda oscilar |
+| `SOMAR_PESAGENS` | true | Soma as pesagens no total da refeição (false: o total é a última pesagem) |
+| `ESTAVEL_KG` | 0.020 | Variação máxima para considerar o peso parado |
+| `ZERO_AUTO_KG` / `ZERO_AUTO_LIMITE_KG` | 0.004 / 0.100 | Faixa do zero automático e o máximo que ele corrige desde a última tara |
+| `MODO_SIMULADOR` | false | `true` só no Wokwi |
+
+## Publicar no site
+
+1. Faça backup do banco. Se o site ainda não tem a balança, execute `config/migrations/006_balanca.sql` (pode repetir).
+2. Publique `app/controllers/IotController.php` e `app/models/Balanca.php`: o ping da balança passou a devolver os
+   totais de hoje. Um site antigo continua aceitando a balança v6 (ela só não recebe as correções feitas no site).
+3. Em **Configurações → Integrações → Adicionar dispositivo**, escolha **Balança de desperdício** e copie o token
+   (aparece uma vez). Cada aparelho tem o seu; use uma balança por refeição/local para não haver disputa de totais.
+4. O quadro **Desperdício de hoje** mostra os quatro totais. **Testar pesagem** grava um total sem precisar do aparelho.
+
+O firmware usa `setInsecure()` no HTTPS (aceita qualquer certificado), o que serve para o projeto e o simulador. Em
+produção, troque por `setCACert()` com o certificado raiz do site.
 
 ## Contrato da API
 
 `POST /api/iot/desperdicio`, cabeçalhos `Content-Type: application/json` e `X-Device-Token`:
 
 ```json
-{"desperdicio_kg":2.5,"tipo":"almoco","data":"2026-10-24"}
+{"desperdicio_kg":2.35,"tipo":"almoco","data":"2026-11-23"}
 ```
 
-`data` é opcional para clientes antigos (padrão: hoje); o novo firmware sempre a envia. Aceita datas reais de 2000 até hoje, peso finito de 0 a 100000 kg e as quatro refeições. O firmware descarta leituras acima de 200 kg (balança física com 4 células de 50 kg) ou 50 kg (`MODO_SIMULADOR`). Resposta 200 inclui `sucesso`, `mensagem`, `desperdicio_kg`, `tipo` e `data`. Token ausente/revogado retorna 401; outro tipo de dispositivo, 403; campos inválidos, 422. A empresa é determinada pelo token, nunca pelo JSON.
+`data` é opcional (padrão: hoje). Aceita datas de 2000 até hoje, peso de 0 a 100000 kg e as quatro refeições
+(`cafe`, `almoco`, `jantar`, `ceia`). Resposta 200 com `sucesso`, `mensagem`, `desperdicio_kg`, `tipo` e `data`. Token
+ausente/revogado: 401; dispositivo que não é balança: 403; campos inválidos: 422. A empresa vem do token, nunca do JSON.
+É **um total por empresa + dia + refeição**: um novo envio substitui o anterior (a balança manda o total somado).
 
-**É um total por empresa + dia + refeição.** Repetir o mesmo envio não soma nem duplica. Um novo total substitui o anterior, preservando produção e previsão. Se houver várias balanças, coordene um único total final: não há soma automática nem histórico de cada pesagem. Um reenvio antigo para a mesma refeição/dia também substitui o total. Use um dispositivo responsável por refeição para evitar disputa.
+`POST /api/iot/ping` (corpo `{}`) marca a balança como Online e responde, para balanças:
 
-## Validação local
-
-Com PHP (PDO MySQL e mbstring), banco local migrado e servidor iniciado na raiz do projeto:
-
-```sh
-php -S 127.0.0.1:8000 -t public app/routes/web.php
-# Em outro terminal:
-python3 tests/balanca_http.py
+```json
+{"sucesso":true,"hora":"2026-11-23 12:00:00","epoch":1795446000,"data":"2026-11-23",
+ "desperdicio":{"cafe":0.0,"almoco":2.35,"jantar":0.0,"ceia":0.0}}
 ```
 
-O teste cria e apaga empresas temporárias; execute apenas no banco de desenvolvimento. Verifica gravação/reenvio, datas, validação, isolamento entre empresas, CSRF, cadastro, revogação e restrição de tipo. Não substitui o teste do circuito no Wokwi.
+## Simulador Wokwi
 
-Para compilar com PlatformIO instalado: `pio run -d iot/esp32_balanca`. O projeto fixa ESP32 6.10.0, HX711 0.7.5, ArduinoJson 7.4.2 e LiquidCrystal I2C 1.1.2. Nesta implementação, a tentativa de compilação foi bloqueada por HTTP 403 no registro do PlatformIO; a compilação e a simulação física ainda precisam ser confirmadas no seu ambiente/Wokwi.
+1. Crie um projeto ESP32 e copie `esp32_acesso.ino` (sketch), `diagram.json` (circuito) e `libraries.txt`. O nome da
+   biblioteca no gerenciador é **HX711 Arduino Library** (bogde).
+2. Mude `MODO_SIMULADOR` para `true` (usa a rede `Wokwi-GUEST` sozinho e a célula simulada de 50 kg, já calibrada em
+   420 unidades/kg) e preencha `URL_SERVIDOR` e `TOKEN_DISPOSITIVO`. O Wokwi roda na nuvem: não enxerga o localhost.
+3. Inicie e aguarde `Wi-Fi conectado`. Com a célula em 0 kg, aperte o azul (TARA). Ajuste a célula para 2,5 kg (clique
+   no HX711), escolha a refeição no amarelo e aperte o vermelho: `Enviado +2.50kg` e 2,50 kg em Integrações.
+4. Aperte o vermelho de novo: o total vira 5,00 kg (as pesagens se somam). `u` no Serial desfaz.
+5. Na DevKit V1 do Wokwi, o GPIO16 se chama **RX2** e o GPIO17 **TX2** (por isso o `diagram.json` liga DT → RX2 e
+   SCK → TX2). No firmware os números continuam 16 e 17.
 
-### Serial parado em `entry 0x400805dc`
+O Wokwi não tem ruído, deriva nem montagem mecânica: o que funciona nele pode precisar de calibração e cuidado com a
+montagem na balança de verdade.
 
-As linhas `rst`, `load` e `entry` são do boot do ESP32, não da aplicação. Use o sketch atualizado e copie também `libraries.txt` (HX711 0.7.5 / ArduinoJson 7.4.2) e `diagram.json`. Após iniciar deve aparecer `SICAPDA BALANCA v5 - calibracao pelo Serial`, antes da inicialização do sensor ou da conexão Wi-Fi. Se essa mensagem não aparece, confira se substituiu o sketch principal do projeto e está vendo o Serial correto a 115200 baud. Se parar em `Inicializando HX711`, confira a biblioteca selecionada. Se mostrar `HX711 sem resposta`, confira DT/GPIO16, SCK/GPIO17, VCC e GND. Tara e médias agora têm prazo de 4 segundos, com cancelamento em vez de espera indefinida. O relógio das mensagens é o tempo simulado; confira também a velocidade da simulação.
+## Testes de desenvolvimento
 
-### Ligações da ESP32 DevKit V1 no Wokwi
+Opcionais, rodam no computador (requerem g++) e compilam os trechos reais do firmware:
 
-Nesta placa, GPIO16 se chama **RX2** no circuito e GPIO17 se chama **TX2**. Portanto, o `diagram.json` usa `cell1:DT → esp:RX2` e `cell1:SCK → esp:TX2`. Os terminais `esp:D16` e `esp:D17` não existem neste componente. No firmware, mantenha os números 16 e 17. Copie o diagrama atualizado ou refaça essas duas ligações antes de iniciar a simulação.
+- `python3 tests/balanca_calibracao.py`: mediana, média móvel, degrau, calibração (inclusive negativa), LCD sem
+  negativo e sem piscar, zero automático e uma célula de 10 kg simulada com ruído, picos e deriva.
+- `python3 tests/balanca_totais.py`: soma das pesagens, fila offline, troca de dia, desfazer e sincronização com o site.
+- `python3 tests/balanca_botoes.py`: clique, ruído, botão segurado e calibração (TARA 4 s).
+- `python3 tests/balanca_circuito.py`: pinos do firmware × `diagram.json`.
+- `python3 tests/balanca_http.py`: API no servidor local (`php -S 127.0.0.1:8000 -t public app/routes/web.php` com
+  banco de teste; cria e apaga empresas temporárias).
 
-### Cliques nos botões
-
-O firmware v4 lê os três botões em uma tarefa FreeRTOS separada a cada 5 ms, com debounce de 30 ms. Assim, a média de peso e o HTTP não impedem a detecção do clique. A tarefa entrega eventos ao loop (fila de até oito cliques); cada pressionamento gera uma ação e manter segurado não repete. A execução pode aguardar a medição ou requisição atual terminar. O monitoramento usa FreeRTOS, que já faz parte do ESP32. O LCD requer a biblioteca adicional indicada abaixo.
-
-Após aparecer `Botoes ativos`, clique em TARA com o recipiente vazio e aguarde `Botao TARA detectado` / `Tara feita`. Adicione peso e clique em ENCERRAR TURNO; deve aparecer `Botao ENCERRAR TURNO detectado`, seguido do resultado do envio. Mantenha o recipiente parado até a confirmação. Se o evento não aparecer, confira `btnTara:1.l → esp:D32`, `btnFim:1.l → esp:D33` e os terminais `2.l` de ambos no GND. Os pinos GPIO32/33 usam INPUT_PULLUP.
-
-Teste opcional da lógica de cliques no computador: `python3 tests/balanca_botoes.py` (requer g++). Ele simula clique rápido, ruído, botão segurado e eventos durante uma espera do loop; não substitui validação do firmware completo no Wokwi.
-
-## LCD e seleção de refeição (v4)
-
-Para atualizar um projeto Wokwi que já funciona, substitua **os três arquivos**: sketch (`esp32_acesso.ino`), `diagram.json` e `libraries.txt`. Recoloque somente a URL e o token do seu dispositivo no sketch. Não é necessário alterar o PHP ou executar outra migração no banco para esta atualização.
-
-Bibliotecas no `libraries.txt` (nomes exatos do gerenciador):
-
-```text
-HX711 Arduino Library@0.7.5
-ArduinoJson@7.4.2
-LiquidCrystal I2C@1.1.2
-```
-
-| Componente | Ligação no circuito Wokwi |
-|---|---|
-| LCD1602 em modo I2C, endereço 0x27 | SDA → D21; SCL → D22; VCC → VIN; GND → GND.1 |
-| Botão amarelo REFEIÇÃO | 1.l → D25; 2.l → GND.1 (INPUT_PULLUP) |
-| HX711, tara e encerramento | Mantêm as ligações anteriores |
-
-Essas ligações de alimentação são do simulador. Ao montar o LCD físico, confira a tensão do módulo e os pull-ups I2C: GPIOs do ESP32 operam em 3,3 V; módulos com pull-ups em 5 V precisam de adaptação de nível.
-
-O LCD mostra `Ref: Almoco` na primeira inicialização. Cada clique amarelo avança **Almoço → Jantar → Ceia → Café → Almoço**; manter pressionado não repete. Os textos do LCD usam caracteres sem acento por compatibilidade. A segunda linha mostra peso em kg ou o estado (tara, envio, pendência ou erro). Aguarde a tela refletir sua escolha antes de encerrar. Os cliques continuam sendo capturados durante medições/rede e são processados em ordem depois da operação atual.
-
-A seleção fica salva na memória NVS, inclusive após reiniciar (uma nova sessão do Wokwi pode reiniciar a memória simulada). A troca de refeição não altera o peso nem faz uma nova tara. Ao encerrar, o código salva peso, **refeição selecionada** e data no mesmo JSON pendente de antes. Se houver pendência, o LCD prioriza a refeição desse registro e o botão amarelo não a modifica enquanto o envio não for confirmado. Uma confirmação mostra a refeição enviada; em seguida a tela volta à seleção salva.
-
-### Conferência no Wokwi
-
-1. Inicie e confira `Botoes ativos` e a refeição no LCD.
-2. Clique no amarelo quatro vezes, aguardando cada mudança, e confira a volta à refeição inicial. Segure-o: deve avançar apenas uma vez.
-3. Faça a tara, coloque 2,5 kg, escolha Jantar e encerre. Confira 2,50 kg em Jantar no site. Repita com Ceia para confirmar registros separados.
-4. Reinicie a ESP32 e confira a seleção salva. Faça a tara novamente antes de uma nova medição, como já era necessário.
-5. Após sincronizar o horário, interrompa a rede e gere uma pesagem. Confira `Envio pendente`; a troca de refeição deve ser recusada. Ao voltar a rede, a pesagem deve chegar na refeição e data originais.
-
-### Testes de desenvolvimento
-
-`python3 tests/balanca_circuito.py` valida pinos e endereços do circuito. `python3 tests/balanca_botoes.py` valida os três botões. `python3 tests/balanca_calibracao.py` (requer g++) valida a média aparada, a tara, o fator de calibração (inclusive negativo), a persistência e a faixa de zero. `ARDUINOJSON_INCLUDE=/caminho/dos/headers python3 tests/balanca_refeicao.py` compila as funções reais de seleção/persistência e usa ArduinoJson 7.4.2 real, com memória, LCD e transporte simulados, cobrindo as quatro refeições, reinício, falha de memória, bloqueio e reenvio. Esses testes opcionais não são necessários para operar a balança. A compilação completa para ESP32 e a simulação do novo LCD ainda precisam ser confirmadas no Wokwi; o registro do PlatformIO retornou HTTP 403 neste ambiente.
+Para compilar o firmware: `pio run -d iot/esp32_balanca`.

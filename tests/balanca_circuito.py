@@ -36,7 +36,7 @@ def gpio(name):
     n = pins[name]
     return 'esp:' + {16:'RX2',17:'TX2'}.get(n,'D'+str(n))
 
-for part, macro in [('btnTara','BTN_TARA'),('btnFim','BTN_FIM'),('btnRefeicao','BTN_REFEICAO')]:
+for part, macro in [('btnTara','BTN_TARA'),('btnFim','BTN_ENVIAR'),('btnRefeicao','BTN_REFEICAO')]:
     linked(part+':1.l',gpio(macro))
     linked(part+':2.l','esp:GND.1')
 linked('cell1:DT',gpio('HX_DT_PIN'))
@@ -48,6 +48,6 @@ linked('lcd:GND','esp:GND.1')
 assert parts['lcd']['attrs']['pins'] == 'i2c'
 address = int(re.search(r'LCD_ENDERECO\s*=\s*(0x[0-9a-fA-F]+)',source)[1],16)
 assert int(parts['lcd']['attrs']['i2cAddress'],16) == address
-signals = [pins[k] for k in ['HX_DT_PIN','HX_SCK_PIN','BTN_TARA','BTN_FIM','BTN_REFEICAO','LCD_SDA','LCD_SCL','LED_GREEN','LED_RED']]
+signals = [pins[k] for k in ['HX_DT_PIN','HX_SCK_PIN','BTN_TARA','BTN_ENVIAR','BTN_REFEICAO','LCD_SDA','LCD_SCL','LED_GREEN','LED_RED']]
 assert len(set(signals)) == len(signals)
 print('PASS: terminais Wokwi, GPIOs do firmware, 3 botões, HX711 e LCD I2C sem conflitos')

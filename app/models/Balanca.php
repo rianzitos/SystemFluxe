@@ -31,6 +31,17 @@ class Balanca
         return ['mensagem' => 'Total de desperdício registrado.', 'desperdicio_kg' => round($kg, 2), 'tipo' => $tipo, 'data' => $data];
     }
 
+    /** Total de hoje de cada refeição, com 0 quando não há registro (a balança soma a partir daqui). */
+    public static function totaisHoje(int $empresaId): array
+    {
+        $hoje = self::hoje($empresaId);
+        $totais = [];
+        foreach (array_keys(Producao::TIPOS) as $tipo) {
+            $totais[$tipo] = round((float) ($hoje[$tipo] ?? 0), 2);
+        }
+        return $totais;
+    }
+
     public static function hoje(int $empresaId): array
     {
         $stmt = Database::connect()->prepare('SELECT tipo, quantidade_desperdicada_kg FROM producao_refeicoes WHERE empresa_id = ? AND data = ?');
