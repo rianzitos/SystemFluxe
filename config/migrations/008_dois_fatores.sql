@@ -28,9 +28,14 @@ PREPARE passo FROM @sql; EXECUTE passo; DEALLOCATE PREPARE passo;
 
 -- Quem marcou "Sim" no cadastro antes desta versão nunca configurou nada: fica como pendente (o método escolhido
 -- continua em dois_fatores_metodo e a tela de Segurança convida a concluir), sem trancar ninguém para fora.
+-- O MySQL Workbench liga o "safe update mode", que recusa UPDATE sem coluna-chave no WHERE (Error Code: 1175):
+-- desliga só para estes dois UPDATE e volta como estava.
+SET @modo_seguro = @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
 UPDATE usuarios SET dois_fatores_habilitado = 0 WHERE dois_fatores_ativado_em IS NULL AND dois_fatores_habilitado <> 0;
 UPDATE usuarios SET dois_fatores_metodo = NULL
  WHERE dois_fatores_ativado_em IS NULL AND dois_fatores_metodo IS NOT NULL AND dois_fatores_metodo NOT IN ('app', 'email');
+SET SQL_SAFE_UPDATES = @modo_seguro;
 
 -- ─── Tabela dois_fatores_desafios ────────────────────────────────────────────
 -- Cada login que passou pela senha e espera o código (finalidade "login") e cada ativação por e-mail (finalidade
