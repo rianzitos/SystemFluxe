@@ -54,6 +54,10 @@ function montarGraficoDemanda() {
     const corRealizado = escuro ? '#F4F4F6' : '#0D0D0D';
     const fundoRealizado = escuro ? 'rgba(244, 244, 246, 0.06)' : 'rgba(13, 13, 13, 0.06)';
 
+    // Linhas horizontais de fundo: cinza clarinho no tema claro e azul clarinho no escuro,
+    // onde o branco competia com a linha "Realizado" (também branca).
+    const corGrade = escuro ? 'rgba(147, 197, 253, 0.45)' : '#EFEFF3';
+
     graficoDemanda = new Chart(canvas, {
         type: 'line',
         data: {
@@ -86,7 +90,7 @@ function montarGraficoDemanda() {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, grid: { color: '#EFEFF3' } },
+                y: { beginAtZero: true, grid: { color: corGrade } },
                 x: { grid: { display: false } },
             },
         },
