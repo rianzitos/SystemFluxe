@@ -86,7 +86,7 @@ const recursos = [
   }
   .sub b { color: var(--texto); font-weight: 500; }
 
-  /* recursos + celular */
+  /* recursos + notebook e celular */
   .meio { position: relative; margin-top: 40px; height: 410px; display: flex; align-items: center; }
   ul { list-style: none; position: relative; width: 470px; display: grid; gap: 42px; }
   li { position: relative; display: flex; align-items: center; gap: 24px; }
@@ -101,16 +101,36 @@ const recursos = [
   .txt small { font-size: 17px; color: var(--suave); }
 
   .disco {
-    position: absolute; width: 430px; height: 430px; border-radius: 50%;
-    background: var(--amarelo); right: -214px; top: 130px;
+    position: absolute; width: 440px; height: 440px; border-radius: 50%;
+    background: var(--amarelo); right: -164px; top: 16px;
   }
+  /* notebook com o painel web */
+  .notebook {
+    position: absolute; left: 398px; top: 26px; width: 406px;
+    filter: drop-shadow(0 30px 40px rgba(0,0,0,.55));
+  }
+  .tampa {
+    width: 370px; margin: 0 auto; padding: 9px 9px 12px;
+    border-radius: 16px 16px 4px 4px;
+    background: #070707; border: 1.5px solid #343434; border-bottom: none;
+  }
+  .tampa img { display: block; width: 100%; border-radius: 3px; }
+  .base {
+    position: relative; height: 13px; border-radius: 2px 2px 14px 14px;
+    background: linear-gradient(#5a5a5a, #2b2b2b 45%, #1c1c1c);
+  }
+  .base::before { /* encaixe para abrir a tampa */
+    content: ''; position: absolute; left: 50%; top: 0; width: 64px; height: 5px;
+    transform: translateX(-50%); border-radius: 0 0 6px 6px; background: #1a1a1a;
+  }
+  /* celular com o aplicativo, na frente do notebook */
   .celular {
-    position: absolute; right: -8px; top: -14px;
-    width: 268px; padding: 9px; border-radius: 42px;
-    background: #050505; border: 1.5px solid #333;
-    box-shadow: 0 40px 70px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.6);
+    position: absolute; right: -42px; top: 100px;
+    width: 160px; padding: 6px; border-radius: 27px;
+    background: #050505; border: 1.5px solid #3a3a3a;
+    box-shadow: 0 30px 50px -14px rgba(0,0,0,.85), 0 0 0 1px rgba(0,0,0,.6);
   }
-  .celular img { display: block; width: 100%; border-radius: 33px; }
+  .celular img { display: block; width: 100%; border-radius: 21px; }
 
   /* rodapé */
   .rodape {
@@ -147,6 +167,10 @@ const recursos = [
 
   <div class="meio">
     <div class="disco"></div>
+    <div class="notebook">
+      <div class="tampa"><img src="painel-web.webp" alt=""></div>
+      <div class="base"></div>
+    </div>
     <div class="celular"><img src="app-painel-escuro.webp" alt=""></div>
     <ul>${itens}
     </ul>
