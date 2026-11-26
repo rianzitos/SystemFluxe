@@ -62,6 +62,7 @@
         'Faca a TARA': ['aviso', 'zerar', 'Primeiro aperte TARA', 'Com o prato vazio.'],
         'Calibre: TARA 4s': ['aviso', 'alerta', 'Balança sem calibração', 'Segure TARA por 4 segundos para calibrar.'],
         'Sem hora: rede?': ['aviso', 'wifi-off', 'Sem data e hora', 'A balança precisa falar com o site uma vez. Confira o Wi-Fi.'],
+        'Acertando hora..': ['info', 'carregando', 'Acertando a hora com o site...', 'Aguarde um instante.', true],
         'Fila cheia: rede': ['erro', 'wifi-off', 'Fila de envios cheia', 'Conecte a balança à internet antes de pesar de novo.'],
         'Sensor sem sinal': ['erro', 'alerta', 'Sensor sem sinal', 'Confira a ligação do HX711.'],
         'Sensor: ligacao': ['erro', 'alerta', 'Sensor no limite', 'Confira os fios da célula de carga.'],
@@ -71,8 +72,26 @@
         'Erro: sem peso?': ['erro', 'alerta', 'A calibração falhou', 'Coloque o peso de calibração no meio do prato.'],
     };
 
+    // Resultado do último ping ao site ("site" no VISOR; firmware de antes não manda). É o que o Monitor
+    // Serial diria, mas ele fica fechado enquanto a página usa a porta USB.
+    function problemaSite(site) {
+        if (typeof site !== 'number' || site === 200) return null;
+        if (site === 0) return { curto: 'Falando com o site...', longo: 'A balança acabou de ligar e ainda está falando com o site. Aperte ENVIAR de novo em alguns segundos.' };
+        if (site === 1) return { curto: 'Site sem hora', longo: 'O site respondeu, mas sem a data e hora. Publique a versão atual do site.' };
+        if (site === 401) return { curto: 'Token recusado (401)', longo: 'O site não reconheceu o token da balança. Copie de novo em Configurações → Integrações e grave em TOKEN_DISPOSITIVO.' };
+        if (site === 404) return { curto: 'Endereço errado (404)', longo: 'O endereço do site está errado. Confira URL_SERVIDOR no firmware (sem barra no final).' };
+        if (site === 403 || site === 406) return { curto: 'Bloqueado (' + site + ')', longo: 'O firewall do servidor bloqueou a balança (HTTP ' + site + ').' };
+        if (site <= 0) return { curto: 'Sem acesso ao site', longo: 'A balança tem Wi-Fi, mas não alcança o site. Confira URL_SERVIDOR e se essa rede tem internet.' };
+        if (site >= 500) return { curto: 'Erro no site (' + site + ')', longo: 'O site deu erro (HTTP ' + site + '). Veja o log de erros do servidor.' };
+        return { curto: 'Site: HTTP ' + site, longo: 'O site respondeu HTTP ' + site + ' ao ping da balança.' };
+    }
+
     function interpretar(l0, l1, d) {
         const ref = d.ref;
+        if (l1 === 'Sem hora: rede?') {
+            const p = problemaSite(d.site);
+            if (p) return { tipo: 'aviso', icone: 'wifi-off', titulo: 'Sem data e hora', texto: p.longo };
+        }
         if (d.modo === 1) {
             const m = MENSAGENS[l1];
             return m && l1 !== 'Esvazie + TARA'
@@ -155,9 +174,12 @@
         // Conexão da balança com o site
         const fila = Number(d.fila) || 0;
         const textoFila = fila === 1 ? '1 envio na fila' : fila + ' envios na fila';
+        const site = d.wifi !== false && d.hora === false ? problemaSite(d.site) : null;
         rede.textContent = d.wifi === false ? (fila ? 'Sem Wi-Fi · ' + textoFila : 'Sem Wi-Fi')
+            : site ? 'Wi-Fi · ' + site.curto
             : (fila ? 'Wi-Fi · ' + textoFila : 'Wi-Fi conectado');
-        rede.dataset.tipo = d.wifi === false || fila ? 'aviso' : 'ok';
+        rede.title = site ? site.longo : '';
+        rede.dataset.tipo = d.wifi === false || fila || site ? 'aviso' : 'ok';
 
         // Mensagem
         const msg = interpretar(l0, l1, Object.assign({}, d, { ref }));

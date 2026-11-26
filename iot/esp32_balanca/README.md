@@ -203,7 +203,7 @@ a tara ficam salvas: só repita se trocar a célula, a montagem ou o HX711.
 | `Sensor sem sinal` | HX711 sem resposta | Confira DT=GPIO16, SCK=GPIO17, VCC em 3V3 e GND |
 | `Sensor: ligacao` / bruto parado em ±8388607 | Fio da célula solto ou em curto | Confira E+, E−, A+, A− e as soldas |
 | `Calibre: TARA 4s` | Nunca calibrada | [Primeira vez](#primeira-vez-configurar-e-calibrar) |
-| `Sem hora: rede?` ao enviar | A ESP32 ainda não sabe a data (precisa da internet uma vez depois de ligar) | Confira o Wi-Fi; o relógio vem do ping do site ou da internet (NTP) |
+| `Sem hora: rede?` ao enviar | A ESP32 ainda não sabe a data: ela perde a hora toda vez que reinicia e só recupera com um ping que dê certo (ou pela internet, NTP) | Sem hora, a balança tenta o site a cada 10 s e de novo ao apertar ENVIAR (`Acertando hora..`). Se continuar, o ping está falhando: o visor web mostra o motivo em "Conexão da balança" (token recusado, endereço errado, sem acesso ao site); no Monitor Serial aparece como `Ping: HTTP ...` |
 | `!` na linha de cima e LED vermelho | Totais esperando envio | Confira Wi-Fi, `URL_SERVIDOR` e o token; o Serial explica o código HTTP (401 = token) |
 | `Acima capacidade` / `SOBRECARGA!` | Mais de 10 kg | Divida em mais pesagens (elas se somam) |
 | LCD apagado ou só quadrados | Endereço I2C ou contraste | O Serial avisa se não achou o LCD em 0x27 (tente 0x3F em `LCD_ENDERECO`); gire o potenciômetro azul atrás do LCD |
