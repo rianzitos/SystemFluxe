@@ -1327,6 +1327,7 @@ void setup() {
   delay(200);
   Serial.println();
   Serial.println("SICAPDA BALANCA v6 - celula de carga de 10 kg + HX711");
+  Serial.printf("SICAPDA BALANCA - visor web: %s\n", VISOR_WEB ? "ligado (/visor/balanca/)" : "desligado");
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BTN_TARA, INPUT_PULLUP);

@@ -20,7 +20,7 @@ ser preenchida pelas passagens reais dos cartões, **sem mudar nenhuma tela**.
 
 | Peça | Onde | Observação |
 |---|---|---|
-| Firmware da ESP32 | `iot/esp32_catraca/esp32_catraca.ino` | Roda **na ESP32**, não no servidor. Fica no repositório só para versionar. Não precisa subir para a hospedagem. |
+| Firmware da ESP32 | `iot/esp32_catraca/esp32_catraca.ino` (+ `platformio.ini` para o PlatformIO) | Roda **na ESP32**, não no servidor. Fica no repositório só para versionar. Não precisa subir para a hospedagem. |
 | Endpoints que a ESP32 chama | `app/controllers/IotController.php`, rota em `app/routes/web.php` | Roda **no servidor**, junto com o resto do PHP. |
 | Cadastro dos dispositivos e dos tokens | Tela **Configurações → Integrações** (`ConfiguracaoController`, `app/models/Dispositivo.php`, tabela `dispositivos_iot`) | Só o administrador da empresa cria dispositivos e gera tokens. |
 | Leitura, decisão e log | `app/models/Catraca.php` (a regra), `app/models/Acesso.php`, tabelas `credenciais_acesso` e `logs_acesso` | Cartão → pessoa → entrada ou saída → log. O "Simular leitura" usa a mesma regra. |
@@ -234,7 +234,13 @@ VISOR {"l0":"Almoco Tot  0.45","l1":"Enviado +0.45kg","ref":"almoco","peso":0.45
 ```
 
 - É preciso **gravar o firmware novo** (as duas pastas têm `VISOR_WEB = true`). Com um firmware antigo a página
-  avisa "ESP32 sem dados".
+  avisa "firmware sem o visor web" e mostra a última linha que chegou. Para conferir, no boot o Monitor Serial
+  mostra `SICAPDA CATRACA - visor web: ligado` (ou `SICAPDA BALANCA - visor web: ligado`).
+- **Gravar pelo PlatformIO (extensão do VS Code):** cada pasta tem o seu `platformio.ini` com as bibliotecas.
+  Abra a pasta do aparelho (`iot/esp32_catraca` ou `iot/esp32_balanca`) no VS Code (*File → Open Folder*), cole o
+  token e o Wi-Fi no `.ino`, ligue a ESP32 no USB, feche a página do visor e clique em **Upload** (→) na barra de
+  baixo. A primeira compilação baixa a plataforma ESP32 e as bibliotecas sozinha. No terminal:
+  `pio run -d iot/esp32_catraca -t upload`. Depois, abra o visor e conecte.
 - O LCD continua funcionando igual. Com ele ligado, os dois mostram a mesma coisa; `VISOR_WEB = false` desliga as
   linhas `VISOR` se elas atrapalharem a leitura do Monitor Serial.
 - O Wokwi no navegador não tem porta USB para a página: use a demonstração para mostrar a tela.

@@ -213,6 +213,7 @@
         this.ultimoDado = 0;
         this.bytes = 0;
         this.modoGravacao = false;
+        this.ultimaLinha = '';
         const aberturaEm = Date.now();
         this.mudar('aguardando');   // a própria tela já diz "ESP32 conectada"
         clearInterval(this.vigia);
@@ -240,7 +241,9 @@
             return 'A ESP32 não mandou nada pelo USB. Aperte o botão EN (RST) da placa; se continuar, '
                 + 'confira se escolheu a porta certa e se o Monitor Serial está fechado.';
         }
-        return 'A ESP32 está mandando o log, mas sem as linhas do visor. Grave o firmware novo (VISOR_WEB = true).';
+        const ultima = this.ultimaLinha ? ' Última linha recebida: "' + this.ultimaLinha.slice(0, 90) + '"' : '';
+        return 'A ESP32 está rodando um firmware sem o visor web. Grave o firmware novo '
+            + '(no boot o Serial mostra "visor web: ligado").' + ultima;
     };
 
     ConexaoUsb.prototype.ler = async function () {
@@ -275,6 +278,8 @@
     };
 
     ConexaoUsb.prototype.linha = function (texto) {
+        const limpa = texto.replace(/[^\x20-\x7E -ÿ]/g, '').trim();
+        if (limpa) this.ultimaLinha = limpa;   // para dizer o que está chegando quando não vem VISOR
         const inicio = texto.indexOf('VISOR {');
         if (inicio < 0) return;   // as outras linhas do Serial são o log de sempre
         let dado;
