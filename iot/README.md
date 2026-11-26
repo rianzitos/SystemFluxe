@@ -220,7 +220,9 @@ Cada página tem dois modos:
    Serial (só um programa usa a porta por vez), clique em **Conectar ESP32 (USB)** e escolha a porta. A partir
    daí a página mostra o que o aparelho de verdade está fazendo: passe um cartão ou aperte os botões da balança.
    O chip do topo fica verde (**ESP32 ao vivo**). Na próxima vez a página conecta sozinha, e se o cabo sair ela
-   volta sozinha quando ele for religado. Ao conectar, a ESP32 pode reiniciar: é normal.
+   volta sozinha quando ele for religado. Ao conectar, a página reinicia a ESP32 (como o Arduino IDE faz),
+   para ela ligar rodando o programa: a catraca volta em poucos segundos e a balança acerta a hora de novo com
+   o site. Se a página disser que a placa está no modo de gravação ou não mandou nada, aperte o botão EN (RST).
 
 Como funciona: os dois firmwares escrevem no Serial (115200), junto com o log de sempre, uma linha
 `VISOR {...}` a cada mudança de tela, e a página (Web Serial) lê essas linhas:
