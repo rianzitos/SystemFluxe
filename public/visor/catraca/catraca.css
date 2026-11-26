@@ -1,0 +1,192 @@
+/* =========================================================
+   VISOR DA CATRACA — nome, ENTRADA/SAÍDA e horário
+   ========================================================= */
+
+.catraca {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 2.2vh, 24px);
+    padding: clamp(32px, 6vh, 64px) var(--gutter);
+    text-align: center;
+}
+
+.catraca-icone {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: clamp(104px, min(18vw, 24vh), 180px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--cor-estado) 14%, transparent);
+    color: var(--cor-estado);
+    font-size: clamp(48px, min(8vw, 11vh), 84px);
+}
+
+/* Na espera, um anel "chama" o cartão como num leitor de verdade */
+.estado-espera .catraca-icone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--cor-estado);
+    animation: chamar 2.4s ease-out infinite;
+}
+
+@keyframes chamar {
+    from {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+
+    to {
+        transform: scale(1.45);
+        opacity: 0;
+    }
+}
+
+.catraca-titulo {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: clamp(2rem, min(5.5vw, 8vh), 4.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+}
+
+.catraca-nome {
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: clamp(3.5rem, min(13vw, 21vh), 10.5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+.catraca-nome.nome-longo {
+    font-size: clamp(2.6rem, min(9vw, 15vh), 7rem);
+}
+
+.catraca-texto {
+    margin: 0;
+    color: var(--texto-suave);
+    font-size: clamp(1rem, min(2vw, 3vh), 1.5rem);
+    max-width: 40ch;
+    text-wrap: balance;
+}
+
+.catraca-hora {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: clamp(1.1rem, min(2.4vw, 3.6vh), 1.9rem);
+    font-weight: 600;
+}
+
+.catraca-hora time {
+    font-family: var(--fonte-titulo);
+    font-variant-numeric: tabular-nums;
+    color: var(--cor-estado);
+}
+
+.catraca-hora .icone {
+    color: var(--texto-suave);
+}
+
+/* ===================== ÚLTIMAS PASSAGENS ===================== */
+
+.historico {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px var(--gutter);
+    border-top: 1px solid var(--borda);
+    min-width: 0;
+}
+
+.historico-titulo {
+    margin: 0;
+    flex-shrink: 0;
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.historico-lista {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow: hidden;
+    min-width: 0;
+    flex: 1;
+}
+
+.historico-vazio {
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+}
+
+.passagem {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border-radius: var(--raio-sm);
+    background: var(--grafite-2);
+    border: 1px solid var(--borda);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.passagem .icone {
+    font-size: 1.05rem;
+}
+
+.passagem-entrada .icone {
+    color: var(--verde);
+}
+
+.passagem-saida .icone {
+    color: var(--amarelo);
+}
+
+.passagem-negado .icone {
+    color: var(--vermelho);
+}
+
+.passagem span {
+    color: var(--texto-suave);
+}
+
+.passagem time {
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-suave);
+}
+
+@media (max-width: 720px) {
+    .historico {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .historico-lista {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .passagem:nth-child(n + 4) {
+        display: none;
+    }
+}

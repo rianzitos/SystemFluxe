@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#171717">
+    <meta name="description" content="Visor web da catraca RFID do SICAPDA: nome de quem passou o cartão, entrada ou saída e o horário.">
+    <title>Visor da Catraca · SICAPDA</title>
+    <link rel="icon" href="../../img/logo_fluxe.png" type="image/png">
+    <link rel="stylesheet" href="../visor.css">
+    <link rel="stylesheet" href="catraca.css">
+</head>
+
+<body>
+    <header class="topo">
+        <img class="topo-logo" src="../sicapda.png" alt="SICAPDA by FLUXE" width="560" height="181">
+        <div class="topo-aparelho">
+            <strong>Catraca RFID</strong>
+            <span>Controle de acesso</span>
+        </div>
+        <div class="topo-direita">
+            <span class="conexao" id="conexao" data-estado="demo" role="status">Demonstração</span>
+            <time class="relogio" id="relogio">--:--:--</time>
+        </div>
+    </header>
+
+    <main class="tela">
+        <section class="visor estado-espera" id="visor" aria-label="Visor da catraca">
+            <div class="catraca" id="conteudo" aria-live="polite">
+                <div class="catraca-icone"><svg class="icone"><use href="#i-cartao"></use></svg></div>
+                <h1 class="catraca-titulo">Aproxime o cartão</h1>
+                <p class="catraca-texto">Encoste o cartão ou a tag no leitor</p>
+            </div>
+
+            <div class="historico">
+                <h2 class="historico-titulo">Últimas passagens</h2>
+                <ol class="historico-lista" id="historico">
+                    <li class="historico-vazio">Nenhuma passagem ainda.</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <footer class="controles">
+        <div class="controles-grupo" id="grupoDemo">
+            <span class="controles-rotulo">Demonstração</span>
+            <button type="button" class="botao botao-principal" id="btnCartao">
+                <svg class="icone"><use href="#i-cartao"></use></svg>
+                Passar cartão <span class="tecla" aria-hidden="true">Espaço</span>
+            </button>
+            <button type="button" class="botao" id="btnDesconhecido">
+                Cartão não cadastrado <span class="tecla" aria-hidden="true">N</span>
+            </button>
+        </div>
+
+        <div class="controles-grupo controles-fim">
+            <p class="nota-usb" id="notaUsb" hidden></p>
+            <button type="button" class="botao" id="btnUsb">Conectar ESP32 (USB)</button>
+            <button type="button" class="botao botao-icone" id="btnTelaCheia" aria-label="Tela cheia" title="Tela cheia (F)">
+                <svg class="icone"><use href="#i-tela-cheia"></use></svg>
+            </button>
+        </div>
+    </footer>
+
+    <script src="../visor.js"></script>
+    <script src="catraca.js"></script>
+</body>
+
+</html>

@@ -193,6 +193,51 @@ Detalhes que valem saber:
   ESP32 são de 3,3 V. Se for um problema na sua montagem, alimente o módulo pelo 3,3 V ou use um conversor
   de nível I2C. No Wokwi isso não existe.
 
+## Visor no navegador (enquanto o LCD não chega)
+
+Duas páginas fazem o papel do visor, uma para cada aparelho, com o visual do SICAPDA. Elas ficam em
+`public/visor/` e são só HTML, CSS e JS (sem banco, sem login):
+
+| Página | Mostra |
+|---|---|
+| `/visor/catraca/` | primeiro nome de quem passou o cartão, ENTRADA ou SAÍDA, o horário, os negados (não cadastrado, desativado, sem Wi-Fi) e as últimas passagens |
+| `/visor/balanca/` | peso em tempo real (com "estável"), a refeição do botão amarelo, o total de hoje dela, "Enviado ao painel do SICAPDA" depois do ENVIAR, a fila sem internet e os passos da calibração |
+
+Como abrir:
+
+- **No computador, com o projeto:** `php -S localhost:8000 -t public app/routes/web.php` e abra
+  `http://localhost:8000/visor/catraca/` ou `http://localhost:8000/visor/balanca/` (no XAMPP:
+  `http://localhost/SystemFluxe/visor/catraca/`).
+- **No site publicado:** `https://fluxeteam.com.br/visor/catraca/` e `.../visor/balanca/`.
+
+Cada página tem dois modos:
+
+1. **Demonstração** (padrão, qualquer navegador, até no celular): os botões do rodapé simulam o aparelho, com
+   as mesmas mensagens e tempos do firmware. Catraca: **Passar cartão** (Espaço) e **Cartão não cadastrado** (N).
+   Balança: o controle **Peso no prato** e os botões **Refeição** (R), **Tara** (T) e **Enviar** (E), nas cores dos
+   botões de verdade. F liga a tela cheia.
+2. **ESP32 no USB** (Chrome ou Edge no computador): ligue a ESP32 no computador pelo cabo USB, feche o Monitor
+   Serial (só um programa usa a porta por vez), clique em **Conectar ESP32 (USB)** e escolha a porta. A partir
+   daí a página mostra o que o aparelho de verdade está fazendo: passe um cartão ou aperte os botões da balança.
+   O chip do topo fica verde (**ESP32 ao vivo**). Na próxima vez a página conecta sozinha, e se o cabo sair ela
+   volta sozinha quando ele for religado. Ao conectar, a ESP32 pode reiniciar: é normal.
+
+Como funciona: os dois firmwares escrevem no Serial (115200), junto com o log de sempre, uma linha
+`VISOR {...}` a cada mudança de tela, e a página (Web Serial) lê essas linhas:
+
+```
+VISOR {"tela":"liberado","nome":"Maria","direcao":"entrada"}          ← catraca
+VISOR {"l0":"Almoco Tot  0.45","l1":"Enviado +0.45kg","ref":"almoco","peso":0.455,
+       "parado":true,"total":0.45,"fila":0,"wifi":true,"modo":0}       ← balança
+```
+
+- É preciso **gravar o firmware novo** (as duas pastas têm `VISOR_WEB = true`). Com um firmware antigo a página
+  avisa "ESP32 sem dados".
+- O LCD continua funcionando igual. Com ele ligado, os dois mostram a mesma coisa; `VISOR_WEB = false` desliga as
+  linhas `VISOR` se elas atrapalharem a leitura do Monitor Serial.
+- O Wokwi no navegador não tem porta USB para a página: use a demonstração para mostrar a tela.
+- Diferente do LCD, o navegador mostra os acentos (`João`, `SAÍDA`).
+
 ## Endpoints
 
 Todos são `POST`, sob `/api/iot`, com o cabeçalho `X-Device-Token: <token do dispositivo>`.

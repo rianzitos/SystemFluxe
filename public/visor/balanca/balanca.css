@@ -1,0 +1,314 @@
+/* =========================================================
+   VISOR DA BALANÇA — peso ao vivo, refeição e envio ao painel
+   ========================================================= */
+
+.balanca {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 2.6vh, 32px);
+    padding: clamp(20px, 4vh, 56px) var(--gutter);
+    text-align: center;
+}
+
+/* ===================== REFEIÇÕES ===================== */
+
+.refeicoes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.refeicao {
+    padding: 10px clamp(16px, 2vw, 26px);
+    border-radius: 999px;
+    border: 1px solid var(--borda);
+    color: var(--texto-suave);
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: clamp(0.95rem, 1.6vw, 1.3rem);
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.refeicao[aria-current="true"] {
+    background: var(--amarelo);
+    border-color: var(--amarelo);
+    color: #171717;
+}
+
+.refeicao.trocou {
+    animation: trocou 0.4s cubic-bezier(.22, .8, .24, 1);
+}
+
+@keyframes trocou {
+    40% {
+        transform: scale(1.12);
+    }
+}
+
+/* ===================== PESO ===================== */
+
+.peso-bloco {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.peso {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(8px, 1.2vw, 18px);
+    margin: 0;
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.peso-valor {
+    font-size: clamp(4.5rem, min(17vw, 25vh), 13rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+}
+
+.peso-unidade {
+    font-size: clamp(1.6rem, min(4.5vw, 7vh), 3.6rem);
+    color: var(--texto-suave);
+    font-weight: 600;
+}
+
+.peso.sem-peso .peso-valor {
+    color: #5c5c5c;
+}
+
+.estabilidade {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--texto-suave);
+    font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+    font-weight: 600;
+}
+
+.estabilidade::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--amarelo);
+}
+
+.estabilidade[data-parado="true"]::before {
+    background: var(--verde);
+}
+
+.estabilidade[hidden] {
+    display: none;
+}
+
+/* ===================== MENSAGEM (o que a balança está fazendo) ===================== */
+
+.mensagem {
+    --cor-msg: var(--texto-suave);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: min(100%, 720px);
+    padding: 14px 22px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--cor-msg) 35%, transparent);
+    background: color-mix(in srgb, var(--cor-msg) 12%, transparent);
+    text-align: left;
+}
+
+.mensagem > .icone {
+    font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+    color: var(--cor-msg);
+}
+
+.mensagem p {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+}
+
+.mensagem strong {
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: clamp(1.1rem, 2.2vw, 1.75rem);
+    line-height: 1.2;
+}
+
+.mensagem span {
+    color: var(--texto-suave);
+    font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+}
+
+.mensagem span:empty {
+    display: none;
+}
+
+.msg-ok {
+    --cor-msg: var(--verde);
+}
+
+.msg-aviso {
+    --cor-msg: var(--laranja);
+}
+
+.msg-erro {
+    --cor-msg: var(--vermelho);
+}
+
+.msg-info {
+    --cor-msg: var(--azul);
+}
+
+.msg-neutro {
+    --cor-msg: var(--texto-suave);
+    border-color: var(--borda);
+    background: transparent;
+}
+
+/* ===================== RESUMO (rodapé da tela) ===================== */
+
+.resumo {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    border-top: 1px solid var(--borda);
+}
+
+.resumo-item {
+    padding: 14px var(--gutter);
+    min-width: 0;
+}
+
+.resumo-item + .resumo-item {
+    border-left: 1px solid var(--borda);
+}
+
+.resumo dt {
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.resumo dd {
+    margin: 4px 0 0;
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: clamp(1rem, 1.7vw, 1.35rem);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#rede[data-tipo="ok"] {
+    color: var(--verde);
+}
+
+#rede[data-tipo="aviso"] {
+    color: var(--laranja);
+}
+
+/* ===================== CONTROLES DA DEMONSTRAÇÃO ===================== */
+
+.peso-sim {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--grafite-2);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.peso-sim input {
+    width: clamp(120px, 14vw, 220px);
+    accent-color: var(--amarelo);
+    cursor: pointer;
+}
+
+.peso-sim output {
+    min-width: 72px;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto-suave);
+}
+
+/* Mesmas cores dos botões da balança de verdade */
+.botao-amarelo {
+    background: var(--amarelo);
+    border-color: var(--amarelo);
+    color: #171717;
+}
+
+.botao-amarelo:hover:not(:disabled) {
+    background: var(--amarelo-hover);
+    border-color: var(--amarelo-hover);
+}
+
+.botao-azul {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
+.botao-azul:hover:not(:disabled) {
+    background: #3b74f0;
+    border-color: #3b74f0;
+}
+
+.botao-vermelho {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+.botao-vermelho:hover:not(:disabled) {
+    background: #e54444;
+    border-color: #e54444;
+}
+
+@media (max-width: 720px) {
+    .refeicoes {
+        gap: 6px;
+    }
+
+    .refeicao {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+
+    .resumo {
+        grid-template-columns: 1fr;
+    }
+
+    .resumo-item + .resumo-item {
+        border-left: 0;
+        border-top: 1px solid var(--borda);
+    }
+
+    .peso-sim {
+        width: 100%;
+    }
+
+    .peso-sim input {
+        flex: 1;
+        width: auto;
+    }
+}
