@@ -17,19 +17,19 @@
     --linha: #262626;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 900px; height: 1200px; background: var(--fundo); }
+  html, body { width: 910px; height: 1170px; background: var(--fundo); }
   body {
     font-family: 'SG', sans-serif; color: var(--texto);
     -webkit-font-smoothing: antialiased;
   }
   .banner {
-    position: relative; width: 900px; height: 1200px; overflow: hidden;
+    position: relative; width: 910px; height: 1170px; overflow: hidden;
     background: var(--fundo);
     padding: 68px 64px 0;
   }
 
   /* traço de circuito (motivo do site da Fluxe) */
-  .circuito { position: absolute; top: 130px; right: 0; width: 360px; height: 180px; }
+  .circuito { position: absolute; top: 120px; right: 0; width: 360px; height: 180px; }
 
   .topo { display: flex; align-items: center; justify-content: space-between; }
   .topo .fluxe { width: 176px; display: block; }
@@ -40,10 +40,10 @@
   }
   .selo::before { content: ''; width: 34px; height: 3px; border-radius: 2px; background: var(--amarelo); }
 
-  .logo { display: block; width: 430px; margin: 58px 0 0 -12px; }
+  .logo { display: block; width: 430px; margin: 48px 0 0 -12px; }
 
   h1 {
-    margin-top: 40px;
+    margin-top: 34px;
     font-size: 52px; line-height: 1.06; font-weight: 700; letter-spacing: -.02em;
   }
   h1 em { font-style: normal; color: var(--amarelo); }
@@ -54,8 +54,8 @@
   .sub b { color: var(--texto); font-weight: 500; }
 
   /* recursos + celular */
-  .meio { position: relative; margin-top: 48px; }
-  ul { list-style: none; position: relative; width: 480px; display: grid; gap: 22px; }
+  .meio { position: relative; margin-top: 40px; }
+  ul { list-style: none; position: relative; width: 480px; display: grid; gap: 20px; }
   ul::before { /* trilha que liga os ícones */
     content: ''; position: absolute; left: 25px; top: 26px; bottom: 26px; width: 2px;
     background: linear-gradient(var(--amarelo), rgba(255,196,0,.15));
@@ -86,7 +86,7 @@
 
   /* rodapé */
   .rodape {
-    position: absolute; left: 64px; bottom: 56px; width: 452px;
+    position: absolute; left: 64px; bottom: 52px; width: 452px;
     padding-top: 30px; border-top: 1px solid var(--linha);
   }
   .acesso { display: flex; align-items: center; gap: 22px; }

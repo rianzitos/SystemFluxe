@@ -1,9 +1,9 @@
 {
   "name": "banner-senai",
   "private": true,
-  "description": "Gera o banner do SICAPDA (900x1200 = 90x120 cm)",
+  "description": "Gera o banner do SICAPDA (70 x 90 cm)",
   "scripts": {
-    "build": "node build.js && node render.js 4 ../banner-sicapda.png ../banner-sicapda.pdf"
+    "build": "node build.js && node render.js 5 ../banner-sicapda.png ../banner-sicapda.pdf"
   },
   "dependencies": {
     "lucide-static": "0.460.0",
