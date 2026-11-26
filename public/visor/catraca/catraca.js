@@ -7,8 +7,9 @@
    - Demonstração: os botões do rodapé simulam um cartão (mesmos tempos do firmware).
    - ESP32 no USB: o firmware (iot/esp32_catraca) escreve "VISOR {json}" no Serial a cada tela:
        {"tela":"espera"} · {"tela":"sem_wifi"} · {"tela":"conectando"} · {"tela":"lendo"}
-       {"tela":"liberado","nome":"Maria","direcao":"entrada"|"saida"}
-       {"tela":"negado","motivo":"cartao_desconhecido"|"inativo"|"sem_wifi"|"sem_resposta","mensagem":"..."}
+       {"tela":"liberado","nome":"Maria","cargo":"Operadora de Produção","direcao":"entrada"|"saida"}
+       {"tela":"negado","motivo":"cartao_desconhecido"|"inativo"|"sem_wifi"|"sem_resposta","mensagem":"...","codigo":401}
+     (codigo só em sem_resposta: o HTTP que o site devolveu; <= 0 = nem chegou ao site). O UID nunca vem.
    ========================================================= */
 
 (function () {
@@ -34,6 +35,18 @@
         sem_wifi: ['Catraca sem internet', 'Sem Wi-Fi a catraca não libera ninguém. Tente de novo em instantes.'],
         sem_resposta: ['O servidor não respondeu', 'Passe o cartão de novo.'],
     };
+
+    // O site recusou o pedido da catraca: diz o motivo pelo código HTTP (o mesmo que o Serial explica).
+    function semResposta(codigo, mensagem) {
+        if (typeof codigo !== 'number') return NEGADOS.sem_resposta;   // firmware antigo
+        if (codigo === 401) return ['Token da catraca recusado', 'O site não reconheceu o token. Copie o token da catraca em Configurações → Integrações e grave em TOKEN_DISPOSITIVO.'];
+        if (codigo === 403) return ['Token de outro aparelho', (mensagem ? mensagem + ' ' : '') + 'Use o token de uma catraca (Configurações → Integrações), não o da balança.'];
+        if (codigo === 404) return ['Endereço do site errado', 'Confira URL_SERVIDOR no firmware (sem barra no final).'];
+        if (codigo <= 0) return ['A catraca não alcançou o site', 'Ela tem Wi-Fi, mas não chegou ao servidor. Confira URL_SERVIDOR e se essa rede tem internet.'];
+        if (codigo === 200) return ['Resposta inesperada do site', 'O site respondeu algo que não é JSON. Confira se ele está atualizado.'];
+        if (codigo >= 500) return ['Erro no servidor', 'O site deu erro (HTTP ' + codigo + '). Tente de novo; se continuar, veja o log do servidor.'];
+        return ['O site recusou o pedido', (mensagem || 'HTTP ' + codigo) + ' (HTTP ' + codigo + ')'];
+    }
     const NEGADOS_CURTO = {
         cartao_desconhecido: 'Não cadastrado',
         inativo: 'Desativado',
@@ -98,15 +111,15 @@
                 telaSimples('estado-info', 'lendo', 'carregando', 'Lendo cartão...', 'Aguarde a confirmação do SICAPDA.', true);
                 break;
             case 'liberado':
-                mostrarLiberado(String(d.nome || '').trim(), d.direcao);
+                mostrarLiberado(String(d.nome || '').trim(), String(d.cargo || '').trim(), d.direcao);
                 break;
             case 'negado':
-                mostrarNegado(d.motivo, d.mensagem);
+                mostrarNegado(d.motivo, d.mensagem, d.codigo);
                 break;
         }
     }
 
-    function mostrarLiberado(nome, direcao) {
+    function mostrarLiberado(nome, cargo, direcao) {
         const hora = V.hora();
         const entrada = direcao === 'entrada';
         const saida = direcao === 'saida';
@@ -116,14 +129,16 @@
         trocar(saida ? 'estado-saida' : 'estado-ok', 'liberado:' + Date.now(), [
             etiqueta(saida ? 'saida' : 'entrada', entrada ? 'Entrada liberada' : saida ? 'Saída registrada' : 'Acesso liberado'),
             nomeEl,
+            ...(cargo ? [V.el('p', 'catraca-cargo', cargo)] : []),
             linhaHora(rotulo, hora),
         ]);
         registrar(saida ? 'saida' : 'entrada', nome || 'Liberado', rotulo, hora);
     }
 
-    function mostrarNegado(motivo, mensagem) {
+    function mostrarNegado(motivo, mensagem, codigo) {
         const hora = V.hora();
-        const textos = NEGADOS[motivo] || ['Acesso negado', mensagem || 'Procure a administração.'];
+        const textos = motivo === 'sem_resposta' ? semResposta(codigo, mensagem)
+            : NEGADOS[motivo] || ['Acesso negado', mensagem || 'Procure a administração.'];
 
         trocar('estado-erro', 'negado:' + Date.now(), [
             etiqueta('negado', 'Acesso negado'),
@@ -131,7 +146,8 @@
             V.el('p', 'catraca-texto', textos[1]),
             linhaHora('Tentativa', hora),
         ]);
-        registrar('negado', 'Negado', NEGADOS_CURTO[motivo] || 'Acesso negado', hora);
+        const curto = motivo === 'sem_resposta' && typeof codigo === 'number' ? 'Site: HTTP ' + codigo : NEGADOS_CURTO[motivo];
+        registrar('negado', 'Negado', curto || 'Acesso negado', hora);
     }
 
     // ===================== ÚLTIMAS PASSAGENS =====================
@@ -156,6 +172,10 @@
     // ===================== DEMONSTRAÇÃO =====================
     // Cada pessoa entra e depois sai (como o servidor alterna): Maria entra, João entra, Maria sai...
 
+    const CARGOS = {   // as mesmas pessoas do config/dados_exemplo.sql
+        Maria: 'Operadora de Produção', João: 'Operador de Produção', Juliana: 'Operadora de Produção',
+        Rafael: 'Operador de Produção', Camila: 'Operadora de Máquinas',
+    };
     const ROTEIRO = ['Maria', 'João', 'Maria', 'Juliana', 'João', 'Rafael', 'Juliana', 'Camila', 'Rafael', 'Camila'];
     const dentro = new Set();
     let passo = 0;
@@ -184,7 +204,7 @@
                 const direcao = dentro.has(nome) ? 'saida' : 'entrada';
                 if (direcao === 'entrada') dentro.add(nome);
                 else dentro.delete(nome);
-                mostrar({ tela: 'liberado', nome, direcao });
+                mostrar({ tela: 'liberado', nome, cargo: CARGOS[nome], direcao });
                 temporizador = setTimeout(() => {
                     marcarOcupada(false);
                     mostrar({ tela: 'espera' });

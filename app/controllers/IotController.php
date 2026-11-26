@@ -12,7 +12,7 @@
  *   POST /api/iot/desperdicio {desperdicio_kg, tipo} → a balança fechou o turno: grava o desperdício do dia
  * Resposta de /acesso (HTTP 200 sempre que o dispositivo é válido; quem decide abrir a catraca é o
  * campo "autorizado"):
- *   {sucesso, autorizado, direcao?, nome?, motivo?, mensagem, repetido?}
+ *   {sucesso, autorizado, direcao?, nome?, cargo?, motivo?, mensagem, repetido?}
  *
  * Tudo o que o painel, os relatórios e a previsão de demanda leem (logs_acesso) passa a ser
  * alimentado por aqui, sem mexer em mais nada.

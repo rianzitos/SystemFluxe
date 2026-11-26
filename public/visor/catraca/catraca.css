@@ -72,6 +72,15 @@
     font-size: clamp(2.6rem, min(9vw, 15vh), 7rem);
 }
 
+.catraca-cargo {
+    margin: -4px 0 0;
+    color: var(--texto-suave);
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: clamp(1.2rem, min(3vw, 4.5vh), 2.2rem);
+    text-wrap: balance;
+}
+
 .catraca-texto {
     margin: 0;
     color: var(--texto-suave);

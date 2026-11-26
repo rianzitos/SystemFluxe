@@ -9,7 +9,7 @@ navegador faria. O cabo USB serve só para gravar o programa nela e alimentá-la
                              ▲                            │                    │
                              └── {autorizado, entrada} ◄──┘                    ▼
                   abre a catraca (servo) ou pisca o LED vermelho     Painel · Pessoas · Relatórios
-                  e mostra no visor LCD o nome e ENTRADA/SAÍDA       · Previsão de demanda
+                  e manda ao visor web o nome, o cargo e ENTRADA/SAÍDA · Previsão de demanda
 ```
 
 Tudo o que o painel, a tela de pessoas, os relatórios e a previsão de refeições mostram sai da
@@ -54,15 +54,14 @@ Passo a passo:
 3. **Cadastre uma pessoa e o cartão dela**, sem SQL: **Pessoas → Cadastro → Adicionar pessoa**. Passe o
    cartão no leitor (ele é negado, mas o sistema guarda o UID): ele aparece sozinho na lista "cartões lidos
    nas catracas" do formulário. Clique nele para preencher o UID e salve. (O UID também aparece no Serial
-   Monitor, `UID lido: 01 02 03 04`, e pode ser digitado junto: `01020304`.)
-4. **No Wokwi:** abra o projeto do circuito, troque o código pelo de `iot/esp32_catraca/esp32_catraca.ino`,
-   confira o `libraries.txt` (`MFRC522`, `ESP32Servo`, `ArduinoJson`, `LiquidCrystal I2C`), ponha o endereço em
-   `URL_SERVIDOR` e o token em `TOKEN_DISPOSITIVO`, e rode. **Se o seu projeto do Wokwi é anterior ao visor**,
-   substitua também o `diagram.json` e o `libraries.txt` pelos desta pasta (o circuito novo traz o LCD); sem
-   isso o Serial Monitor avisa `LCD nao encontrado` e a catraca funciona só sem o visor.
+   Monitor, `Cartao lido: 01020304`, e pode ser digitado assim.)
+4. **No Wokwi:** abra o projeto do circuito, troque o código pelo de `iot/esp32_catraca/esp32_catraca.ino`
+   e o `diagram.json` e o `libraries.txt` pelos desta pasta (`MFRC522`, `ESP32Servo`, `ArduinoJson`). Ponha
+   `MODO_SIMULADOR = true` (usa a rede `Wokwi-GUEST`), o endereço em `URL_SERVIDOR` e o token em
+   `TOKEN_DISPOSITIVO`, e rode. Na ESP32 de verdade, `MODO_SIMULADOR = false` e o Wi-Fi em `WIFI_SSID`/`WIFI_SENHA`.
 5. **Passe o cartão** no leitor simulado, do mesmo jeito que já fazem. O Serial Monitor mostra a resposta
-   do servidor, o servo abre por 4 segundos, o LED verde acende e o visor mostra o nome e `ENTRADA LIBERADA`
-   ou `SAIDA LIBERADA`.
+   do servidor, o LED vermelho apaga, o verde acende e o servo abre por 4 segundos. Com a ESP32 de verdade no
+   USB, o visor web (`/visor/catraca/`) mostra o nome, o cargo e ENTRADA ou SAÍDA.
 6. **Veja no sistema:** a pessoa aparece em **Pessoas** (presentes agora), o **Painel** e os **Relatórios**
    mostram o acesso, e o dispositivo fica **Online** em Configurações → Integrações. Passando de novo
    (depois de 10 segundos), vira a **saída**.
@@ -133,7 +132,11 @@ número, o texto foi copiado errado (use a caixa amarela, não a lista). Depois,
 | `HTTP 401: o servidor NAO reconheceu o token` | Esse é o único caso de token errado: copiado errado, trocado por "Novo token", ou a catraca foi criada em **outro site/banco** (ex.: criada no site local e o firmware aponta para o de produção, ou o contrário). |
 | `HTTP -1` (ou outro valor negativo): `nao consegui falar com o servidor` | **Não é o token.** O firmware não chegou ao servidor: endereço errado, sem internet, ou o endereço não é alcançável de onde o firmware roda. |
 | `HTTP 404` | A rota não existe: `URL_SERVIDOR` com caminho errado (confira a subpasta, se houver) ou código novo ainda não publicado. |
-| `HTTP 403` ou `406` | O firewall da hospedagem (ModSecurity) bloqueou o pedido. |
+| `HTTP 403` | O token é de uma **balança**, não de uma catraca (crie uma Catraca em Integrações e use o token dela), ou o firewall bloqueou. |
+| `HTTP 406` | O firewall da hospedagem (ModSecurity) bloqueou o pedido. |
+
+O visor web mostra a mesma explicação na tela de negado ("Token da catraca recusado", "Token de outro aparelho",
+"A catraca não alcançou o site"...), então dá para achar o problema sem o Monitor Serial.
 
 **`localhost` no Wokwi:** o Wokwi aberto no navegador roda nos servidores deles, então `localhost` ali **não é o seu
 computador**: o resultado é `HTTP -1`. Para testar o sistema que roda na sua máquina, escolha um:
@@ -150,57 +153,33 @@ Endereços `http://` (sem o "s") funcionam no firmware, para um servidor na rede
 | Peça | Pino da ESP32 |
 |---|---|
 | RC522: SDA / SCK / MOSI / MISO / RST | GPIO 5 / 18 / 23 / 19 / 22 (3,3 V, nunca 5 V) |
-| Servo (a catraca) | GPIO 13 |
-| LED vermelho (fechada) | GPIO 26 |
-| LED verde (aberta) | GPIO 27 |
-| Visor LCD 16x2 com módulo I2C: SDA / SCL | GPIO 21 / **25** (VCC no 5 V, GND) |
+| Servo (a catraca) | GPIO 13 (V+ no 5 V) |
+| LED vermelho (travada; pisca 3 vezes = negado) | GPIO 27, com resistor de 220 Ω |
+| LED verde (liberada) | GPIO 26, com resistor de 220 Ω |
 
-O SCL do visor **não** está no GPIO 22 (o "padrão" da ESP32) porque o 22 já é o RST do RC522; o `Wire`
-aceita qualquer par de pinos, então o SCL ficou no 25 e a fiação que já funcionava não mudou.
+Os LEDs estão como no protoboard da equipe (o `diagram.json` do Wokwi foi ajustado igual). Se a cor acender
+trocada, troque os números de `LED_VERMELHO` e `LED_VERDE` no topo do firmware, ou os dois fios.
 
-Para mudar os pinos, edite os `#define` no topo do firmware.
+A catraca não tem mais o visor LCD: quem mostra o resultado é a página do visor web (abaixo).
 
-## Visor (LCD 16x2)
-
-O visor mostra, para quem está na fila, o resultado de cada cartão. O nome e o sentido vêm da resposta
-do servidor (`nome`, `direcao`, `motivo`), então **não há nada a mudar no PHP nem no banco**.
-
-| Situação | Linha 1 | Linha 2 |
+| Situação | LEDs e servo | Visor web |
 |---|---|---|
-| Esperando cartão | `SICAPDA` | `Passe o cartao` |
-| Cartão lido, aguardando o servidor | `Lendo cartao` | `Aguarde...` |
-| Entrada autorizada (catraca aberta) | primeiro nome, ex.: `Carlos` | `ENTRADA LIBERADA` |
-| Saída autorizada (catraca aberta) | primeiro nome, ex.: `Ana` | `SAIDA LIBERADA` |
-| Cartão não cadastrado (3 s) | `ACESSO NEGADO` | `Nao cadastrado` |
-| Cartão ou pessoa desativada (3 s) | `ACESSO NEGADO` | `Desativado` |
-| Servidor não respondeu, token recusado ou resposta inválida (3 s) | `SEM RESPOSTA` | `Tente de novo` |
-| Sem Wi-Fi (3 s, depois fica na tela de espera) | `SEM WI-FI` | `Acesso negado` → `Reconectando...` |
+| Esperando cartão | vermelho aceso, servo em 0° | "Aproxime o cartão" (ou "Sem Wi-Fi") |
+| Cartão lido, aguardando o servidor | — | "Lendo cartão..." |
+| Entrada ou saída autorizada (4 s) | vermelho apaga, verde acende, servo em 90°; depois volta | primeiro nome, cargo, ENTRADA/SAÍDA e horário |
+| Negado (3 s na tela) | vermelho pisca 3 vezes | o motivo: não cadastrado, desativado, sem Wi-Fi ou por que o site recusou |
 
-Detalhes que valem saber:
+O UID do cartão nunca vai para o visor (ele aparece só no Monitor Serial, para cadastrar cartões).
 
-- **Sem acentos:** o LCD não tem letras acentuadas, então o firmware troca `José` por `Jose` e `Conceição`
-  por `Conceicao` (por isso também aparece `SAIDA`, sem acento). Nomes com mais de 16 letras são cortados.
-- **Só o primeiro nome**, como o servidor já devolve (o visor fica à vista da fila). O aviso de negado não
-  diz de quem é o cartão.
-- **A tela de acesso liberado fica enquanto a catraca está aberta** (4 s); a de negado/erro some sozinha
-  em 3 s (`MENSAGEM_NEGADO_MS`), sem travar a leitura do próximo cartão.
-- **O visor é opcional:** se não for encontrado, o Serial Monitor avisa (`LCD nao encontrado em 0x27`) e a
-  catraca funciona normalmente, só sem mostrar nada.
-- **Módulo real com endereço diferente:** muitos módulos I2C usam `0x3F` em vez de `0x27`. Se o visor
-  acender mas ficar em branco ou o aviso acima aparecer, troque `LCD_ENDERECO` no firmware (e confira
-  SDA/SCL, VCC e GND).
-- **Módulos de 5 V na bancada:** o módulo costuma ter resistores de pull-up ligados aos 5 V, e os pinos da
-  ESP32 são de 3,3 V. Se for um problema na sua montagem, alimente o módulo pelo 3,3 V ou use um conversor
-  de nível I2C. No Wokwi isso não existe.
+## Visor no navegador
 
-## Visor no navegador (enquanto o LCD não chega)
-
-Duas páginas fazem o papel do visor, uma para cada aparelho, com o visual do SICAPDA. Elas ficam em
+Duas páginas fazem o papel do visor, uma para cada aparelho, com o visual do SICAPDA (a catraca não tem mais
+LCD; a balança ainda mostra no LCD também, se ele estiver ligado). Elas ficam em
 `public/visor/` e são só HTML, CSS e JS (sem banco, sem login):
 
 | Página | Mostra |
 |---|---|
-| `/visor/catraca/` | primeiro nome de quem passou o cartão, ENTRADA ou SAÍDA, o horário, os negados (não cadastrado, desativado, sem Wi-Fi) e as últimas passagens |
+| `/visor/catraca/` | primeiro nome e cargo de quem passou o cartão, ENTRADA ou SAÍDA, o horário, os negados (não cadastrado, desativado, sem Wi-Fi, site recusou) e as últimas passagens |
 | `/visor/balanca/` | peso em tempo real (com "estável"), a refeição do botão amarelo, o total de hoje dela, "Enviado ao painel do SICAPDA" depois do ENVIAR, a fila sem internet e os passos da calibração |
 
 Como abrir:
@@ -228,12 +207,12 @@ Como funciona: os dois firmwares escrevem no Serial (115200), junto com o log de
 `VISOR {...}` a cada mudança de tela, e a página (Web Serial) lê essas linhas:
 
 ```
-VISOR {"tela":"liberado","nome":"Maria","direcao":"entrada"}          ← catraca
+VISOR {"tela":"liberado","nome":"Maria","cargo":"Operadora de Produção","direcao":"entrada"}   ← catraca
 VISOR {"l0":"Almoco Tot  0.45","l1":"Enviado +0.45kg","ref":"almoco","peso":0.455,
        "parado":true,"total":0.45,"fila":0,"wifi":true,"modo":0}       ← balança
 ```
 
-- É preciso **gravar o firmware novo** (as duas pastas têm `VISOR_WEB = true`). Com um firmware antigo a página
+- É preciso **gravar o firmware novo** (a catraca sempre manda as linhas; a balança tem `VISOR_WEB = true`). Com um firmware antigo a página
   avisa "firmware sem o visor web" e mostra a última linha que chegou. Para conferir, no boot o Monitor Serial
   mostra `SICAPDA CATRACA - visor web: ligado` (ou `SICAPDA BALANCA - visor web: ligado`).
 - **Gravar pelo PlatformIO (extensão do VS Code):** cada pasta tem o seu `platformio.ini` com as bibliotecas.
@@ -241,8 +220,8 @@ VISOR {"l0":"Almoco Tot  0.45","l1":"Enviado +0.45kg","ref":"almoco","peso":0.45
   token e o Wi-Fi no `.ino`, ligue a ESP32 no USB, feche a página do visor e clique em **Upload** (→) na barra de
   baixo. A primeira compilação baixa a plataforma ESP32 e as bibliotecas sozinha. No terminal:
   `pio run -d iot/esp32_catraca -t upload`. Depois, abra o visor e conecte.
-- O LCD continua funcionando igual. Com ele ligado, os dois mostram a mesma coisa; `VISOR_WEB = false` desliga as
-  linhas `VISOR` se elas atrapalharem a leitura do Monitor Serial.
+- Na balança o LCD continua funcionando igual. Com ele ligado, os dois mostram a mesma coisa; `VISOR_WEB = false`
+  desliga as linhas `VISOR` se elas atrapalharem a leitura do Monitor Serial.
 - O Wokwi no navegador não tem porta USB para a página: use a demonstração para mostrar a tela.
 - Diferente do LCD, o navegador mostra os acentos (`João`, `SAÍDA`).
 
