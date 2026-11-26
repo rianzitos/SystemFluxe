@@ -1,1 +1,3 @@
 .pio/
+# arquivo temporário que o PlatformIO cria ao converter o .ino (não versionar)
+*.ino.cpp
