@@ -1,3 +1,5 @@
 .pio/
 # arquivo temporário que o PlatformIO cria ao converter o .ino (não versionar)
 *.ino.cpp
+# Wi-Fi e token de cada computador (copie do segredos.exemplo.h)
+segredos.h

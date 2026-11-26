@@ -56,9 +56,10 @@ Passo a passo:
    nas catracas" do formulário. Clique nele para preencher o UID e salve. (O UID também aparece no Serial
    Monitor, `Cartao lido: 01020304`, e pode ser digitado assim.)
 4. **No Wokwi:** abra o projeto do circuito, troque o código pelo de `iot/esp32_catraca/esp32_catraca.ino`
-   e o `diagram.json` e o `libraries.txt` pelos desta pasta (`MFRC522`, `ESP32Servo`, `ArduinoJson`). Ponha
-   `MODO_SIMULADOR = true` (usa a rede `Wokwi-GUEST`), o endereço em `URL_SERVIDOR` e o token em
-   `TOKEN_DISPOSITIVO`, e rode. Na ESP32 de verdade, `MODO_SIMULADOR = false` e o Wi-Fi em `WIFI_SSID`/`WIFI_SENHA`.
+   e o `diagram.json` e o `libraries.txt` pelos desta pasta (`MFRC522`, `ESP32Servo`, `ArduinoJson`). Crie no
+   projeto um arquivo `segredos.h` com o conteúdo do `segredos.exemplo.h` (endereço em `URL_SERVIDOR`, token em
+   `TOKEN_DISPOSITIVO`), ponha `MODO_SIMULADOR = true` no `.ino` (usa a rede `Wokwi-GUEST`) e rode. Na ESP32 de
+   verdade, `MODO_SIMULADOR = false` e o Wi-Fi em `WIFI_SSID`/`WIFI_SENHA` do `segredos.h`.
 5. **Passe o cartão** no leitor simulado, do mesmo jeito que já fazem. O Serial Monitor mostra a resposta
    do servidor, o LED vermelho apaga, o verde acende e o servo abre por 4 segundos. Com a ESP32 de verdade no
    USB, o visor web (`/visor/catraca/`) mostra o nome, o cargo e ENTRADA ou SAÍDA.
@@ -135,6 +136,8 @@ número, o texto foi copiado errado (use a caixa amarela, não a lista). Depois,
 | `HTTP 403` | O token é de uma **balança**, não de uma catraca (crie uma Catraca em Integrações e use o token dela), ou o firewall bloqueou. |
 | `HTTP 406` | O firewall da hospedagem (ModSecurity) bloqueou o pedido. |
 
+Na catraca, o token é conferido já no boot (ping): se o site recusar, ou se o `segredos.h` ainda estiver com o
+token de exemplo, a tela de espera do visor mostra o problema e o que fazer, sem precisar passar um cartão.
 O visor web mostra a mesma explicação na tela de negado ("Token da catraca recusado", "Token de outro aparelho",
 "A catraca não alcançou o site"...), então dá para achar o problema sem o Monitor Serial.
 
@@ -228,8 +231,10 @@ VISOR {"l0":"Almoco Tot  0.45","l1":"Enviado +0.45kg","ref":"almoco","peso":0.45
   avisa "firmware sem o visor web" e mostra a última linha que chegou. Para conferir, no boot o Monitor Serial
   mostra `SICAPDA CATRACA - visor web: ligado` (ou `SICAPDA BALANCA - visor web: ligado`).
 - **Gravar pelo PlatformIO (extensão do VS Code):** cada pasta tem o seu `platformio.ini` com as bibliotecas.
-  Abra a pasta do aparelho (`iot/esp32_catraca` ou `iot/esp32_balanca`) no VS Code (*File → Open Folder*), cole o
-  token e o Wi-Fi no `.ino`, ligue a ESP32 no USB, feche a página do visor e clique em **Upload** (→) na barra de
+  Abra a pasta do aparelho (`iot/esp32_catraca` ou `iot/esp32_balanca`) no VS Code (*File → Open Folder*) e
+  preencha o token e o Wi-Fi: na **catraca**, no arquivo `segredos.h` (copie o `segredos.exemplo.h` da pasta; o Git
+  ignora esse arquivo, então o token não vai para o GitHub e o `git pull` nunca mais esbarra nele); na balança, no
+  `.ino`. Ligue a ESP32 no USB, feche a página do visor e o Monitor Serial e clique em **Upload** (→) na barra de
   baixo. A primeira compilação baixa a plataforma ESP32 e as bibliotecas sozinha. No terminal:
   `pio run -d iot/esp32_catraca -t upload`. Depois, abra o visor e conecte.
 - Na balança o LCD continua funcionando igual. Com ele ligado, os dois mostram a mesma coisa; `VISOR_WEB = false`

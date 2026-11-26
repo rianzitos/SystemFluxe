@@ -252,8 +252,9 @@
             return 'A ESP32 ligou no modo de gravação e não está rodando o programa. Aperte o botão EN (RST) da placa.';
         }
         if (!this.bytes) {
-            return 'A ESP32 não mandou nada pelo USB. Aperte o botão EN (RST) da placa; se continuar, '
-                + 'confira se escolheu a porta certa e se o Monitor Serial está fechado.';
+            return 'Nada chegou pelo USB. Se o Monitor Serial (VS Code ou Arduino) estiver aberto, feche: só um '
+                + 'programa lê a ESP32 por vez. Se estiver fechado, confira se escolheu a porta da ESP32 '
+                + '(CP210x ou CH340) e aperte o botão EN da placa.';
         }
         const ultima = this.ultimaLinha ? ' Última linha recebida: "' + this.ultimaLinha.slice(0, 90) + '"' : '';
         return 'A ESP32 está rodando um firmware sem o visor web. Grave o firmware novo '

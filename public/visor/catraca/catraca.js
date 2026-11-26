@@ -9,7 +9,8 @@
        {"tela":"espera"} · {"tela":"sem_wifi"} · {"tela":"conectando"} · {"tela":"lendo"}
        {"tela":"liberado","nome":"Maria","cargo":"Operadora de Produção","direcao":"entrada"|"saida"}
        {"tela":"negado","motivo":"cartao_desconhecido"|"inativo"|"sem_wifi"|"sem_resposta","mensagem":"...","codigo":401}
-     (codigo só em sem_resposta: o HTTP que o site devolveu; <= 0 = nem chegou ao site). O UID nunca vem.
+       {"tela":"configurar","problema":"token"} · {"tela":"configurar","problema":"site","codigo":401}
+     (codigo: o HTTP que o site devolveu; <= 0 = nem chegou ao site). O UID nunca vem.
    ========================================================= */
 
 (function () {
@@ -39,7 +40,7 @@
     // O site recusou o pedido da catraca: diz o motivo pelo código HTTP (o mesmo que o Serial explica).
     function semResposta(codigo, mensagem) {
         if (typeof codigo !== 'number') return NEGADOS.sem_resposta;   // firmware antigo
-        if (codigo === 401) return ['Token da catraca recusado', 'O site não reconheceu o token. Copie o token da catraca em Configurações → Integrações e grave em TOKEN_DISPOSITIVO.'];
+        if (codigo === 401) return ['O site recusou o token da catraca', 'Esse token não existe no site de URL_SERVIDOR. Nesse mesmo site, em Configurações → Integrações, crie a catraca (ou clique em "Novo token" nela), copie o token da caixa amarela, cole em TOKEN_DISPOSITIVO no segredos.h e grave de novo.'];
         if (codigo === 403) return ['Token de outro aparelho', (mensagem ? mensagem + ' ' : '') + 'Use o token de uma catraca (Configurações → Integrações), não o da balança.'];
         if (codigo === 404) return ['Endereço do site errado', 'Confira URL_SERVIDOR no firmware (sem barra no final).'];
         if (codigo <= 0) return ['A catraca não alcançou o site', 'Ela tem Wi-Fi, mas não chegou ao servidor. Confira URL_SERVIDOR e se essa rede tem internet.'];
@@ -107,6 +108,14 @@
             case 'conectando':
                 telaSimples('estado-info', 'conectando', 'wifi', 'Conectando ao Wi-Fi...', 'A catraca está ligando.');
                 break;
+            case 'configurar': {
+                // A catraca não consegue liberar ninguém até isso ser resolvido: fica na tela de espera.
+                const t = d.problema === 'token'
+                    ? ['Falta o token da catraca', 'Cole o token da catraca em TOKEN_DISPOSITIVO, no arquivo segredos.h, e grave o firmware de novo. O token aparece em Configurações → Integrações ao criar a catraca.']
+                    : semResposta(d.codigo, '');
+                telaSimples('estado-aviso', 'configurar:' + d.problema + ':' + d.codigo, 'alerta', t[0], t[1]);
+                break;
+            }
             case 'lendo':
                 telaSimples('estado-info', 'lendo', 'carregando', 'Lendo cartão...', 'Aguarde a confirmação do SICAPDA.', true);
                 break;
