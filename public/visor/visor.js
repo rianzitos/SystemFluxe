@@ -138,6 +138,9 @@
         this.leitor = null;
         this.estado = 'demo';
         this.ultimoDado = 0;
+        this.bytes = 0;                    // bytes recebidos desde que abriu (0 = a placa está muda)
+        this.modoGravacao = false;         // a ROM da ESP32 avisou "waiting for download"
+        this.notaSemDados = '';
         this.saidaPedida = false;          // a pessoa escolheu "voltar à demonstração": não reconecta sozinho
         this.vigia = null;
     }
@@ -192,29 +195,52 @@
                 : 'Não consegui abrir a porta USB da ESP32. Tente de novo.');
             return;
         }
-        // DTR e RTS desligados, para a ESP32 rodar normalmente. A ORDEM importa: no circuito de reset
-        // automático da DevKit, RTS ligado com DTR desligado aperta o EN (reinicia a placa e ela perde a
-        // hora). Desligando o RTS primeiro, esse meio-termo não acontece e a balança segue onde estava.
+        // Reinicia a ESP32 rodando o programa, igual ao "hard reset" do esptool. Na DevKit, DTR e RTS
+        // comandam o EN (reset) e o IO0 (modo de gravação):
+        //   RTS ligado + DTR desligado → EN baixo: a placa fica em reset, com o IO0 alto
+        //   RTS desligado + DTR desligado → solta o EN: ela liga e roda o firmware
+        // NUNCA deixar DTR ligado + RTS desligado enquanto ela liga: o IO0 fica baixo e a ESP32 entra no
+        // modo de gravação ("waiting for download"), sem ler cartão nem mandar nada ao visor. Abrir a porta
+        // já pode reiniciar a placa no meio do caminho; este reset no fim garante que ela ligue certo.
+        // A balança perde a hora ao reiniciar, mas acerta de novo com o site em poucos segundos.
         try {
+            await porta.setSignals({ dataTerminalReady: false, requestToSend: true });
+            await new Promise((r) => setTimeout(r, 120));
             await porta.setSignals({ requestToSend: false });
-            await porta.setSignals({ dataTerminalReady: false });
         } catch (e) { /* nem toda placa aceita; segue */ }
 
         this.porta = porta;
         this.ultimoDado = 0;
+        this.bytes = 0;
+        this.modoGravacao = false;
         const aberturaEm = Date.now();
         this.mudar('aguardando');   // a própria tela já diz "ESP32 conectada"
         clearInterval(this.vigia);
         this.vigia = setInterval(() => {
             const agora = Date.now();
-            if (!this.ultimoDado && agora - aberturaEm > SEM_DADOS_MS && this.estado !== 'aguardando-firmware') {
-                this.mudar('aguardando-firmware',
-                    'A ESP32 está no USB, mas não mandou dados do visor. Grave o firmware novo (VISOR_WEB = true).');
+            if (!this.ultimoDado && agora - aberturaEm > SEM_DADOS_MS) {
+                const nota = this.semDados();
+                if (this.estado !== 'aguardando-firmware' || nota !== this.notaSemDados) {
+                    this.notaSemDados = nota;
+                    this.mudar('aguardando-firmware', nota);
+                }
             } else if (this.ultimoDado && agora - this.ultimoDado > SILENCIO_MS && this.estado === 'ao-vivo') {
                 this.mudar('aguardando', 'Sem dados da ESP32 há alguns segundos...');
             }
         }, 1000);
         this.ler();
+    };
+
+    // Porta aberta e nenhuma linha VISOR: diz o porquê, pelo que chegou (ou não) pelo cabo.
+    ConexaoUsb.prototype.semDados = function () {
+        if (this.modoGravacao) {
+            return 'A ESP32 ligou no modo de gravação e não está rodando o programa. Aperte o botão EN (RST) da placa.';
+        }
+        if (!this.bytes) {
+            return 'A ESP32 não mandou nada pelo USB. Aperte o botão EN (RST) da placa; se continuar, '
+                + 'confira se escolheu a porta certa e se o Monitor Serial está fechado.';
+        }
+        return 'A ESP32 está mandando o log, mas sem as linhas do visor. Grave o firmware novo (VISOR_WEB = true).';
     };
 
     ConexaoUsb.prototype.ler = async function () {
@@ -227,7 +253,9 @@
                 for (;;) {
                     const { value, done } = await leitor.read();
                     if (done) break;
+                    this.bytes += value.length;
                     resto += decodificador.decode(value, { stream: true });
+                    if (!this.modoGravacao && /waiting for download|DOWNLOAD_BOOT/.test(resto)) this.modoGravacao = true;
                     let fim;
                     while ((fim = resto.indexOf('\n')) >= 0) {
                         this.linha(resto.slice(0, fim).replace(/\r$/, ''));
