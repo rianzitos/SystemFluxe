@@ -53,7 +53,8 @@ SystemFluxe/
 │   └── routes/web.php       # Roteamento das rotas públicas e protegidas
 ├── config/                  # Configurações de app e banco de dados
 ├── public/                  # CSS, JS, imagens e o vídeo "Ver como funciona" (public/video/)
-│   └── aplicativo/          # Versão web do aplicativo (Flutter), que abre no navegador e instala como app
+│   ├── aplicativo/          # Versão web do aplicativo (Flutter), que abre no navegador e instala como app
+│   └── visor/               # Visor no navegador da catraca e da balança (no lugar do LCD; veja iot/README.md)
 ├── storage/downloads/       # Instaladores do aplicativo (Windows e Android) e manifestos, fora de public/
 ├── bin/emails.php           # Tarefa agendada dos e-mails automáticos (alerta de desperdício e resumo diário)
 ├── iot/                     # Firmware da catraca (ESP32 + RFID) e o passo a passo da integração IoT

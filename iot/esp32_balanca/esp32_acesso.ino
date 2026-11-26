@@ -51,6 +51,12 @@ const float PESO_CALIBRACAO_KG = 1.000f;  // peso conhecido da calibração pelo
 const float DIVISAO_KG         = 0.005f;  // degrau do peso no LCD: 0.005 = 5 g (0.010 se o último dígito oscilar)
 const bool  SOMAR_PESAGENS     = true;    // true: cada ENVIAR soma ao total da refeição de hoje; false: substitui
 
+// Visor no navegador: sem o LCD, a página /visor/balanca/ do SICAPDA (Chrome ou Edge, com a ESP32 no USB)
+// mostra o peso, a refeição e os envios. Ela lê as linhas "VISOR {...}" que a ESP32 escreve no Serial.
+// Com o LCD ligado, os dois funcionam juntos. false = não escreve essas linhas.
+const bool VISOR_WEB = true;
+const unsigned long VISOR_WEB_MS = 2000;  // sem mudança, repete o estado (para quem abrir a página depois)
+
 // ----- Ajustes finos (normalmente não precisa mexer) -----
 const float ESTAVEL_KG          = 0.020f; // "peso parado": varia menos que isso (pico a pico) dentro da média
 const float DEGRAU_KG           = 0.030f; // mudança maior que isso = carga nova: a média recomeça na hora
@@ -191,6 +197,10 @@ char avisoTexto[17] = "";
 unsigned long avisoDesde = 0, avisoDuracao = 0;
 long divisoesMostradas = 0;
 unsigned long negativoDesde = 0;
+bool visorPesoOk = false;    // visor web: o peso da tela vale (sensor ok, calibrada e com tara)
+bool visorParado = false;    // visor web: o peso está parado
+char visorUltimo[200] = "";  // visor web: última linha enviada
+unsigned long visorUltimoEnvio = 0;
 
 // Rede, Serial e LEDs
 bool wifiConectado = false;
@@ -608,14 +618,19 @@ bool aplicarFator(float fator) {
 }
 
 // ================================ LCD ================================
+void visorWeb();
+
+// A tela é guardada mesmo sem o LCD: é dela que o visor web lê o que mostrar.
 void escreverLinhaLCD(uint8_t linha, const char* texto) {
-  if (!displayDisponivel) return;
   char preenchido[17];
   snprintf(preenchido, sizeof(preenchido), "%-16.16s", texto);
   if (strcmp(preenchido, telaAtual[linha]) == 0) return;  // só reescreve o que mudou (sem piscar)
   strcpy(telaAtual[linha], preenchido);
-  lcd.setCursor(0, linha);
-  lcd.print(preenchido);
+  if (displayDisponivel) {
+    lcd.setCursor(0, linha);
+    lcd.print(preenchido);
+  }
+  visorWeb();  // avisos que aparecem no meio de uma espera ("Enviando...", "Tarando...") também vão
 }
 
 void mostrarTela(const char* linha0, const char* linha1) {
@@ -687,6 +702,28 @@ void linhaRefeicao(char* saida) {
   }
 }
 
+// Visor web: uma linha "VISOR {json}" no Serial com as duas linhas do LCD e os números por trás delas.
+// Sai quando algo muda e, sem mudança, a cada VISOR_WEB_MS. O texto do LCD é ASCII fixo do programa
+// (sem aspas nem barras), então entra direto no JSON.
+void visorWeb() {
+  if (!VISOR_WEB) return;
+  char peso[16] = "null";
+  if (visorPesoOk) snprintf(peso, sizeof(peso), "%.3f", divisoesMostradas * DIVISAO_KG);
+  char json[sizeof(visorUltimo)];
+  snprintf(json, sizeof(json),
+           "{\"l0\":\"%s\",\"l1\":\"%s\",\"ref\":\"%s\",\"peso\":%s,\"parado\":%s,\"total\":%.2f,\"fila\":%u,"
+           "\"wifi\":%s,\"modo\":%u}",
+           telaAtual[0], telaAtual[1], TIPOS_REFEICAO[refeicaoSelecionada], peso, visorParado ? "true" : "false",
+           totalMostrado(refeicaoSelecionada) / 1000.0, (unsigned)reg.nFila, wifiConectado ? "true" : "false",
+           (unsigned)modo);
+  unsigned long agora = millis();
+  if (strcmp(json, visorUltimo) == 0 && agora - visorUltimoEnvio < VISOR_WEB_MS) return;
+  strcpy(visorUltimo, json);
+  visorUltimoEnvio = agora;
+  Serial.print("VISOR ");
+  Serial.println(json);
+}
+
 void linhaPeso(char* saida, long divisoes) {
   int casas = DIVISAO_KG < 0.0095f ? 3 : (DIVISAO_KG < 0.095f ? 2 : 1);
   char valor[12];
@@ -706,6 +743,8 @@ bool estaParado(const Instantaneo& s) {
 void atualizarTela(const Instantaneo& s) {
   char linha0[17], linha1[17];
   unsigned long agora = millis();
+  visorParado = estaParado(s);
+  visorPesoOk = false;
   if (modo == MODO_CAL_VAZIO) {
     mostrarTela("CALIBRACAO", avisoAtivo() ? avisoTexto : "Esvazie + TARA");
     return;
@@ -718,6 +757,7 @@ void atualizarTela(const Instantaneo& s) {
   linhaRefeicao(linha0);
   float kg = pesoAtualKg(s);
   if (isfinite(kg)) divisoesMostradas = divisoesParaMostrar(kg, divisoesMostradas);
+  visorPesoOk = isfinite(kg);
   bool negativo = isfinite(kg) && kg < -AVISO_NEGATIVO_KG && estaParado(s);
   if (!negativo) negativoDesde = 0;
   else if (!negativoDesde) negativoDesde = agora;
@@ -1360,6 +1400,7 @@ void loop() {
     ultimaTela = millis();
     atualizarTela(s);
     atualizarLeds(s);
+    visorWeb();  // o que não aparece no LCD (peso parado, Wi-Fi) e a repetição a cada VISOR_WEB_MS
   }
   logSerial(s);
   delay(5);

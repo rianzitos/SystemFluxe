@@ -1,0 +1,445 @@
+/* =========================================================
+   VISOR WEB — SICAPDA by FLUXE
+   Faz o papel do visor LCD da catraca e da balança enquanto as telas não chegam.
+   Mesma paleta do site: preto #171717, grafite #232323, amarelo FLUXE #FFC400.
+   Fontes do próprio aplicativo (funcionam sem internet).
+   ========================================================= */
+
+@font-face {
+    font-family: 'Sora';
+    src: url('../aplicativo/assets/assets/fonts/Sora.ttf') format('truetype');
+    font-weight: 100 800;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('../aplicativo/assets/assets/fonts/Inter.ttf') format('truetype');
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+:root {
+    color-scheme: dark;
+    --preto: #171717;
+    --grafite: #232323;
+    --grafite-2: #2b2b2b;
+    --borda: #333232;
+    --texto: #ffffff;
+    --texto-suave: #a1a1a1;
+    --amarelo: #ffc400;
+    --amarelo-hover: #ffc933;
+    --verde: #22c55e;
+    --vermelho: #f87171;
+    --laranja: #fb923c;
+    --azul: #60a5fa;
+
+    /* cor do estado atual da tela (trocada pelas classes .estado-*) */
+    --cor-estado: var(--amarelo);
+
+    --raio: 16px;
+    --raio-sm: 10px;
+    --gutter: clamp(16px, 2.4vw, 32px);
+    --fonte-titulo: 'Sora', 'Inter', system-ui, sans-serif;
+    --fonte-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--preto);
+    color: var(--texto);
+    font-family: var(--fonte-texto);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    overflow-x: hidden;
+}
+
+::selection {
+    background: var(--amarelo);
+    color: #000;
+}
+
+button,
+input {
+    font: inherit;
+    color: inherit;
+}
+
+:focus-visible {
+    outline: 2px solid var(--amarelo);
+    outline-offset: 3px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+svg.icone {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ===================== TOPO ===================== */
+
+.topo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px var(--gutter);
+    border-bottom: 1px solid var(--borda);
+}
+
+.topo-logo {
+    height: clamp(36px, 4vw, 52px);
+    width: auto;
+    display: block;
+}
+
+.topo-aparelho {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 16px;
+    border-left: 1px solid var(--borda);
+    min-width: 0;
+}
+
+.topo-aparelho strong {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+    white-space: nowrap;
+}
+
+.topo-aparelho span {
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.topo-direita {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.relogio {
+    font-family: var(--fonte-titulo);
+    font-weight: 600;
+    font-size: clamp(1.1rem, 2vw, 1.6rem);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+/* Chip de conexão: demonstração / ESP32 ao vivo / sem sinal */
+.conexao {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--borda);
+    background: var(--grafite);
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.conexao::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--texto-suave);
+}
+
+.conexao[data-estado="ao-vivo"]::before {
+    background: var(--verde);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+    animation: pulso-ponto 2s infinite;
+}
+
+.conexao[data-estado="aguardando"]::before,
+.conexao[data-estado="conectando"]::before {
+    background: var(--amarelo);
+}
+
+.conexao[data-estado="perdida"]::before {
+    background: var(--vermelho);
+}
+
+@keyframes pulso-ponto {
+    70% {
+        box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}
+
+/* ===================== A TELA (a única seção) ===================== */
+
+.tela {
+    flex: 1;
+    display: flex;
+    padding: var(--gutter);
+}
+
+.visor {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--raio);
+    background:
+        linear-gradient(color-mix(in srgb, var(--cor-estado) 9%, transparent), transparent 55%),
+        var(--grafite);
+    border: 1px solid var(--borda);
+    overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+
+/* faixa de cor do estado no alto da tela */
+.visor::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: var(--cor-estado);
+    transition: background-color 0.3s ease;
+}
+
+.estado-espera {
+    --cor-estado: var(--amarelo);
+}
+
+.estado-ok {
+    --cor-estado: var(--verde);
+}
+
+.estado-saida {
+    --cor-estado: var(--amarelo);
+}
+
+.estado-erro {
+    --cor-estado: var(--vermelho);
+}
+
+.estado-aviso {
+    --cor-estado: var(--laranja);
+}
+
+.estado-info {
+    --cor-estado: var(--azul);
+}
+
+.estado-neutro {
+    --cor-estado: var(--texto-suave);
+}
+
+/* Etiqueta de estado (ENTRADA LIBERADA, ACESSO NEGADO...) */
+.etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cor-estado) 16%, transparent);
+    color: var(--cor-estado);
+    font-family: var(--fonte-titulo);
+    font-weight: 700;
+    font-size: clamp(0.85rem, 1.5vw, 1.2rem);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.etiqueta svg.icone {
+    font-size: 1.25em;
+}
+
+/* Animação de troca de conteúdo */
+.entra {
+    animation: entra 0.35s cubic-bezier(.22, .8, .24, 1);
+}
+
+@keyframes entra {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.girando {
+    animation: girar 0.9s linear infinite;
+}
+
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===================== CONTROLES (rodapé) ===================== */
+
+.controles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    padding: 12px var(--gutter) 16px;
+    border-top: 1px solid var(--borda);
+}
+
+.controles-grupo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.controles-grupo[hidden] {
+    display: none;
+}
+
+.controles-rotulo {
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.controles-fim {
+    margin-left: auto;
+}
+
+.botao {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: var(--raio-sm);
+    border: 1px solid var(--borda);
+    background: var(--grafite-2);
+    font-weight: 600;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.botao:hover:not(:disabled) {
+    border-color: #4a4a4a;
+    background: #323232;
+}
+
+.botao:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.botao:disabled,
+.botao[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.botao-principal {
+    background: var(--amarelo);
+    border-color: var(--amarelo);
+    color: #171717;
+}
+
+.botao-principal:hover:not(:disabled) {
+    background: var(--amarelo-hover);
+    border-color: var(--amarelo-hover);
+}
+
+.botao-icone {
+    width: 44px;
+    padding: 0;
+    font-size: 1.1rem;
+}
+
+.tecla {
+    display: inline-block;
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 5px;
+    border: 1px solid currentColor;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.nota-usb {
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    max-width: 46ch;
+}
+
+/* ===================== CELULAR ===================== */
+
+@media (max-width: 720px) {
+    .topo {
+        flex-wrap: wrap;
+        gap: 10px 12px;
+    }
+
+    .topo-aparelho {
+        padding-left: 12px;
+    }
+
+    .topo-aparelho span {
+        display: none;
+    }
+
+    .topo-direita {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .controles-fim {
+        margin-left: 0;
+    }
+
+    .tecla {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

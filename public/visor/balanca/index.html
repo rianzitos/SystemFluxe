@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#171717">
+    <meta name="description" content="Visor web da balança de desperdício do SICAPDA: peso em tempo real, refeição selecionada e confirmação de envio ao painel.">
+    <title>Visor da Balança · SICAPDA</title>
+    <link rel="icon" href="../../img/logo_fluxe.png" type="image/png">
+    <link rel="stylesheet" href="../visor.css">
+    <link rel="stylesheet" href="balanca.css">
+</head>
+
+<body>
+    <header class="topo">
+        <img class="topo-logo" src="../sicapda.png" alt="SICAPDA by FLUXE" width="560" height="181">
+        <div class="topo-aparelho">
+            <strong>Balança de desperdício</strong>
+            <span>Pesagem das sobras</span>
+        </div>
+        <div class="topo-direita">
+            <span class="conexao" id="conexao" data-estado="demo" role="status">Demonstração</span>
+            <time class="relogio" id="relogio">--:--:--</time>
+        </div>
+    </header>
+
+    <main class="tela">
+        <section class="visor estado-espera" id="visor" aria-label="Visor da balança">
+            <div class="balanca">
+                <ul class="refeicoes" id="refeicoes" aria-label="Refeição selecionada">
+                    <li class="refeicao" data-ref="cafe">Café</li>
+                    <li class="refeicao" data-ref="almoco" aria-current="true">Almoço</li>
+                    <li class="refeicao" data-ref="jantar">Jantar</li>
+                    <li class="refeicao" data-ref="ceia">Ceia</li>
+                </ul>
+
+                <div class="peso-bloco">
+                    <h1 class="sr-only">Peso no prato</h1>
+                    <p class="peso" id="peso">
+                        <span class="peso-valor" id="pesoValor">0,000</span>
+                        <span class="peso-unidade">kg</span>
+                    </p>
+                    <p class="estabilidade" id="estabilidade" data-parado="true">Peso estável</p>
+                </div>
+
+                <div class="mensagem msg-neutro" id="mensagem" role="status" aria-live="polite">
+                    <svg class="icone"><use href="#i-info"></use></svg>
+                    <p><strong>Coloque o prato e aperte ENVIAR</strong>
+                        <span>O peso entra no total de hoje da refeição escolhida.</span></p>
+                </div>
+            </div>
+
+            <dl class="resumo">
+                <div class="resumo-item">
+                    <dt id="totalRotulo">Total do almoço hoje</dt>
+                    <dd id="total">0,00 kg</dd>
+                </div>
+                <div class="resumo-item">
+                    <dt>Último envio ao painel</dt>
+                    <dd id="ultimoEnvio">Nenhum ainda</dd>
+                </div>
+                <div class="resumo-item">
+                    <dt>Conexão da balança</dt>
+                    <dd id="rede" data-tipo="ok">Wi-Fi conectado</dd>
+                </div>
+            </dl>
+        </section>
+    </main>
+
+    <footer class="controles">
+        <div class="controles-grupo" id="grupoDemo">
+            <span class="controles-rotulo">Demonstração</span>
+            <label class="peso-sim">
+                <span>Peso no prato</span>
+                <input type="range" id="pesoSim" min="0" max="10" step="0.005" value="0">
+                <output id="pesoSimValor" for="pesoSim">0,000 kg</output>
+            </label>
+            <button type="button" class="botao botao-fisico botao-amarelo" id="btnRefeicao">
+                <svg class="icone"><use href="#i-refeicao"></use></svg>
+                Refeição <span class="tecla" aria-hidden="true">R</span>
+            </button>
+            <button type="button" class="botao botao-fisico botao-azul" id="btnTara">
+                <svg class="icone"><use href="#i-zerar"></use></svg>
+                Tara <span class="tecla" aria-hidden="true">T</span>
+            </button>
+            <button type="button" class="botao botao-fisico botao-vermelho" id="btnEnviar">
+                <svg class="icone"><use href="#i-enviar"></use></svg>
+                Enviar <span class="tecla" aria-hidden="true">E</span>
+            </button>
+        </div>
+
+        <div class="controles-grupo controles-fim">
+            <p class="nota-usb" id="notaUsb" hidden></p>
+            <button type="button" class="botao" id="btnUsb">Conectar ESP32 (USB)</button>
+            <button type="button" class="botao botao-icone" id="btnTelaCheia" aria-label="Tela cheia" title="Tela cheia (F)">
+                <svg class="icone"><use href="#i-tela-cheia"></use></svg>
+            </button>
+        </div>
+    </footer>
+
+    <script src="../visor.js"></script>
+    <script src="balanca.js"></script>
+</body>
+
+</html>

@@ -29,6 +29,9 @@ ESP32 + HX711 + **uma célula de carga tipo barra de 10 kg** + LCD 16x2 I2C + 3 
    `!`, o LED vermelho acende e a balança reenvia sozinha quando a rede voltar (mesmo se for desligada).
 5. Passou de 10 kg? Esvazie no lixo, faça **TARA** e pese o resto: as pesagens se somam no total da refeição.
 
+Sem o LCD, a página `/visor/balanca/` do SICAPDA mostra a mesma coisa no navegador, com a ESP32 ligada no
+computador pelo USB (Chrome ou Edge). Veja [Visor no navegador](../README.md#visor-no-navegador-enquanto-o-lcd-não-chega).
+
 | LED | Aceso quer dizer |
 |---|---|
 | Verde | Conectado ao Wi-Fi (pisca enquanto envia) |

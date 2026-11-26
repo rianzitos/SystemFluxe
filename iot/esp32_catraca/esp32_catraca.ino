@@ -50,6 +50,12 @@ const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 #define LCD_SCL    25
 const uint8_t LCD_ENDERECO = 0x27;               // alguns módulos reais usam 0x3F
 
+// Visor no navegador: sem o LCD, a página /visor/catraca/ do SICAPDA (Chrome ou Edge, com a ESP32 no USB)
+// mostra o nome, ENTRADA/SAÍDA e o horário. Ela lê as linhas "VISOR {...}" que a ESP32 escreve no Serial.
+// Com o LCD ligado, os dois funcionam juntos. false = não escreve essas linhas.
+const bool VISOR_WEB = true;
+const unsigned long VISOR_WEB_MS = 3000;         // repete a tela de espera (para quem abrir a página depois)
+
 // ----- Ajustes -----
 const int ANGLE_CLOSED = 0;                      // catraca travada
 const int ANGLE_OPEN = 90;                       // catraca liberada
@@ -75,6 +81,7 @@ bool displayDisponivel = false;
 bool telaTemporaria = false;                     // true enquanto um aviso espera a hora de voltar ao "Passe o cartao"
 unsigned long telaTemporariaAte = 0;
 int wifiNaTela = -1;                             // último estado do Wi-Fi desenhado na tela de espera (-1 = nenhum)
+unsigned long visorUltimoEnvio = 0;
 
 void closeGate() {
   gate.write(ANGLE_CLOSED);
@@ -163,6 +170,25 @@ void mostrarTela(const String& linha1, const String& linha2) {
   escreverLinhaLCD(1, linha2);
 }
 
+// Visor web: uma linha "VISOR {json}" no Serial a cada mudança de tela. "tela" é conectando, espera,
+// sem_wifi, lendo, liberado (com nome e direcao) ou negado (com motivo e mensagem). O nome vai com acento:
+// o navegador mostra "João", não "Joao".
+void visorWebDados(const char* tela, const char* chave1, const String& valor1, const char* chave2, const String& valor2) {
+  if (!VISOR_WEB) return;
+  JsonDocument doc;
+  doc["tela"] = tela;
+  if (chave1) doc[chave1] = valor1;
+  if (chave2) doc[chave2] = valor2;
+  Serial.print("VISOR ");
+  serializeJson(doc, Serial);
+  Serial.println();
+  visorUltimoEnvio = millis();
+}
+
+void visorWeb(const char* tela) {
+  visorWebDados(tela, nullptr, "", nullptr, "");
+}
+
 // Tela parada, à espera de um cartão (ou avisando que a rede caiu).
 void telaEspera() {
   telaTemporaria = false;
@@ -170,6 +196,7 @@ void telaEspera() {
   wifiNaTela = conectado ? 1 : 0;
   if (conectado) mostrarTela("SICAPDA", "Passe o cartao");
   else mostrarTela("SEM WI-FI", "Reconectando...");
+  visorWeb(conectado ? "espera" : "sem_wifi");
 }
 
 // Mostra um aviso que se apaga sozinho (volta para a tela de espera depois de "ms").
@@ -180,13 +207,14 @@ void mostrarAviso(const String& linha1, const String& linha2, unsigned long ms) 
 }
 
 // Chamada a cada volta do loop: tira o aviso quando o tempo acaba e acompanha o Wi-Fi.
+// Roda mesmo sem o LCD, porque o visor web depende dela.
 void atualizarTela() {
-  if (!displayDisponivel) return;
   if (telaTemporaria) {
     if ((long)(millis() - telaTemporariaAte) >= 0) telaEspera();
     return;
   }
   if ((WiFi.status() == WL_CONNECTED ? 1 : 0) != wifiNaTela) telaEspera();
+  else if (VISOR_WEB && millis() - visorUltimoEnvio >= VISOR_WEB_MS) visorWeb(wifiNaTela ? "espera" : "sem_wifi");
 }
 
 // Segunda linha da tela de acesso liberado, conforme o sentido devolvido pelo servidor.
@@ -198,6 +226,9 @@ String textoLiberado(const String& direcao) {
 
 // Acesso negado ou falha: diz o motivo para a pessoa na fila saber o que fazer.
 void mostrarNegado(int resultado, const String& motivo, const String& mensagem) {
+  String motivoVisor = resultado == FALHA_SEM_WIFI ? String("sem_wifi")
+                     : resultado == FALHA_SEM_RESPOSTA ? String("sem_resposta") : motivo;
+  visorWebDados("negado", "motivo", motivoVisor, "mensagem", mensagem);
   if (resultado == FALHA_SEM_WIFI) {
     mostrarAviso("SEM WI-FI", "Acesso negado", MENSAGEM_NEGADO_MS);
   } else if (resultado == FALHA_SEM_RESPOSTA) {
@@ -231,6 +262,7 @@ void iniciarDisplay() {
 
 void connectWifi() {
   mostrarTela("Conectando", "ao Wi-Fi...");
+  visorWeb("conectando");
   Serial.print("Conectando ao Wi-Fi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_SENHA, WIFI_CANAL);
@@ -396,6 +428,7 @@ void loop() {
 
   printUid();
   mostrarTela("Lendo cartao", "Aguarde...");   // a resposta do servidor pode levar alguns segundos
+  visorWeb("lendo");
 
   String nome, direcao, motivo, mensagem;
   int resultado = consultarAcesso(uidAsText(), nome, direcao, motivo, mensagem);
@@ -403,6 +436,7 @@ void loop() {
   if (resultado == ACESSO_LIBERADO) {
     Serial.println("Acesso liberado");
     mostrarTela(nome.length() ? nome : String("Acesso liberado"), textoLiberado(direcao));   // ex.: "Carlos" / "ENTRADA LIBERADA"
+    visorWebDados("liberado", "nome", nome, "direcao", direcao);
     openGate();
     delay(OPEN_TIME_MS);   // catraca gira / pessoa passa
     closeGate();           // trava de novo
