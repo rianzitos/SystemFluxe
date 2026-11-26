@@ -387,6 +387,8 @@ int consultarAcesso(const String& uid, String& nome, String& direcao, String& mo
 
 void setup() {
   Serial.begin(115200);
+  Serial.println();
+  Serial.printf("SICAPDA CATRACA - visor web: %s\n", VISOR_WEB ? "ligado (/visor/catraca/)" : "desligado");
 
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
