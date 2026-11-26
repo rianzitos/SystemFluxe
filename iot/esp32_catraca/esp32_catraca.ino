@@ -23,17 +23,17 @@
 #include <esp_system.h>
 
 // ================================ CONFIGURAÇÃO ================================
-// Wi-Fi da catraca de verdade. No simulador (MODO_SIMULADOR = true) a rede "Wokwi-GUEST" é usada sozinha.
-const char* WIFI_SSID  = "NOME_DA_REDE";
-const char* WIFI_SENHA = "SENHA_DA_REDE";
+// Wi-Fi, endereço do site e token ficam no arquivo "segredos.h", nesta pasta e fora do Git: copie o
+// segredos.exemplo.h para segredos.h e preencha. Assim o token não vai para o GitHub e o "git pull"
+// nunca esbarra nele (nem apaga o que você preencheu).
+#if __has_include("segredos.h")
+#include "segredos.h"
+#else
+#error "Falta o arquivo segredos.h: copie o segredos.exemplo.h desta pasta para segredos.h e preencha o Wi-Fi e o token."
+#endif
+
+// true no Wokwi: usa a rede "Wokwi-GUEST" (o Wokwi roda na nuvem e não enxerga o localhost do computador).
 const bool MODO_SIMULADOR = false;
-
-// Endereço do SICAPDA, sem a barra no final. O Wokwi roda na nuvem e não enxerga o localhost do computador.
-const char* URL_SERVIDOR = "https://fluxeteam.com.br";
-
-// Token da CATRACA: Configurações → Integrações → Adicionar dispositivo → Catraca (aparece uma vez só).
-// O token da balança não serve aqui. Não suba o token de verdade para o GitHub: cole só na sua cópia.
-const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 
 // ================================ PINOS ================================
 // Leitor RC522: SDA 5, RST 22 e o SPI padrão da ESP32 (SCK 18, MISO 19, MOSI 23), alimentado em 3,3 V.
@@ -76,6 +76,17 @@ unsigned long ultimaTentativaWifi = 0;
 unsigned long ultimoVisor = 0;
 unsigned long voltarParaEsperaEm = 0;   // != 0: o visor mostra uma negação e volta à espera nessa hora
 int wifiNoVisor = -1;                   // Wi-Fi mostrado na tela de espera (1, 0 ou -1 = nenhum ainda)
+int codigoSite = 0;                     // último código HTTP do site (0 = ainda não falou com ele)
+int siteNoVisor = -1;                   // codigoSite mostrado na tela de espera
+
+// Token com cara de token: 64 letras/números hexadecimais (não o texto de exemplo, nem com espaço).
+bool tokenPreenchido() {
+  if (strlen(TOKEN_DISPOSITIVO) != 64) return false;
+  for (const char* c = TOKEN_DISPOSITIVO; *c; c++) {
+    if (!isxdigit((unsigned char)*c)) return false;
+  }
+  return true;
+}
 
 // ================================ LEDS E SERVO ================================
 void travar() {
@@ -115,12 +126,27 @@ void visorSimples(const char* tela) {
   enviarVisor(doc);
 }
 
-// Tela parada: "Aproxime o cartão" ou, sem rede, "Sem Wi-Fi".
+// Tela parada: "Aproxime o cartão". Se algo impede a catraca de liberar alguém, o visor já mostra o
+// problema aqui, sem precisar passar um cartão: sem Wi-Fi, token não preenchido ou o site recusando.
 void visorEspera() {
   bool conectado = WiFi.status() == WL_CONNECTED;
   wifiNoVisor = conectado ? 1 : 0;
+  siteNoVisor = codigoSite;
   voltarParaEsperaEm = 0;
-  visorSimples(conectado ? "espera" : "sem_wifi");
+  JsonDocument doc;
+  if (!conectado) {
+    doc["tela"] = "sem_wifi";
+  } else if (!tokenPreenchido()) {
+    doc["tela"] = "configurar";
+    doc["problema"] = "token";
+  } else if (codigoSite != 0 && codigoSite != 200) {
+    doc["tela"] = "configurar";
+    doc["problema"] = "site";
+    doc["codigo"] = codigoSite;
+  } else {
+    doc["tela"] = "espera";
+  }
+  enviarVisor(doc);
 }
 
 void visorLiberado(const Resposta& r) {
@@ -150,7 +176,7 @@ void atualizarVisor() {
     return;
   }
   int conectado = WiFi.status() == WL_CONNECTED ? 1 : 0;
-  if (conectado != wifiNoVisor || millis() - ultimoVisor >= VISOR_REPETE_MS) visorEspera();
+  if (conectado != wifiNoVisor || codigoSite != siteNoVisor || millis() - ultimoVisor >= VISOR_REPETE_MS) visorEspera();
 }
 
 // ================================ WI-FI ================================
@@ -214,7 +240,8 @@ int postJson(const char* caminho, const String& corpo, String& resposta) {
 // O que cada código quer dizer, em português (o mesmo aparece no visor).
 void explicarFalha(int codigo) {
   if (codigo == 401) {
-    Serial.println("HTTP 401: o servidor NAO reconheceu o token. Copie de novo o token da CATRACA (Configuracoes > Integracoes).");
+    Serial.printf("HTTP 401: o site %s NAO tem esse token. Crie a catraca (ou gere \"Novo token\") em Configuracoes > "
+                  "Integracoes DESSE site e cole em TOKEN_DISPOSITIVO no segredos.h.\n", URL_SERVIDOR);
   } else if (codigo == 403) {
     Serial.println("HTTP 403: o token e de uma BALANCA, nao de uma catraca (ou o firewall do servidor bloqueou).");
   } else if (codigo <= 0) {
@@ -233,6 +260,7 @@ void enviarPing() {
   if (WiFi.status() != WL_CONNECTED) return;
   String resposta;
   int codigo = postJson("ping", "{}", resposta);
+  codigoSite = codigo;
   Serial.printf("Ping: HTTP %d\n", codigo);
   explicarFalha(codigo);
 }
@@ -256,6 +284,7 @@ Resposta consultarServidor(const String& uid) {
 
   String texto;
   int codigo = postJson("acesso", corpo, texto);
+  codigoSite = codigo;
   JsonDocument dados;
   bool json = codigo > 0 && !deserializeJson(dados, texto);
   if (json) r.mensagem = dados["mensagem"] | "";
@@ -348,7 +377,10 @@ void setup() {
   int tamanhoToken = strlen(TOKEN_DISPOSITIVO);
   Serial.printf("Servidor: %s | token: %d caracteres (%.6s...%s)\n", URL_SERVIDOR, tamanhoToken, TOKEN_DISPOSITIVO,
                 TOKEN_DISPOSITIVO + (tamanhoToken > 4 ? tamanhoToken - 4 : 0));
-  if (tamanhoToken != 64) Serial.println("ATENCAO: o token tem 64 caracteres. Copie de novo da caixa amarela em Integracoes.");
+  if (!tokenPreenchido()) {
+    Serial.println("ATENCAO: TOKEN_DISPOSITIVO no segredos.h nao e um token (sao 64 letras/numeros, sem espacos).");
+    Serial.println("         Copie da caixa amarela em Configuracoes > Integracoes do site em URL_SERVIDOR.");
+  }
 
   conectarWifi();
   enviarPing();
