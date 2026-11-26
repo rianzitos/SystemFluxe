@@ -20,6 +20,7 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ESP32Servo.h>
+#include <esp_system.h>
 
 // ================================ CONFIGURAÇÃO ================================
 // Wi-Fi da catraca de verdade. No simulador (MODO_SIMULADOR = true) a rede "Wokwi-GUEST" é usada sozinha.
@@ -290,17 +291,50 @@ bool lerCartao(String& uid) {
   return true;
 }
 
+// ================================ DIAGNÓSTICO DO BOOT ================================
+// Por que a ESP32 reiniciou da última vez. BROWNOUT = faltou energia: o servo e o Wi-Fi juntos puxam
+// mais corrente do que a porta USB dá (ligue o servo numa fonte 5 V separada, com o GND junto).
+const char* motivoDoReinicio() {
+  switch (esp_reset_reason()) {
+    case ESP_RST_POWERON:  return "ligou (energia, USB ou botao EN)";
+    case ESP_RST_EXT:      return "botao EN";
+    case ESP_RST_SW:       return "reinicio pelo programa";
+    case ESP_RST_PANIC:    return "TRAVOU com erro no programa";
+    case ESP_RST_INT_WDT:
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_WDT:      return "TRAVOU (watchdog)";
+    case ESP_RST_BROWNOUT: return "QUEDA DE ENERGIA (brownout): servo + Wi-Fi puxaram corrente demais do USB";
+    default:               return "outro";
+  }
+}
+
+// Acende cada LED por um instante e diz no Serial qual pino está aceso: confere a fiação de relance.
+void testarLeds() {
+  Serial.printf("Teste dos LEDs: agora acende o VERDE (GPIO %d)...\n", LED_VERDE);
+  digitalWrite(LED_VERDE, HIGH);
+  delay(400);
+  digitalWrite(LED_VERDE, LOW);
+  Serial.printf("Teste dos LEDs: agora acende o VERMELHO (GPIO %d)...\n", LED_VERMELHO);
+  digitalWrite(LED_VERMELHO, HIGH);
+  delay(400);
+  digitalWrite(LED_VERMELHO, LOW);
+  Serial.println("Se acendeu a cor trocada, troque os numeros de LED_VERMELHO e LED_VERDE no topo do codigo.");
+}
+
 // ================================ SETUP E LOOP ================================
 void setup() {
   Serial.begin(115200);
+  delay(300);   // dá tempo do Monitor Serial pegar o começo do boot
   Serial.println();
   Serial.println("SICAPDA CATRACA - visor web: ligado (/visor/catraca/)");
+  Serial.printf("Ultimo reinicio: %s\n", motivoDoReinicio());
 
   pinMode(LED_VERMELHO, OUTPUT);
   pinMode(LED_VERDE, OUTPUT);
+  testarLeds();
+
   catraca.setPeriodHertz(50);
   catraca.attach(SERVO_PIN, 500, 2400);
-  travar();
 
   SPI.begin();
   leitor.PCD_Init();
@@ -308,6 +342,7 @@ void setup() {
   if (versao == 0x00 || versao == 0xFF) {
     Serial.println("Leitor RC522 nao respondeu: confira SDA=5, SCK=18, MOSI=23, MISO=19, RST=22, 3.3V e GND.");
   }
+  travar();   // vermelho aceso, servo em 0°
 
   // Resumo da configuração, para conferir de relance (o token aparece só pelas pontas).
   int tamanhoToken = strlen(TOKEN_DISPOSITIVO);

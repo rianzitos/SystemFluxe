@@ -413,5 +413,4 @@
     });
     desenharConexao('demo', '');
     iniciarDemo();
-    conexao.retomar();   // a ESP32 já autorizada antes conecta sozinha
 })();

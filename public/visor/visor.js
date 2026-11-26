@@ -142,7 +142,16 @@
         this.modoGravacao = false;         // a ROM da ESP32 avisou "waiting for download"
         this.notaSemDados = '';
         this.saidaPedida = false;          // a pessoa escolheu "voltar à demonstração": não reconecta sozinho
+        this.portaEscolhida = null;        // a porta que a pessoa escolheu NESTA página (só ela reconecta sozinha)
+        this.abrindo = false;
         this.vigia = null;
+    }
+
+    // Muda DTR/RTS sem deixar um erro interromper a sequência (um passo que falha não pula os seguintes).
+    async function sinais(porta, valores) {
+        try {
+            await porta.setSignals(valores);
+        } catch (e) { /* nem toda placa aceita; segue */ }
     }
 
     ConexaoUsb.prototype.suportada = function () {
@@ -164,29 +173,34 @@
             return;   // a pessoa fechou a lista sem escolher
         }
         this.saidaPedida = false;
+        this.portaEscolhida = porta;
         await this.abrir(porta, false);
     };
 
-    // Ao abrir a página (e quando o cabo volta): usa a porta que já foi autorizada antes, sem perguntar.
+    // O cabo da MESMA placa voltou: reconecta sozinho. A página nunca pega uma porta sem a pessoa clicar em
+    // "Conectar": se pegasse, o Monitor Serial e o upload do PlatformIO não conseguiriam abrir a porta.
     ConexaoUsb.prototype.retomar = async function () {
-        if (!this.suportada() || this.porta || this.saidaPedida) return;
-        let portas = [];
-        try {
-            portas = await navigator.serial.getPorts();
-        } catch (e) {
-            return;
-        }
-        if (portas.length) await this.abrir(portas[0], true);
+        if (!this.suportada() || this.porta || this.saidaPedida || !this.portaEscolhida) return;
+        await this.abrir(this.portaEscolhida, true);
     };
 
     ConexaoUsb.prototype.abrir = async function (porta, silencioso) {
-        if (this.porta) return;
+        if (this.porta || this.abrindo) return;
+        this.abrindo = true;
+        try {
+            await this.abrirPorta(porta, silencioso);
+        } finally {
+            this.abrindo = false;
+        }
+    };
+
+    ConexaoUsb.prototype.abrirPorta = async function (porta, silencioso) {
         this.mudar('conectando');
         try {
             await porta.open({ baudRate: 115200 });
         } catch (e) {
             if (silencioso) {
-                this.mudar('demo');
+                this.mudar('perdida');
                 return;
             }
             const ocupada = e && (e.name === 'NetworkError' || e.name === 'InvalidStateError');
@@ -203,11 +217,11 @@
         // modo de gravação ("waiting for download"), sem ler cartão nem mandar nada ao visor. Abrir a porta
         // já pode reiniciar a placa no meio do caminho; este reset no fim garante que ela ligue certo.
         // A balança perde a hora ao reiniciar, mas acerta de novo com o site em poucos segundos.
-        try {
-            await porta.setSignals({ dataTerminalReady: false, requestToSend: true });
-            await new Promise((r) => setTimeout(r, 120));
-            await porta.setSignals({ requestToSend: false });
-        } catch (e) { /* nem toda placa aceita; segue */ }
+        // O EN é SEMPRE solto no fim (mesmo se um passo falhar): a placa nunca fica presa em reset.
+        await sinais(porta, { dataTerminalReady: false, requestToSend: true });
+        await new Promise((r) => setTimeout(r, 120));
+        await sinais(porta, { requestToSend: false });
+        await sinais(porta, { dataTerminalReady: false, requestToSend: false });
 
         this.porta = porta;
         this.ultimoDado = 0;
@@ -298,6 +312,7 @@
         const porta = this.porta;
         this.porta = null;
         if (porta) {
+            await sinais(porta, { dataTerminalReady: false, requestToSend: false });   // deixa a placa rodando
             try {
                 await porta.close();
             } catch (e) { /* já estava fechada (cabo solto) */ }
@@ -324,7 +339,9 @@
 
     ConexaoUsb.prototype.vigiarCabo = function () {
         if (!this.suportada()) return;
-        navigator.serial.addEventListener('connect', () => this.retomar());
+        navigator.serial.addEventListener('connect', (e) => {
+            if (e.target === this.portaEscolhida) this.retomar();
+        });
     };
 
     Visor.conexaoUsb = function (opcoes) {
