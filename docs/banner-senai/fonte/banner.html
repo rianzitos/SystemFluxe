@@ -54,23 +54,18 @@
   .sub b { color: var(--texto); font-weight: 500; }
 
   /* recursos + celular */
-  .meio { position: relative; margin-top: 40px; }
-  ul { list-style: none; position: relative; width: 480px; display: grid; gap: 20px; }
-  ul::before { /* trilha que liga os ícones */
-    content: ''; position: absolute; left: 25px; top: 26px; bottom: 26px; width: 2px;
-    background: linear-gradient(var(--amarelo), rgba(255,196,0,.15));
-  }
-  li { position: relative; display: flex; align-items: center; gap: 22px; }
+  .meio { position: relative; margin-top: 40px; height: 410px; display: flex; align-items: center; }
+  ul { list-style: none; position: relative; width: 470px; display: grid; gap: 42px; }
+  li { position: relative; display: flex; align-items: center; gap: 24px; }
   .tile {
-    flex: none; width: 52px; height: 52px; border-radius: 14px;
+    flex: none; width: 60px; height: 60px; border-radius: 16px;
     background: var(--amarelo); color: var(--fundo);
     display: grid; place-items: center;
-    box-shadow: 0 0 0 6px var(--fundo);
   }
-  .tile svg { width: 27px; height: 27px; }
-  .txt { display: grid; gap: 3px; }
-  .txt strong { font-size: 21px; font-weight: 600; letter-spacing: -.005em; }
-  .txt small { font-size: 15.5px; color: var(--suave); }
+  .tile svg { width: 31px; height: 31px; }
+  .txt { display: grid; gap: 4px; }
+  .txt strong { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  .txt small { font-size: 17px; color: var(--suave); }
 
   .disco {
     position: absolute; width: 430px; height: 430px; border-radius: 50%;
@@ -123,27 +118,19 @@
     <ul>
       <li>
         <span class="tile"><svg class="lucide lucide-nfc" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M6 8.32a7.43 7.43 0 0 1 0 7.36" /> <path d="M9.46 6.21a11.76 11.76 0 0 1 0 11.58" /> <path d="M12.91 4.1a15.91 15.91 0 0 1 .01 15.8" /> <path d="M16.37 2a20.16 20.16 0 0 1 0 20" /> </svg></span>
-        <span class="txt"><strong>Catraca com cartão RFID</strong><small>Entradas e saídas registradas na hora</small></span>
+        <span class="txt"><strong>Catraca com cartão RFID</strong><small>Entradas e saídas na hora</small></span>
       </li>
       <li>
         <span class="tile"><svg class="lucide lucide-trending-up" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /> <polyline points="16 7 22 7 22 13" /> </svg></span>
-        <span class="txt"><strong>Previsão de demanda</strong><small>Refeições e quilos previstos pelo histórico</small></span>
+        <span class="txt"><strong>Previsão de demanda</strong><small>Quanto preparar, pelo histórico</small></span>
       </li>
       <li>
         <span class="tile"><svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /> <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /> <path d="M7 21h10" /> <path d="M12 3v18" /> <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" /> </svg></span>
-        <span class="txt"><strong>Balança de desperdício</strong><small>As sobras são pesadas e enviadas ao sistema</small></span>
+        <span class="txt"><strong>Balança de desperdício</strong><small>Sobras pesadas automaticamente</small></span>
       </li>
       <li>
         <span class="tile"><svg class="lucide lucide-sparkles" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /> <path d="M20 3v4" /> <path d="M22 5h-4" /> <path d="M4 17v2" /> <path d="M5 18H3" /> </svg></span>
-        <span class="txt"><strong>Assistente com IA</strong><small>Pergunte sobre os dados e receba a resposta</small></span>
-      </li>
-      <li>
-        <span class="tile"><svg class="lucide lucide-layout-dashboard" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <rect width="7" height="9" x="3" y="3" rx="1" /> <rect width="7" height="5" x="14" y="3" rx="1" /> <rect width="7" height="9" x="14" y="12" rx="1" /> <rect width="7" height="5" x="3" y="16" rx="1" /> </svg></span>
-        <span class="txt"><strong>Painel em tempo real</strong><small>Indicadores, alertas e relatórios em Excel</small></span>
-      </li>
-      <li>
-        <span class="tile"><svg class="lucide lucide-monitor-smartphone" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h8" /> <path d="M10 19v-3.96 3.15" /> <path d="M7 19h5" /> <rect width="6" height="10" x="16" y="12" rx="2" /> </svg></span>
-        <span class="txt"><strong>Web, Android e Windows</strong><small>O mesmo sistema em qualquer tela</small></span>
+        <span class="txt"><strong>Assistente com IA</strong><small>Dúvidas respondidas na conversa</small></span>
       </li>
     </ul>
   </div>

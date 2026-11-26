@@ -12,12 +12,10 @@ const icon = (name) =>
     .trim();
 
 const recursos = [
-  ['nfc', 'Catraca com cartão RFID', 'Entradas e saídas registradas na hora'],
-  ['trending-up', 'Previsão de demanda', 'Refeições e quilos previstos pelo histórico'],
-  ['scale', 'Balança de desperdício', 'As sobras são pesadas e enviadas ao sistema'],
-  ['sparkles', 'Assistente com IA', 'Pergunte sobre os dados e receba a resposta'],
-  ['layout-dashboard', 'Painel em tempo real', 'Indicadores, alertas e relatórios em Excel'],
-  ['monitor-smartphone', 'Web, Android e Windows', 'O mesmo sistema em qualquer tela'],
+  ['nfc', 'Catraca com cartão RFID', 'Entradas e saídas na hora'],
+  ['trending-up', 'Previsão de demanda', 'Quanto preparar, pelo histórico'],
+  ['scale', 'Balança de desperdício', 'Sobras pesadas automaticamente'],
+  ['sparkles', 'Assistente com IA', 'Dúvidas respondidas na conversa'],
 ];
 
 (async () => {
@@ -89,23 +87,18 @@ const recursos = [
   .sub b { color: var(--texto); font-weight: 500; }
 
   /* recursos + celular */
-  .meio { position: relative; margin-top: 40px; }
-  ul { list-style: none; position: relative; width: 480px; display: grid; gap: 20px; }
-  ul::before { /* trilha que liga os ícones */
-    content: ''; position: absolute; left: 25px; top: 26px; bottom: 26px; width: 2px;
-    background: linear-gradient(var(--amarelo), rgba(255,196,0,.15));
-  }
-  li { position: relative; display: flex; align-items: center; gap: 22px; }
+  .meio { position: relative; margin-top: 40px; height: 410px; display: flex; align-items: center; }
+  ul { list-style: none; position: relative; width: 470px; display: grid; gap: 42px; }
+  li { position: relative; display: flex; align-items: center; gap: 24px; }
   .tile {
-    flex: none; width: 52px; height: 52px; border-radius: 14px;
+    flex: none; width: 60px; height: 60px; border-radius: 16px;
     background: var(--amarelo); color: var(--fundo);
     display: grid; place-items: center;
-    box-shadow: 0 0 0 6px var(--fundo);
   }
-  .tile svg { width: 27px; height: 27px; }
-  .txt { display: grid; gap: 3px; }
-  .txt strong { font-size: 21px; font-weight: 600; letter-spacing: -.005em; }
-  .txt small { font-size: 15.5px; color: var(--suave); }
+  .tile svg { width: 31px; height: 31px; }
+  .txt { display: grid; gap: 4px; }
+  .txt strong { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+  .txt small { font-size: 17px; color: var(--suave); }
 
   .disco {
     position: absolute; width: 430px; height: 430px; border-radius: 50%;
