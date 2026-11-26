@@ -270,5 +270,4 @@
         f: V.alternarTelaCheia,
     });
     desenharConexao('demo', '');
-    conexao.retomar();   // a ESP32 já autorizada antes conecta sozinha
 })();

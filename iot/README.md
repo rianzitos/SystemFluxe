@@ -198,10 +198,22 @@ Cada página tem dois modos:
 2. **ESP32 no USB** (Chrome ou Edge no computador): ligue a ESP32 no computador pelo cabo USB, feche o Monitor
    Serial (só um programa usa a porta por vez), clique em **Conectar ESP32 (USB)** e escolha a porta. A partir
    daí a página mostra o que o aparelho de verdade está fazendo: passe um cartão ou aperte os botões da balança.
-   O chip do topo fica verde (**ESP32 ao vivo**). Na próxima vez a página conecta sozinha, e se o cabo sair ela
-   volta sozinha quando ele for religado. Ao conectar, a página reinicia a ESP32 (como o Arduino IDE faz),
-   para ela ligar rodando o programa: a catraca volta em poucos segundos e a balança acerta a hora de novo com
-   o site. Se a página disser que a placa está no modo de gravação ou não mandou nada, aperte o botão EN (RST).
+   O chip do topo fica verde (**ESP32 ao vivo**). A página só pega a porta quando alguém clica em **Conectar**
+   (com a aba aberta e conectada, o Monitor Serial e o upload não conseguem usar a porta: clique em
+   **Voltar à demonstração** ou feche a aba antes). Se o cabo sair, ela volta sozinha quando a mesma placa for
+   religada. Ao conectar, a página reinicia a ESP32 (como o Arduino IDE faz), para ela ligar rodando o
+   programa: a catraca volta em poucos segundos e a balança acerta a hora de novo com o site. Se a página disser
+   que a placa está no modo de gravação ou não mandou nada, aperte o botão EN (RST).
+
+**Nada funciona (nenhum LED, nada no Monitor Serial, nada no visor)?** A ESP32 não está rodando o programa:
+1. Feche todas as abas do visor (uma aba conectada segura a porta USB).
+2. Tire e ponha o cabo USB e aperte o botão **EN** da placa.
+3. Abra o Monitor Serial do PlatformIO e aperte **EN** de novo. O boot mostra `SICAPDA CATRACA - visor web:
+   ligado`, `Ultimo reinicio: ...` e acende o verde e depois o vermelho (teste dos LEDs).
+   - Nada aparece: grave de novo (Upload) e confira no fim do upload `Hash of data verified` e `SUCCESS`.
+   - `Ultimo reinicio: QUEDA DE ENERGIA (brownout)` ou reinícios seguidos: o servo e o Wi-Fi puxam corrente demais
+     da porta USB. Ligue o V+ do servo numa fonte de 5 V separada (com o GND junto ao da ESP32).
+   - `TRAVOU`: o monitor mostra a linha do código onde travou (`esp32_exception_decoder`); mande essa saída.
 
 Como funciona: os dois firmwares escrevem no Serial (115200), junto com o log de sempre, uma linha
 `VISOR {...}` a cada mudança de tela, e a página (Web Serial) lê essas linhas:
