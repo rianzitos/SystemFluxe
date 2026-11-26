@@ -70,6 +70,7 @@ const unsigned long ESPERA_ESTAVEL_MS     = 6000;   // espera máxima pelo peso 
 const unsigned long SEGURAR_CALIBRACAO_MS = 4000;   // segurar TARA por esse tempo abre a calibração
 const unsigned long CALIBRACAO_EXPIRA_MS  = 180000; // sem ação por 3 min, a calibração é cancelada
 const unsigned long PING_MS       = 60000;  // "estou vivo" (Online em Integrações), hora e totais do site
+const unsigned long PING_SEM_HORA_MS = 10000; // ainda sem data e hora (acabou de ligar): tenta o site mais cedo
 const unsigned long REENVIO_MS    = 15000;  // nova tentativa de envio quando há totais na fila
 const unsigned long WIFI_RETRY_MS = 15000;  // nova tentativa de conectar ao Wi-Fi
 const unsigned long LOG_PESO_MS   = 2000;   // peso ao vivo no Serial
@@ -199,12 +200,16 @@ long divisoesMostradas = 0;
 unsigned long negativoDesde = 0;
 bool visorPesoOk = false;    // visor web: o peso da tela vale (sensor ok, calibrada e com tara)
 bool visorParado = false;    // visor web: o peso está parado
-char visorUltimo[200] = "";  // visor web: última linha enviada
+char visorUltimo[240] = "";  // visor web: última linha enviada
 unsigned long visorUltimoEnvio = 0;
 
 // Rede, Serial e LEDs
 bool wifiConectado = false;
 bool pingAgendado = true;
+// Resultado do último ping (vai para o visor web, que explica o problema sem o Monitor Serial):
+// 0 = ainda não tentou, código HTTP (<= 0: nem chegou ao site) ou PING_SEM_EPOCH (200 sem hora válida).
+const int PING_SEM_EPOCH = 1;
+int codigoPing = 0;
 unsigned long ultimoPing = 0, ultimoReenvio = 0, ultimaTentativaWifi = 0;
 unsigned long ultimaTela = 0, ultimoLog = 0, ultimaTaxa = 0;
 uint32_t contadorTaxa = 0;
@@ -712,10 +717,10 @@ void visorWeb() {
   char json[sizeof(visorUltimo)];
   snprintf(json, sizeof(json),
            "{\"l0\":\"%s\",\"l1\":\"%s\",\"ref\":\"%s\",\"peso\":%s,\"parado\":%s,\"total\":%.2f,\"fila\":%u,"
-           "\"wifi\":%s,\"modo\":%u}",
+           "\"wifi\":%s,\"modo\":%u,\"hora\":%s,\"site\":%d}",
            telaAtual[0], telaAtual[1], TIPOS_REFEICAO[refeicaoSelecionada], peso, visorParado ? "true" : "false",
            totalMostrado(refeicaoSelecionada) / 1000.0, (unsigned)reg.nFila, wifiConectado ? "true" : "false",
-           (unsigned)modo);
+           (unsigned)modo, relogioOk() ? "true" : "false", codigoPing);
   unsigned long agora = millis();
   if (strcmp(json, visorUltimo) == 0 && agora - visorUltimoEnvio < VISOR_WEB_MS) return;
   strcpy(visorUltimo, json);
@@ -957,17 +962,25 @@ void enviarPing() {
   if (!wifiConectado) return;
   String resposta;
   int codigo = postJson("ping", "{}", resposta);
+  codigoPing = codigo;
   if (codigo != 200) {
     Serial.printf("Ping: HTTP %d\n", codigo);
     explicarFalha(codigo);
     return;
   }
   JsonDocument dados;
-  if (deserializeJson(dados, resposta)) return;
+  if (deserializeJson(dados, resposta)) {
+    codigoPing = PING_SEM_EPOCH;
+    Serial.printf("Ping: o site respondeu algo que nao e JSON (a hora nao foi acertada): %.80s\n", resposta.c_str());
+    return;
+  }
   long epoch = dados["epoch"] | 0L;
   if (epoch > 1700000000L) {
     timeval tv = {epoch, 0};
     settimeofday(&tv, nullptr);
+  } else if (!relogioOk()) {
+    codigoPing = PING_SEM_EPOCH;
+    Serial.println("Ping: a resposta do site veio sem \"epoch\" (data e hora). Publique a versao atual do site.");
   }
   const char* dataServidor = dados["data"] | "";
   JsonObjectConst totais = dados["desperdicio"].as<JsonObjectConst>();
@@ -1034,8 +1047,15 @@ void registrarEEnviar() {
     aviso("Aperte TARA", 2000);
     return;
   }
+  if (!relogioOk() && wifiConectado) {
+    // Acabou de ligar (ou reiniciou) e o ping ainda não acertou a hora: tenta agora, em vez de recusar.
+    escreverLinhaLCD(1, "Acertando hora..");
+    enviarPing();
+    ultimoPing = millis();
+  }
   if (!relogioOk()) {
     Serial.println("Ainda sem data e hora: a balanca precisa falar com o site (ping) ou com a internet (NTP) uma vez.");
+    if (codigoPing != 0 && codigoPing != 200) Serial.printf("Ultimo ping ao site: codigo %d (veja a explicacao acima).\n", codigoPing);
     aviso("Sem hora: rede?", 2500);
     return;
   }
@@ -1372,7 +1392,8 @@ void loop() {
   while (eventosBotoes && xQueueReceive(eventosBotoes, &evento, 0) == pdTRUE) tratarEvento(evento);
 
   unsigned long agora = millis();
-  if (wifiConectado && (pingAgendado || agora - ultimoPing >= PING_MS)) {
+  unsigned long intervaloPing = relogioOk() ? PING_MS : PING_SEM_HORA_MS;
+  if (wifiConectado && (pingAgendado || agora - ultimoPing >= intervaloPing)) {
     pingAgendado = false;
     ultimoPing = agora;
     enviarPing();

@@ -192,9 +192,12 @@
                 : 'Não consegui abrir a porta USB da ESP32. Tente de novo.');
             return;
         }
-        // DTR e RTS desligados: em placas com reset automático, ligados podem segurar a ESP32 reiniciando.
+        // DTR e RTS desligados, para a ESP32 rodar normalmente. A ORDEM importa: no circuito de reset
+        // automático da DevKit, RTS ligado com DTR desligado aperta o EN (reinicia a placa e ela perde a
+        // hora). Desligando o RTS primeiro, esse meio-termo não acontece e a balança segue onde estava.
         try {
-            await porta.setSignals({ dataTerminalReady: false, requestToSend: false });
+            await porta.setSignals({ requestToSend: false });
+            await porta.setSignals({ dataTerminalReady: false });
         } catch (e) { /* nem toda placa aceita; segue */ }
 
         this.porta = porta;
