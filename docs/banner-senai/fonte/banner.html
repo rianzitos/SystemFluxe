@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Banner SICAPDA</title>
+<style>
+  @font-face { font-family: 'SG'; src: url(space-grotesk-latin-400-normal.woff2) format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'SG'; src: url(space-grotesk-latin-500-normal.woff2) format('woff2'); font-weight: 500; }
+  @font-face { font-family: 'SG'; src: url(space-grotesk-latin-600-normal.woff2) format('woff2'); font-weight: 600; }
+  @font-face { font-family: 'SG'; src: url(space-grotesk-latin-700-normal.woff2) format('woff2'); font-weight: 700; }
+
+  :root {
+    --amarelo: #FFC400;
+    --fundo: #121212;
+    --texto: #F5F5F5;
+    --suave: #A3A3A3;
+    --linha: #262626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 900px; height: 1200px; background: var(--fundo); }
+  body {
+    font-family: 'SG', sans-serif; color: var(--texto);
+    -webkit-font-smoothing: antialiased;
+  }
+  .banner {
+    position: relative; width: 900px; height: 1200px; overflow: hidden;
+    background: var(--fundo);
+    padding: 68px 64px 0;
+  }
+
+  /* traço de circuito (motivo do site da Fluxe) */
+  .circuito { position: absolute; top: 130px; right: 0; width: 360px; height: 180px; }
+
+  .topo { display: flex; align-items: center; justify-content: space-between; }
+  .topo .fluxe { width: 176px; display: block; }
+  .selo {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 13px; font-weight: 600; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--suave);
+  }
+  .selo::before { content: ''; width: 34px; height: 3px; border-radius: 2px; background: var(--amarelo); }
+
+  .logo { display: block; width: 430px; margin: 58px 0 0 -12px; }
+
+  h1 {
+    margin-top: 40px;
+    font-size: 52px; line-height: 1.06; font-weight: 700; letter-spacing: -.02em;
+  }
+  h1 em { font-style: normal; color: var(--amarelo); }
+  .sub {
+    margin-top: 18px; max-width: 600px;
+    font-size: 19px; line-height: 1.5; color: var(--suave);
+  }
+  .sub b { color: var(--texto); font-weight: 500; }
+
+  /* recursos + celular */
+  .meio { position: relative; margin-top: 48px; }
+  ul { list-style: none; position: relative; width: 480px; display: grid; gap: 22px; }
+  ul::before { /* trilha que liga os ícones */
+    content: ''; position: absolute; left: 25px; top: 26px; bottom: 26px; width: 2px;
+    background: linear-gradient(var(--amarelo), rgba(255,196,0,.15));
+  }
+  li { position: relative; display: flex; align-items: center; gap: 22px; }
+  .tile {
+    flex: none; width: 52px; height: 52px; border-radius: 14px;
+    background: var(--amarelo); color: var(--fundo);
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 6px var(--fundo);
+  }
+  .tile svg { width: 27px; height: 27px; }
+  .txt { display: grid; gap: 3px; }
+  .txt strong { font-size: 21px; font-weight: 600; letter-spacing: -.005em; }
+  .txt small { font-size: 15.5px; color: var(--suave); }
+
+  .disco {
+    position: absolute; width: 430px; height: 430px; border-radius: 50%;
+    background: var(--amarelo); right: -214px; top: 130px;
+  }
+  .celular {
+    position: absolute; right: -8px; top: -14px;
+    width: 268px; padding: 9px; border-radius: 42px;
+    background: #050505; border: 1.5px solid #333;
+    box-shadow: 0 40px 70px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(0,0,0,.6);
+  }
+  .celular img { display: block; width: 100%; border-radius: 33px; }
+
+  /* rodapé */
+  .rodape {
+    position: absolute; left: 64px; bottom: 56px; width: 452px;
+    padding-top: 30px; border-top: 1px solid var(--linha);
+  }
+  .acesso { display: flex; align-items: center; gap: 22px; }
+  .qr { width: 100px; height: 100px; padding: 9px; border-radius: 14px; background: #fff; }
+  .qr svg { display: block; width: 100%; height: 100%; }
+  .acesso p { font-size: 15px; color: var(--suave); line-height: 1.45; }
+  .acesso p strong { display: block; font-size: 20px; color: var(--texto); font-weight: 600; }
+  .acesso p span { display: block; margin-top: 6px; font-size: 17px; color: var(--amarelo); font-weight: 500; letter-spacing: .01em; }
+</style>
+</head>
+<body>
+<div class="banner">
+
+  <svg class="circuito" viewBox="0 0 360 180" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M360 58 H262 L220 100 H150" stroke="#FFC400" stroke-width="3"/>
+    <circle cx="143" cy="100" r="7" stroke="#FFC400" stroke-width="3"/>
+    <path d="M360 104 H300 L262 142 H214" stroke="#363636" stroke-width="3"/>
+    <circle cx="208" cy="142" r="6" fill="#363636"/>
+  </svg>
+
+  <div class="topo">
+    <img class="fluxe" src="fluxe_logo.png" alt="Fluxe — Fluindo na sua empresa!">
+    <div class="selo">Projeto SENAI · 2026</div>
+  </div>
+
+  <img class="logo" src="sicapda_logo.png" alt="SICAPDA by Fluxe">
+
+  <h1>Acesso seguro.<br>Refeitório <em>sem desperdício.</em></h1>
+  <p class="sub">Sistema Inteligente de Controle de Acesso e Previsão de Demanda Alimentar: tudo em um único painel.</p>
+
+  <div class="meio">
+    <div class="disco"></div>
+    <div class="celular"><img src="app-painel-escuro.webp" alt=""></div>
+    <ul>
+      <li>
+        <span class="tile"><svg class="lucide lucide-nfc" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M6 8.32a7.43 7.43 0 0 1 0 7.36" /> <path d="M9.46 6.21a11.76 11.76 0 0 1 0 11.58" /> <path d="M12.91 4.1a15.91 15.91 0 0 1 .01 15.8" /> <path d="M16.37 2a20.16 20.16 0 0 1 0 20" /> </svg></span>
+        <span class="txt"><strong>Catraca com cartão RFID</strong><small>Entradas e saídas registradas na hora</small></span>
+      </li>
+      <li>
+        <span class="tile"><svg class="lucide lucide-trending-up" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /> <polyline points="16 7 22 7 22 13" /> </svg></span>
+        <span class="txt"><strong>Previsão de demanda</strong><small>Refeições e quilos previstos pelo histórico</small></span>
+      </li>
+      <li>
+        <span class="tile"><svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /> <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /> <path d="M7 21h10" /> <path d="M12 3v18" /> <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" /> </svg></span>
+        <span class="txt"><strong>Balança de desperdício</strong><small>As sobras são pesadas e enviadas ao sistema</small></span>
+      </li>
+      <li>
+        <span class="tile"><svg class="lucide lucide-sparkles" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /> <path d="M20 3v4" /> <path d="M22 5h-4" /> <path d="M4 17v2" /> <path d="M5 18H3" /> </svg></span>
+        <span class="txt"><strong>Assistente com IA</strong><small>Pergunte sobre os dados e receba a resposta</small></span>
+      </li>
+      <li>
+        <span class="tile"><svg class="lucide lucide-layout-dashboard" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <rect width="7" height="9" x="3" y="3" rx="1" /> <rect width="7" height="5" x="14" y="3" rx="1" /> <rect width="7" height="9" x="14" y="12" rx="1" /> <rect width="7" height="5" x="3" y="16" rx="1" /> </svg></span>
+        <span class="txt"><strong>Painel em tempo real</strong><small>Indicadores, alertas e relatórios em Excel</small></span>
+      </li>
+      <li>
+        <span class="tile"><svg class="lucide lucide-monitor-smartphone" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" > <path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h8" /> <path d="M10 19v-3.96 3.15" /> <path d="M7 19h5" /> <rect width="6" height="10" x="16" y="12" rx="2" /> </svg></span>
+        <span class="txt"><strong>Web, Android e Windows</strong><small>O mesmo sistema em qualquer tela</small></span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="rodape">
+    <div class="acesso">
+      <div class="qr"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#121212" d="M0 0.5h7m1 0h1m1 0h2m1 0h3m2 0h3m1 0h7M0 1.5h1m5 0h1m1 0h1m1 0h1m2 0h1m2 0h1m3 0h1m1 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m9 0h1m3 0h1m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m3 0h1m1 0h1m1 0h1m1 0h5m1 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m6 0h1m1 0h3m1 0h2m1 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h1m1 0h1m4 0h3M0 8.5h1m1 0h2m1 0h3m2 0h1m2 0h1m1 0h1m1 0h1m4 0h1m2 0h1m1 0h2M1 9.5h1m1 0h1m3 0h1m1 0h1m2 0h4m1 0h8m3 0h1M4 10.5h1m1 0h2m1 0h1m2 0h2m2 0h1m1 0h1m2 0h1m1 0h1m2 0h2M1 11.5h2m2 0h1m2 0h1m1 0h3m3 0h1m1 0h1m1 0h3m1 0h1m3 0h1M4 12.5h1m1 0h1m3 0h3m1 0h2m1 0h1m1 0h1m3 0h1m1 0h2M0 13.5h4m4 0h2m2 0h1m1 0h1m1 0h4m1 0h2m3 0h3M2 14.5h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h2m1 0h3m1 0h5m2 0h3M0 15.5h2m5 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h2m2 0h1M0 16.5h1m1 0h2m2 0h1m1 0h4m2 0h2m2 0h1m1 0h2m2 0h2m1 0h1M3 17.5h1m1 0h1m1 0h1m2 0h3m1 0h1m1 0h2m2 0h1m2 0h1m1 0h3M0 18.5h1m1 0h1m2 0h4m3 0h5m1 0h1m5 0h1m1 0h1M2 19.5h3m4 0h3m1 0h2m2 0h3m1 0h1m2 0h1m1 0h1M1 20.5h3m2 0h1m2 0h1m1 0h4m1 0h3m1 0h7M8 21.5h1m1 0h3m3 0h1m1 0h1m1 0h1m3 0h5M0 22.5h7m1 0h1m5 0h1m4 0h2m1 0h1m1 0h2m1 0h1M0 23.5h1m5 0h1m1 0h1m4 0h2m3 0h3m3 0h2m2 0h1M0 24.5h1m1 0h3m1 0h1m2 0h3m3 0h1m1 0h1m2 0h5m1 0h2M0 25.5h1m1 0h3m1 0h1m1 0h2m1 0h3m1 0h3m1 0h3m1 0h3m2 0h1M0 26.5h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m3 0h1m2 0h1m2 0h1m1 0h1M0 27.5h1m5 0h1m4 0h3m1 0h1m4 0h2m3 0h1m1 0h1M0 28.5h7m1 0h1m1 0h4m2 0h1m1 0h4m5 0h1"/></svg>
+</div>
+      <p><strong>Conheça o sistema</strong>Aponte a câmera para o código<span>fluxeteam.com.br/sicapda</span></p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
