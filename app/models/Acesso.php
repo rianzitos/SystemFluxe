@@ -312,7 +312,7 @@ class Acesso
     {
         $stmt = $this->db->prepare(
             'SELECT c.id AS credencial_id, c.ativo AS credencial_ativa,
-                    f.id AS funcionario_id, f.nome, f.ativo AS funcionario_ativo
+                    f.id AS funcionario_id, f.nome, f.cargo, f.ativo AS funcionario_ativo
              FROM credenciais_acesso c
              JOIN funcionarios f ON f.id = c.funcionario_id
              WHERE c.identificador = ? AND f.empresa_id = ?

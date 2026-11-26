@@ -1,15 +1,17 @@
-// SICAPDA by FLUXE — Catraca com RFID: ESP32 + MFRC522 + servo + 2 LEDs + visor LCD 16x2 (I2C)
-// Circuito simulado no Wokwi pela equipe (mesmos pinos e mesmo comportamento da catraca).
+// SICAPDA by FLUXE — Catraca RFID: ESP32 DevKit + leitor MFRC522 + servo + LED vermelho + LED verde
 //
-// Diferença para a versão com lista fixa de UIDs: quem decide agora é o SERVIDOR.
-// Cartão lido → POST /api/iot/acesso (com o token do dispositivo) → o servidor confere o
-// cartão no banco, alterna entrada/saída, grava em logs_acesso e responde "autorizado" ou
-// não → a ESP32 abre ou nega. Cadastrar ou desativar um cartão não exige regravar a ESP32.
+// Como funciona
+//   Parada:   LED vermelho aceso, catraca travada (servo em 0°).
+//   Cartão:   a ESP32 lê o UID e pergunta ao SICAPDA (POST /api/iot/acesso, com o token do aparelho).
+//             Quem decide é o servidor: confere o cartão, alterna entrada/saída e grava em logs_acesso.
+//   Liberado: o vermelho apaga, o verde acende e o servo gira (catraca aberta por 4 s); depois trava de novo.
+//   Negado:   o vermelho pisca 3 vezes (cartão não cadastrado ou desativado, sem Wi-Fi ou servidor recusou).
 //
-// Visor: mostra o primeiro nome de quem passou o cartão e se foi ENTRADA ou SAIDA (o nome e a
-// direção vêm na resposta do servidor). Se o visor não estiver ligado, a catraca funciona igual.
+// Tela: a página /visor/catraca/ do SICAPDA (Chrome ou Edge, com a ESP32 no USB do computador). A cada mudança
+// a ESP32 escreve no Serial uma linha "VISOR {json}" e a página desenha: nome e cargo de quem passou, ENTRADA ou
+// SAÍDA e o horário, ou o motivo da negação. O UID do cartão nunca vai para a tela.
 //
-// Bibliotecas (libraries.txt no Wokwi): MFRC522, ESP32Servo, ArduinoJson (versão 7) e LiquidCrystal I2C
+// Bibliotecas: platformio.ini (PlatformIO) ou libraries.txt (Wokwi): MFRC522, ESP32Servo e ArduinoJson 7.
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -18,286 +20,181 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ESP32Servo.h>
-#include <Wire.h>
-#include <LiquidCrystal_I2C.h>
 
-// ----- Rede e servidor -----
-const char* WIFI_SSID  = "Wokwi-GUEST";   // no Wokwi é esta rede (sem senha); na vida real, o Wi-Fi da empresa
-const char* WIFI_SENHA = "";
-const int   WIFI_CANAL = 6;               // 6 acelera a conexão no Wokwi; use 0 (automático) fora dele
+// ================================ CONFIGURAÇÃO ================================
+// Wi-Fi da catraca de verdade. No simulador (MODO_SIMULADOR = true) a rede "Wokwi-GUEST" é usada sozinha.
+const char* WIFI_SSID  = "NOME_DA_REDE";
+const char* WIFI_SENHA = "SENHA_DA_REDE";
+const bool MODO_SIMULADOR = false;
 
-// Endereço do SICAPDA, sem a barra no final. O Wokwi no navegador roda na nuvem e NÃO enxerga o
-// localhost do seu computador: use o site publicado ou um túnel (ex.: ngrok, que dá um https://...).
-// Para testar o sistema local sem túnel, use "Simular leitura" em Configurações → Integrações.
+// Endereço do SICAPDA, sem a barra no final. O Wokwi roda na nuvem e não enxerga o localhost do computador.
 const char* URL_SERVIDOR = "https://fluxeteam.com.br";
 
-// Token deste dispositivo: Configurações → Integrações → Adicionar dispositivo (aparece uma vez só).
-// Não suba o token de verdade para o GitHub: cole só no seu computador.
+// Token da CATRACA: Configurações → Integrações → Adicionar dispositivo → Catraca (aparece uma vez só).
+// O token da balança não serve aqui. Não suba o token de verdade para o GitHub: cole só na sua cópia.
 const char* TOKEN_DISPOSITIVO = "COLE_AQUI_O_TOKEN_DO_DISPOSITIVO";
 
-// ----- Pinos -----
-#define SS_PIN     5    // SDA do RC522
-#define RST_PIN    22   // RST do RC522
-#define SERVO_PIN  13
-#define LED_RED    26   // catraca fechada
-#define LED_GREEN  27   // catraca aberta
+// ================================ PINOS ================================
+// Leitor RC522: SDA 5, RST 22 e o SPI padrão da ESP32 (SCK 18, MISO 19, MOSI 23), alimentado em 3,3 V.
+#define SS_PIN       5
+#define RST_PIN      22
+#define SERVO_PIN    13
+// LEDs como estão ligados no protoboard. Se acender a cor errada, troque os dois números (ou os dois fios).
+#define LED_VERMELHO 27   // aceso = catraca travada; pisca 3 vezes = acesso negado
+#define LED_VERDE    26   // aceso = catraca liberada
 
-// SCK = 18, MISO = 19, MOSI = 23 (SPI padrão do ESP32)
+// ================================ AJUSTES ================================
+const int ANGULO_FECHADA = 0;
+const int ANGULO_ABERTA  = 90;
+const unsigned long TEMPO_ABERTA_MS = 4000;   // tempo para a pessoa passar
+const unsigned long TELA_NEGADO_MS  = 3000;   // quanto tempo o motivo da negação fica no visor
+const unsigned long PING_MS         = 60000;  // "estou vivo": é o que mostra Online em Integrações
+const unsigned long WIFI_RETRY_MS   = 10000;  // nova tentativa de conectar ao Wi-Fi
+const unsigned long VISOR_REPETE_MS = 3000;   // repete a tela de espera (para o visor aberto depois)
 
-// Visor LCD 16x2 com módulo I2C. O SCL "padrão" da ESP32 seria o GPIO 22, mas ele já é o RST do RC522,
-// por isso o SCL do visor fica no GPIO 25 (o Wire aceita qualquer par de pinos).
-#define LCD_SDA    21
-#define LCD_SCL    25
-const uint8_t LCD_ENDERECO = 0x27;               // alguns módulos reais usam 0x3F
+// ================================ TIPOS ================================
+// Ficam no topo: o Arduino cria os protótipos das funções antes do resto do código.
+enum Resultado { LIBERADO, NEGADO };
 
-// Visor no navegador: sem o LCD, a página /visor/catraca/ do SICAPDA (Chrome ou Edge, com a ESP32 no USB)
-// mostra o nome, ENTRADA/SAÍDA e o horário. Ela lê as linhas "VISOR {...}" que a ESP32 escreve no Serial.
-// Com o LCD ligado, os dois funcionam juntos. false = não escreve essas linhas.
-const bool VISOR_WEB = true;
-const unsigned long VISOR_WEB_MS = 3000;         // repete a tela de espera (para quem abrir a página depois)
+struct Resposta {
+  Resultado resultado;
+  String nome;       // primeiro nome, como o servidor manda
+  String cargo;
+  String direcao;    // "entrada" ou "saida"
+  String motivo;     // negado: cartao_desconhecido, inativo, sem_wifi ou sem_resposta
+  String mensagem;   // texto do servidor (também nas recusas, ex.: "Token de dispositivo inválido.")
+  int codigoHttp;    // sem_resposta: o código que o site devolveu (<= 0: nem chegou ao site)
+};
 
-// ----- Ajustes -----
-const int ANGLE_CLOSED = 0;                      // catraca travada
-const int ANGLE_OPEN = 90;                       // catraca liberada
-const unsigned long OPEN_TIME_MS = 4000;         // tempo aberta para a pessoa passar
-const unsigned long PING_INTERVAL_MS = 60000;    // "estou vivo" a cada 1 minuto (é o que mostra Online nas Configurações)
-const unsigned long WIFI_RETRY_MS = 10000;       // intervalo entre tentativas de reconectar
-const unsigned long MENSAGEM_NEGADO_MS = 3000;   // quanto tempo o aviso de acesso negado fica no visor
+// ================================ ESTADO ================================
+MFRC522 leitor(SS_PIN, RST_PIN);
+Servo catraca;
 
-// Resultado de uma consulta ao servidor (ver consultarAcesso)
-const int ACESSO_LIBERADO = 1;
-const int ACESSO_NEGADO = 0;
-const int FALHA_SEM_WIFI = -1;
-const int FALHA_SEM_RESPOSTA = -2;
+unsigned long ultimoPing = 0;
+unsigned long ultimaTentativaWifi = 0;
+unsigned long ultimoVisor = 0;
+unsigned long voltarParaEsperaEm = 0;   // != 0: o visor mostra uma negação e volta à espera nessa hora
+int wifiNoVisor = -1;                   // Wi-Fi mostrado na tela de espera (1, 0 ou -1 = nenhum ainda)
 
-MFRC522 rfid(SS_PIN, RST_PIN);
-Servo gate;
-LiquidCrystal_I2C lcd(LCD_ENDERECO, 16, 2);
-
-unsigned long lastPing = 0;
-unsigned long lastWifiTry = 0;
-
-bool displayDisponivel = false;
-bool telaTemporaria = false;                     // true enquanto um aviso espera a hora de voltar ao "Passe o cartao"
-unsigned long telaTemporariaAte = 0;
-int wifiNaTela = -1;                             // último estado do Wi-Fi desenhado na tela de espera (-1 = nenhum)
-unsigned long visorUltimoEnvio = 0;
-
-void closeGate() {
-  gate.write(ANGLE_CLOSED);
-  digitalWrite(LED_GREEN, LOW);
-  digitalWrite(LED_RED, HIGH);
+// ================================ LEDS E SERVO ================================
+void travar() {
+  catraca.write(ANGULO_FECHADA);
+  digitalWrite(LED_VERDE, LOW);
+  digitalWrite(LED_VERMELHO, HIGH);
 }
 
-void openGate() {
-  digitalWrite(LED_RED, LOW);
-  digitalWrite(LED_GREEN, HIGH);
-  gate.write(ANGLE_OPEN);
+void abrir() {
+  digitalWrite(LED_VERMELHO, LOW);
+  digitalWrite(LED_VERDE, HIGH);
+  catraca.write(ANGULO_ABERTA);
 }
 
-void denyAccess() {
-  // Acesso negado: LED vermelho pisca 3 vezes e a catraca continua fechada
+// Negação: o vermelho pisca 3 vezes e continua aceso (a catraca segue travada).
+void piscarNegado() {
   for (int i = 0; i < 3; i++) {
-    digitalWrite(LED_RED, LOW);
+    digitalWrite(LED_VERMELHO, LOW);
     delay(150);
-    digitalWrite(LED_RED, HIGH);
+    digitalWrite(LED_VERMELHO, HIGH);
     delay(150);
   }
 }
 
-void printUid() {
-  Serial.print("UID lido:");
-  for (byte i = 0; i < rfid.uid.size; i++) {
-    Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
-    Serial.print(rfid.uid.uidByte[i], HEX);
-  }
+// ================================ VISOR WEB ================================
+// Uma linha "VISOR {json}" no Serial por tela; a página /visor/catraca/ lê e desenha.
+void enviarVisor(JsonDocument& tela) {
+  Serial.print("VISOR ");
+  serializeJson(tela, Serial);
   Serial.println();
+  ultimoVisor = millis();
 }
 
-// UID como o servidor guarda: hexadecimal em maiúsculas, sem espaços (ex.: "01020304").
-// É este texto que se cadastra em credenciais_acesso.identificador.
-String uidAsText() {
-  String uid = "";
-  for (byte i = 0; i < rfid.uid.size; i++) {
-    if (rfid.uid.uidByte[i] < 0x10) uid += "0";
-    uid += String(rfid.uid.uidByte[i], HEX);
-  }
-  uid.toUpperCase();
-  return uid;
-}
-
-// ----- Visor LCD 16x2 -----
-
-// O LCD não tem letras acentuadas: "José" vira "Jose", "Conceição" vira "Conceicao".
-// O texto chega do servidor em UTF-8; as letras acentuadas ocupam 2 bytes (0xC3 + letra).
-String semAcentos(const String& texto) {
-  // Letras de U+00C0 a U+00FF (À…ÿ), na ordem, trocadas pela letra simples.
-  static const char TABELA[] = "AAAAAAACEEEEIIIIDNOOOOOxOUUUUYTs"   // U+00C0 a U+00DF
-                               "aaaaaaaceeeeiiiidnooooo/ouuuuyty";  // U+00E0 a U+00FF
-  String saida = "";
-  for (unsigned int i = 0; i < texto.length(); i++) {
-    uint8_t c = texto[i];
-    if (c < 0x80) {
-      saida += (char)c;
-    } else if (c == 0xC3 && i + 1 < texto.length()) {
-      uint8_t seguinte = texto[++i];
-      if (seguinte >= 0x80 && seguinte <= 0xBF) saida += TABELA[seguinte - 0x80];
-    }
-    // qualquer outro byte não ASCII (outros alfabetos, emojis) é descartado
-  }
-  return saida;
-}
-
-// Escreve uma linha inteira (16 colunas) centralizada. Sobrescrever a linha toda dispensa
-// lcd.clear(), que faria a tela piscar.
-void escreverLinhaLCD(uint8_t linha, const String& texto) {
-  String t = semAcentos(texto);
-  if (t.length() > 16) t = t.substring(0, 16);
-  int espacosAntes = (16 - (int)t.length()) / 2;
-
-  String pronta = "";
-  for (int i = 0; i < espacosAntes; i++) pronta += ' ';
-  pronta += t;
-  while (pronta.length() < 16) pronta += ' ';
-
-  lcd.setCursor(0, linha);
-  lcd.print(pronta);
-}
-
-void mostrarTela(const String& linha1, const String& linha2) {
-  if (!displayDisponivel) return;
-  escreverLinhaLCD(0, linha1);
-  escreverLinhaLCD(1, linha2);
-}
-
-// Visor web: uma linha "VISOR {json}" no Serial a cada mudança de tela. "tela" é conectando, espera,
-// sem_wifi, lendo, liberado (com nome e direcao) ou negado (com motivo e mensagem). O nome vai com acento:
-// o navegador mostra "João", não "Joao".
-void visorWebDados(const char* tela, const char* chave1, const String& valor1, const char* chave2, const String& valor2) {
-  if (!VISOR_WEB) return;
+void visorSimples(const char* tela) {
   JsonDocument doc;
   doc["tela"] = tela;
-  if (chave1) doc[chave1] = valor1;
-  if (chave2) doc[chave2] = valor2;
-  Serial.print("VISOR ");
-  serializeJson(doc, Serial);
-  Serial.println();
-  visorUltimoEnvio = millis();
+  enviarVisor(doc);
 }
 
-void visorWeb(const char* tela) {
-  visorWebDados(tela, nullptr, "", nullptr, "");
-}
-
-// Tela parada, à espera de um cartão (ou avisando que a rede caiu).
-void telaEspera() {
-  telaTemporaria = false;
+// Tela parada: "Aproxime o cartão" ou, sem rede, "Sem Wi-Fi".
+void visorEspera() {
   bool conectado = WiFi.status() == WL_CONNECTED;
-  wifiNaTela = conectado ? 1 : 0;
-  if (conectado) mostrarTela("SICAPDA", "Passe o cartao");
-  else mostrarTela("SEM WI-FI", "Reconectando...");
-  visorWeb(conectado ? "espera" : "sem_wifi");
+  wifiNoVisor = conectado ? 1 : 0;
+  voltarParaEsperaEm = 0;
+  visorSimples(conectado ? "espera" : "sem_wifi");
 }
 
-// Mostra um aviso que se apaga sozinho (volta para a tela de espera depois de "ms").
-void mostrarAviso(const String& linha1, const String& linha2, unsigned long ms) {
-  mostrarTela(linha1, linha2);
-  telaTemporaria = true;
-  telaTemporariaAte = millis() + ms;
+void visorLiberado(const Resposta& r) {
+  JsonDocument doc;
+  doc["tela"] = "liberado";
+  doc["nome"] = r.nome;
+  doc["cargo"] = r.cargo;
+  doc["direcao"] = r.direcao;
+  enviarVisor(doc);
 }
 
-// Chamada a cada volta do loop: tira o aviso quando o tempo acaba e acompanha o Wi-Fi.
-// Roda mesmo sem o LCD, porque o visor web depende dela.
-void atualizarTela() {
-  if (telaTemporaria) {
-    if ((long)(millis() - telaTemporariaAte) >= 0) telaEspera();
+void visorNegado(const Resposta& r) {
+  JsonDocument doc;
+  doc["tela"] = "negado";
+  doc["motivo"] = r.motivo;
+  doc["mensagem"] = r.mensagem;
+  if (r.motivo == "sem_resposta") doc["codigo"] = r.codigoHttp;
+  enviarVisor(doc);
+  voltarParaEsperaEm = millis() + TELA_NEGADO_MS;
+}
+
+// A cada volta do loop: tira a negação depois de TELA_NEGADO_MS, acompanha o Wi-Fi e repete a espera
+// de tempos em tempos (a página pode ter sido aberta agora).
+void atualizarVisor() {
+  if (voltarParaEsperaEm) {
+    if ((long)(millis() - voltarParaEsperaEm) >= 0) visorEspera();
     return;
   }
-  if ((WiFi.status() == WL_CONNECTED ? 1 : 0) != wifiNaTela) telaEspera();
-  else if (VISOR_WEB && millis() - visorUltimoEnvio >= VISOR_WEB_MS) visorWeb(wifiNaTela ? "espera" : "sem_wifi");
+  int conectado = WiFi.status() == WL_CONNECTED ? 1 : 0;
+  if (conectado != wifiNoVisor || millis() - ultimoVisor >= VISOR_REPETE_MS) visorEspera();
 }
 
-// Segunda linha da tela de acesso liberado, conforme o sentido devolvido pelo servidor.
-String textoLiberado(const String& direcao) {
-  if (direcao == "entrada") return "ENTRADA LIBERADA";
-  if (direcao == "saida") return "SAIDA LIBERADA";
-  return "ACESSO LIBERADO";
-}
-
-// Acesso negado ou falha: diz o motivo para a pessoa na fila saber o que fazer.
-void mostrarNegado(int resultado, const String& motivo, const String& mensagem) {
-  String motivoVisor = resultado == FALHA_SEM_WIFI ? String("sem_wifi")
-                     : resultado == FALHA_SEM_RESPOSTA ? String("sem_resposta") : motivo;
-  visorWebDados("negado", "motivo", motivoVisor, "mensagem", mensagem);
-  if (resultado == FALHA_SEM_WIFI) {
-    mostrarAviso("SEM WI-FI", "Acesso negado", MENSAGEM_NEGADO_MS);
-  } else if (resultado == FALHA_SEM_RESPOSTA) {
-    mostrarAviso("SEM RESPOSTA", "Tente de novo", MENSAGEM_NEGADO_MS);
-  } else if (motivo == "cartao_desconhecido") {
-    mostrarAviso("ACESSO NEGADO", "Nao cadastrado", MENSAGEM_NEGADO_MS);
-  } else if (motivo == "inativo") {
-    mostrarAviso("ACESSO NEGADO", "Desativado", MENSAGEM_NEGADO_MS);
-  } else {
-    mostrarAviso("ACESSO NEGADO", mensagem, MENSAGEM_NEGADO_MS);
-  }
-}
-
-// Sem o visor (ou com ele mal ligado) a catraca continua funcionando: só não mostra nada.
-void iniciarDisplay() {
-  Wire.begin(LCD_SDA, LCD_SCL);
-  Wire.setTimeOut(50);
-  Wire.beginTransmission(LCD_ENDERECO);
-  if (Wire.endTransmission() != 0) {
-    Serial.printf("LCD nao encontrado em 0x%02X. Confira SDA=%d, SCL=%d, VCC e GND. A catraca funciona normalmente, so sem o visor.\n",
-                  LCD_ENDERECO, LCD_SDA, LCD_SCL);
-    return;
-  }
-  lcd.init();
-  lcd.backlight();
-  displayDisponivel = true;
-  mostrarTela("SICAPDA", "Iniciando...");
-}
-
-// ----- Wi-Fi e servidor -----
-
-void connectWifi() {
-  mostrarTela("Conectando", "ao Wi-Fi...");
-  visorWeb("conectando");
-  Serial.print("Conectando ao Wi-Fi");
+// ================================ WI-FI ================================
+void iniciarWifi() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_SENHA, WIFI_CANAL);
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
+  if (MODO_SIMULADOR) WiFi.begin("Wokwi-GUEST", "", 6);   // canal 6 acelera a conexão no Wokwi
+  else WiFi.begin(WIFI_SSID, WIFI_SENHA);
+  ultimaTentativaWifi = millis();
+}
+
+void conectarWifi() {
+  visorSimples("conectando");
+  Serial.print("Conectando ao Wi-Fi");
+  iniciarWifi();
+  unsigned long inicio = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - inicio < 15000) {
     delay(250);
     Serial.print(".");
   }
-  Serial.println(WiFi.status() == WL_CONNECTED ? " conectado" : " falhou");
+  if (WiFi.status() == WL_CONNECTED) Serial.printf(" conectado (IP %s)\n", WiFi.localIP().toString().c_str());
+  else Serial.println(" falhou. Confira WIFI_SSID e WIFI_SENHA; a catraca tenta de novo sozinha.");
 }
 
 // Se a rede cair, tenta voltar sem travar a leitura dos cartões.
-void keepWifi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  if (millis() - lastWifiTry < WIFI_RETRY_MS) return;
-  lastWifiTry = millis();
-  Serial.println("Wi-Fi caiu, reconectando...");
+void manterWifi() {
+  if (WiFi.status() == WL_CONNECTED || millis() - ultimaTentativaWifi < WIFI_RETRY_MS) return;
+  Serial.println("Wi-Fi fora do ar, reconectando...");
   WiFi.disconnect();
-  WiFi.begin(WIFI_SSID, WIFI_SENHA, WIFI_CANAL);
+  iniciarWifi();
 }
 
-// POST em /api/iot/<path> com o token do dispositivo.
-// Devolve o código HTTP (<= 0 se nem chegou ao servidor) e o corpo da resposta em "response".
-// Endereço https:// usa conexão segura; http:// (servidor na rede local, por exemplo) usa conexão comum.
-int postJson(const char* path, const String& body, String& response) {
-  String url = String(URL_SERVIDOR) + "/api/iot/" + path;
-
+// ================================ SERVIDOR ================================
+// POST em /api/iot/<caminho> com o token. Devolve o código HTTP (<= 0: nem chegou ao servidor).
+// https:// usa conexão segura; http:// (servidor na rede local) usa conexão comum.
+int postJson(const char* caminho, const String& corpo, String& resposta) {
+  String url = String(URL_SERVIDOR) + "/api/iot/" + caminho;
   WiFiClientSecure clienteSeguro;
   WiFiClient clienteComum;
   HTTPClient http;
+  http.setConnectTimeout(5000);
   http.setTimeout(8000);
 
   bool iniciou;
   if (url.startsWith("https://")) {
-    clienteSeguro.setInsecure();   // TESTE: aceita qualquer certificado. Em produção: clienteSeguro.setCACert(<certificado raiz do site>)
+    clienteSeguro.setInsecure();   // TESTE: aceita qualquer certificado. Em produção: setCACert(<certificado raiz>)
     iniciou = http.begin(clienteSeguro, url);
   } else {
     iniciou = http.begin(clienteComum, url);
@@ -306,150 +203,146 @@ int postJson(const char* path, const String& body, String& response) {
 
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Token", TOKEN_DISPOSITIVO);
-
-  int code = http.POST(body);
-  if (code > 0) response = http.getString();
-  else Serial.printf("Falha de conexao em %s: %s\n", url.c_str(), http.errorToString(code).c_str());
+  int codigo = http.POST(corpo);
+  if (codigo > 0) resposta = http.getString();
+  else Serial.printf("Falha de conexao em %s: %s\n", url.c_str(), http.errorToString(codigo).c_str());
   http.end();
-  return code;
+  return codigo;
 }
 
-// Diz, em português, o que cada código de resposta quer dizer (só o 401 é problema do token).
-void explicarFalha(int code) {
-  if (code == 401) {
-    Serial.println("HTTP 401: o servidor NAO reconheceu o token. Confira TOKEN_DISPOSITIVO e se a catraca foi criada neste mesmo site.");
-  } else if (code <= 0) {
-    Serial.printf("HTTP %d: nao consegui falar com o servidor (nao e problema do token). Confira URL_SERVIDOR e a rede. "
-                  "O Wokwi no navegador NAO enxerga o localhost do seu computador.\n", code);
-  } else if (code == 404) {
-    Serial.println("HTTP 404: o servidor nao tem essa rota. Confira URL_SERVIDOR (inclusive a subpasta, se houver) e se o codigo novo foi publicado.");
-  } else if (code == 403 || code == 406) {
-    Serial.printf("HTTP %d: o firewall do servidor bloqueou o pedido.\n", code);
-  } else if (code == 405 || code == 422) {
-    Serial.printf("HTTP %d: pedido recusado pelo servidor.\n", code);
-  } else {
-    Serial.printf("HTTP %d: erro no servidor.\n", code);
+// O que cada código quer dizer, em português (o mesmo aparece no visor).
+void explicarFalha(int codigo) {
+  if (codigo == 401) {
+    Serial.println("HTTP 401: o servidor NAO reconheceu o token. Copie de novo o token da CATRACA (Configuracoes > Integracoes).");
+  } else if (codigo == 403) {
+    Serial.println("HTTP 403: o token e de uma BALANCA, nao de uma catraca (ou o firewall do servidor bloqueou).");
+  } else if (codigo <= 0) {
+    Serial.printf("HTTP %d: nao consegui falar com o servidor. Confira URL_SERVIDOR e se a rede tem internet.\n", codigo);
+  } else if (codigo == 404) {
+    Serial.println("HTTP 404: o servidor nao tem essa rota. Confira URL_SERVIDOR (inclusive a subpasta, se houver).");
+  } else if (codigo == 406) {
+    Serial.println("HTTP 406: o firewall do servidor bloqueou o pedido.");
+  } else if (codigo != 200) {
+    Serial.printf("HTTP %d: erro no servidor.\n", codigo);
   }
 }
 
-void sendPing() {
+void enviarPing() {
+  ultimoPing = millis();
   if (WiFi.status() != WL_CONNECTED) return;
-  String response;
-  int code = postJson("ping", "{}", response);
-  Serial.printf("Ping: HTTP %d\n", code);
-  if (code != 200) explicarFalha(code);
+  String resposta;
+  int codigo = postJson("ping", "{}", resposta);
+  Serial.printf("Ping: HTTP %d\n", codigo);
+  explicarFalha(codigo);
 }
 
-// Pergunta ao servidor se o cartão pode passar. Por segurança, qualquer falha (sem Wi-Fi,
-// servidor fora do ar, token recusado, resposta estranha) NEGA o acesso: a catraca nunca abre "no escuro".
-//
-// Devolve ACESSO_LIBERADO, ACESSO_NEGADO (o servidor respondeu "não"), FALHA_SEM_WIFI ou
-// FALHA_SEM_RESPOSTA. Preenche, quando o servidor responde: o primeiro nome da pessoa, a direção
-// ("entrada" ou "saida"), o motivo da recusa ("cartao_desconhecido" ou "inativo") e a mensagem.
-int consultarAcesso(const String& uid, String& nome, String& direcao, String& motivo, String& mensagem) {
-  nome = "";
-  direcao = "";
-  motivo = "";
-  mensagem = "";
+// Pergunta ao servidor se o cartão pode passar. Qualquer falha (sem Wi-Fi, servidor fora do ar, token
+// recusado, resposta estranha) NEGA: a catraca nunca abre "no escuro".
+Resposta consultarServidor(const String& uid) {
+  Resposta r;
+  r.resultado = NEGADO;
+  r.codigoHttp = 0;
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Sem Wi-Fi: acesso negado");
-    return FALHA_SEM_WIFI;
+    r.motivo = "sem_wifi";
+    return r;
   }
 
-  JsonDocument request;
-  request["uid"] = uid;
-  String body;
-  serializeJson(request, body);
+  JsonDocument pedido;
+  pedido["uid"] = uid;
+  String corpo;
+  serializeJson(pedido, corpo);
 
-  String response;
-  int code = postJson("acesso", body, response);
-  if (code != 200) {
-    explicarFalha(code);
-    Serial.println("Acesso negado (sem resposta valida do servidor)");
-    return FALHA_SEM_RESPOSTA;
+  String texto;
+  int codigo = postJson("acesso", corpo, texto);
+  JsonDocument dados;
+  bool json = codigo > 0 && !deserializeJson(dados, texto);
+  if (json) r.mensagem = dados["mensagem"] | "";
+
+  if (codigo != 200 || !json) {
+    explicarFalha(codigo);
+    if (codigo == 200) Serial.printf("Resposta do servidor nao e JSON: %.80s\n", texto.c_str());
+    r.motivo = "sem_resposta";
+    r.codigoHttp = codigo;
+    return r;
   }
 
-  JsonDocument data;
-  if (deserializeJson(data, response)) {
-    Serial.println("Resposta invalida do servidor: acesso negado");
-    return FALHA_SEM_RESPOSTA;
-  }
-
-  bool authorized = data["autorizado"] | false;
-  nome = data["nome"] | "";
-  direcao = data["direcao"] | "";
-  motivo = data["motivo"] | "";
-  mensagem = data["mensagem"] | "";
-  Serial.println(nome + " " + direcao + " - " + mensagem);
-  return authorized ? ACESSO_LIBERADO : ACESSO_NEGADO;
+  r.resultado = (dados["autorizado"] | false) ? LIBERADO : NEGADO;
+  r.nome = dados["nome"] | "";
+  r.cargo = dados["cargo"] | "";
+  r.direcao = dados["direcao"] | "";
+  r.motivo = dados["motivo"] | "";
+  return r;
 }
 
+// ================================ LEITOR RFID ================================
+// UID como o servidor guarda: hexadecimal em maiúsculas, sem espaços (ex.: "01020304").
+bool lerCartao(String& uid) {
+  if (!leitor.PICC_IsNewCardPresent() || !leitor.PICC_ReadCardSerial()) return false;
+  uid = "";
+  for (byte i = 0; i < leitor.uid.size; i++) {
+    if (leitor.uid.uidByte[i] < 0x10) uid += "0";
+    uid += String(leitor.uid.uidByte[i], HEX);
+  }
+  uid.toUpperCase();
+  leitor.PICC_HaltA();        // o mesmo cartão só é lido de novo quando sair e voltar
+  leitor.PCD_StopCrypto1();
+  return true;
+}
+
+// ================================ SETUP E LOOP ================================
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  Serial.printf("SICAPDA CATRACA - visor web: %s\n", VISOR_WEB ? "ligado (/visor/catraca/)" : "desligado");
+  Serial.println("SICAPDA CATRACA - visor web: ligado (/visor/catraca/)");
 
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-
-  gate.setPeriodHertz(50);
-  gate.attach(SERVO_PIN, 500, 2400);
+  pinMode(LED_VERMELHO, OUTPUT);
+  pinMode(LED_VERDE, OUTPUT);
+  catraca.setPeriodHertz(50);
+  catraca.attach(SERVO_PIN, 500, 2400);
+  travar();
 
   SPI.begin();
-  rfid.PCD_Init();
-
-  closeGate();
-  iniciarDisplay();
+  leitor.PCD_Init();
+  byte versao = leitor.PCD_ReadRegister(MFRC522::VersionReg);
+  if (versao == 0x00 || versao == 0xFF) {
+    Serial.println("Leitor RC522 nao respondeu: confira SDA=5, SCK=18, MOSI=23, MISO=19, RST=22, 3.3V e GND.");
+  }
 
   // Resumo da configuração, para conferir de relance (o token aparece só pelas pontas).
   int tamanhoToken = strlen(TOKEN_DISPOSITIVO);
-  Serial.printf("Servidor: %s\n", URL_SERVIDOR);
-  Serial.printf("Token: %d caracteres (%.6s...%s)\n", tamanhoToken, TOKEN_DISPOSITIVO,
+  Serial.printf("Servidor: %s | token: %d caracteres (%.6s...%s)\n", URL_SERVIDOR, tamanhoToken, TOKEN_DISPOSITIVO,
                 TOKEN_DISPOSITIVO + (tamanhoToken > 4 ? tamanhoToken - 4 : 0));
-  if (tamanhoToken != 64) Serial.println("ATENCAO: o token deve ter exatamente 64 caracteres. Copie de novo da caixa amarela (nao da lista).");
+  if (tamanhoToken != 64) Serial.println("ATENCAO: o token tem 64 caracteres. Copie de novo da caixa amarela em Integracoes.");
 
-  connectWifi();
-  sendPing();
-  lastPing = millis();
-  telaEspera();
+  conectarWifi();
+  enviarPing();
+  visorEspera();
   Serial.println("Catraca pronta. Aproxime um cartao...");
 }
 
 void loop() {
-  keepWifi();
-  atualizarTela();
+  manterWifi();
+  atualizarVisor();
+  if (millis() - ultimoPing >= PING_MS) enviarPing();
 
-  if (millis() - lastPing >= PING_INTERVAL_MS) {
-    sendPing();
-    lastPing = millis();
-  }
+  String uid;
+  if (!lerCartao(uid)) return;
 
-  if (!rfid.PICC_IsNewCardPresent()) return;
-  if (!rfid.PICC_ReadCardSerial()) return;
+  Serial.printf("Cartao lido: %s\n", uid.c_str());
+  visorSimples("lendo");
+  Resposta r = consultarServidor(uid);
 
-  printUid();
-  mostrarTela("Lendo cartao", "Aguarde...");   // a resposta do servidor pode levar alguns segundos
-  visorWeb("lendo");
-
-  String nome, direcao, motivo, mensagem;
-  int resultado = consultarAcesso(uidAsText(), nome, direcao, motivo, mensagem);
-
-  if (resultado == ACESSO_LIBERADO) {
-    Serial.println("Acesso liberado");
-    mostrarTela(nome.length() ? nome : String("Acesso liberado"), textoLiberado(direcao));   // ex.: "Carlos" / "ENTRADA LIBERADA"
-    visorWebDados("liberado", "nome", nome, "direcao", direcao);
-    openGate();
-    delay(OPEN_TIME_MS);   // catraca gira / pessoa passa
-    closeGate();           // trava de novo
-    Serial.println("Catraca travada");
-    telaEspera();
+  if (r.resultado == LIBERADO) {
+    Serial.printf("Liberado: %s (%s), %s\n", r.nome.c_str(), r.cargo.c_str(), r.direcao.c_str());
+    visorLiberado(r);
+    abrir();
+    delay(TEMPO_ABERTA_MS);   // a pessoa passa
+    travar();
+    visorEspera();
   } else {
-    Serial.println("Acesso negado");
-    mostrarNegado(resultado, motivo, mensagem);   // o aviso se apaga sozinho (MENSAGEM_NEGADO_MS)
-    denyAccess();
+    Serial.printf("Negado: %s %s\n", r.motivo.c_str(), r.mensagem.c_str());
+    visorNegado(r);
+    piscarNegado();
   }
-
-  rfid.PICC_HaltA();
-  rfid.PCD_StopCrypto1();
 }

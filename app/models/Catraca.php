@@ -23,7 +23,7 @@ class Catraca
      * $direcaoFixa ('entrada' ou 'saida') força o sentido; sem ela, alterna a cada passagem.
      *
      * Devolve o corpo da resposta, sem o campo "sucesso":
-     *   autorizado, direcao?, nome?, motivo? ('cartao_desconhecido' | 'inativo'), mensagem, repetido?
+     *   autorizado, direcao?, nome?, cargo?, motivo? ('cartao_desconhecido' | 'inativo'), mensagem, repetido?
      */
     public static function passar(int $empresaId, int $dispositivoId, string $uid, ?string $direcaoFixa = null): array
     {
@@ -85,13 +85,14 @@ class Catraca
 
     private static function autorizada(array $credencial, string $direcao): array
     {
-        // Só o primeiro nome: o visor do leitor fica à vista de quem está na fila.
+        // Só o primeiro nome e o cargo: o visor da catraca fica à vista de quem está na fila.
         $primeiroNome = explode(' ', trim((string) $credencial['nome']))[0];
 
         return [
             'autorizado' => true,
             'direcao'    => $direcao,
             'nome'       => $primeiroNome,
+            'cargo'      => trim((string) ($credencial['cargo'] ?? '')),
             'mensagem'   => $direcao === 'entrada' ? 'Entrada liberada.' : 'Saída registrada.',
         ];
     }
