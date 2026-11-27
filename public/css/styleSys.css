@@ -530,6 +530,9 @@ main {
     color: white !important;
     background-color: var(--preto);
     margin-top: 0.5rem;
+    /* é um link (<a>) e não mais um <button>: mantém o mesmo visual */
+    text-decoration: none;
+    font-size: 13.3333px;
 }
 
 .botaoSobre:hover {
@@ -557,6 +560,11 @@ main {
     display: block;
     position: absolute;
     left: -12vw;
+}
+
+/* A versão da arte para o tema escuro só aparece no tema escuro (veja temaSys.css) */
+#imagemSobre .imgSobreEscura {
+    display: none;
 }
 
 /* Elementos decorativos (usados em outras seções do site) */
