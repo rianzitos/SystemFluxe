@@ -192,9 +192,17 @@ html.tema-animando body *::after {
 }
 
 /* ilustrações com fundo branco ganham cantos arredondados para não "estourar" no escuro */
-:root[data-theme="dark"] #painelGeral img,
-:root[data-theme="dark"] #imagemSobre img {
+:root[data-theme="dark"] #painelGeral img {
     border-radius: 14px;
+}
+
+/* "Sobre o sistema": no escuro usa a arte com o painel claro transparente (sem o "cartão branco") */
+:root[data-theme="dark"] #imagemSobre .imgSobreClara {
+    display: none;
+}
+
+:root[data-theme="dark"] #imagemSobre .imgSobreEscura {
+    display: block;
 }
 
 /* ---------------------------------------------------------------------
